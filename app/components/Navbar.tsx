@@ -1,14 +1,27 @@
 'use client'
 
 import Link from 'next/link'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 8)
+    }
+
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   return (
     <>
-      <nav className={`navbar${isMobileMenuOpen ? ' is-menu-open' : ''} bg-white py-4 border-b border-gray-100`}>
+      <nav
+        className={`navbar${isMobileMenuOpen ? ' is-menu-open' : ''}${isScrolled ? ' is-scrolled' : ''} py-4 transition-colors`}
+      >
         <div className="navbar-content flex justify-between items-center max-w-7xl mx-auto w-full">
           
           {/* Desktop Navigation */}

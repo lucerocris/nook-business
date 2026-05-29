@@ -7,9 +7,15 @@
   width: 100%;
   height: 64px;
   z-index: 1001;
+  background-color: transparent;
+  border-bottom: 1px solid transparent;
+  --link-color: #3b3b3b;
+}
+
+.navbar.is-scrolled {
   background-color: #ffffff;
   border-bottom: 1px solid rgb(229, 231, 235);
-  --link-color: #3b3b3b;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 @media (min-width: 768px) {

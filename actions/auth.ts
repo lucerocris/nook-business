@@ -1,6 +1,5 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -23,15 +22,18 @@ export async function signUp(
   const password = String(formData.get("password") ?? "");
 
   if (!fullName || !email || !password) {
-    return { error: "Please fill out all required fields." };
+    return {
+      error: "Please fill out all required fields.",
+    };
   }
 
   if (password.length < 8) {
-    return { error: "Password must be at least 8 characters." };
+    return {
+      error: "Password must be at least 8 characters.",
+    };
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   const { error } = await supabase.auth.signUp({
     email,
@@ -70,8 +72,7 @@ export async function signIn(
     };
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
     email,

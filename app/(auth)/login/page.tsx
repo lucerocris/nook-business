@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "@/components/auth/login-form";
@@ -10,18 +9,22 @@ type LoginPageProps = {
 };
 
 const getSafeRedirect = (value?: string) => {
-  if (value && value.startsWith("/")) {
+  if (value?.startsWith("/")) {
     return value;
   }
 
   return "/";
 };
 
-export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-  const { data } = await supabase.auth.getUser();
-  const user = data?.user;
+export default async function LoginPage({
+  searchParams,
+}: LoginPageProps) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { redirect: redirectParam } = (await searchParams) ?? {};
   const redirectTo = getSafeRedirect(redirectParam);
 
@@ -35,10 +38,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <div className="flex justify-center">
           <img src="/logo.svg" alt="Nook" className="h-10 w-auto" />
         </div>
-        <h1 className="mt-6 text-2xl font-bold text-gray-900">Welcome back</h1>
+
+        <h1 className="mt-6 text-2xl font-bold text-gray-900">
+          Welcome back
+        </h1>
+
         <p className="mt-2 text-sm text-gray-500">
           Log in to manage your listings and respond to claims.
         </p>
+
         <LoginForm redirectTo={redirectTo} />
       </div>
     </div>

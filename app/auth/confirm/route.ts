@@ -1,17 +1,17 @@
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 const getSafeRedirect = (value?: string | null) => {
-  if (value && value.startsWith("/")) {
+  if (value?.startsWith("/")) {
     return value;
   }
 
-  return "/dashboard";
+  return "/";
 };
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
+
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type");
   const next = searchParams.get("next");
@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
+
   const { error } = await supabase.auth.verifyOtp({
     type: "signup",
     token_hash: tokenHash,
@@ -36,5 +36,8 @@ export async function GET(request: NextRequest) {
   }
 
   const redirectTo = getSafeRedirect(next);
-  return NextResponse.redirect(new URL(redirectTo, request.url));
+
+  return NextResponse.redirect(
+    new URL(redirectTo, request.url)
+  );
 }

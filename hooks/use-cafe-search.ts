@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import type { PostgrestError } from "@supabase/supabase-js";
-import { useSupabase } from "@/app/lib/supabase/context";
+import { useSupabase } from "@/lib/supabase/context";
 import type { Database } from "@/types/database.types";
 
 type CafeSearchResults =

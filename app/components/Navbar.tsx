@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import React, { useEffect, useMemo, useState } from 'react'
-import { useSupabase } from '@/app/lib/supabase/context'
+import { useSupabase } from '@/lib/supabase/context'
 
 export function Navbar() {
   const supabase = useSupabase()

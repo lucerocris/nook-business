@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ClaimForm } from "@/app/components/claim/claim-form";
@@ -20,9 +19,11 @@ type CafeRecord = {
   is_claimed: boolean | null;
 };
 
-export default async function ClaimPage({ params }: ClaimPageProps) {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+export default async function ClaimPage({
+  params,
+}: ClaimPageProps) {
+  const supabase = await createClient();
+
   const { cafeId } = await params;
 
   const { data: cafe, error } = await supabase
@@ -37,8 +38,10 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
     notFound();
   }
 
-  const { data: userData } = await supabase.auth.getUser();
-  const user = userData?.user;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const redirectPath = encodeURIComponent(`/claim/${cafeId}`);
 
   if (!user) {
@@ -52,13 +55,16 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
               className="mx-auto mb-6 h-20 w-20 rounded-xl object-cover"
             />
           ) : null}
+
           <h1 className="text-3xl font-bold text-gray-900">
             Claim {cafe.name ?? "this cafe"}
           </h1>
+
           <p className="mt-3 text-sm text-gray-500">
-            Create a free business account to manage {cafe.name ?? "this cafe"}
-            on Nook.
+            Create a free business account to manage{" "}
+            {cafe.name ?? "this cafe"} on Nook.
           </p>
+
           <div className="mt-8 flex flex-col items-center gap-3">
             <Link
               href={`/register?redirect=${redirectPath}`}
@@ -66,6 +72,7 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
             >
               Create free account
             </Link>
+
             <Link
               href={`/login?redirect=${redirectPath}`}
               className="text-sm font-semibold text-[#3A5A40] hover:text-[#2b442f]"

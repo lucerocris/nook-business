@@ -12,6 +12,10 @@
   --link-color: #3b3b3b;
 }
 
+.navbar-bordered .navbar {
+  border-bottom: 1px solid rgb(229, 231, 235);
+}
+
 .navbar.is-scrolled {
   background-color: #ffffff;
   border-bottom: 1px solid rgb(229, 231, 235);

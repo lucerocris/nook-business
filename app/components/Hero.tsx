@@ -1,3 +1,7 @@
+'use client'
+
+import { CafeSearchInput } from "./claim/cafe-search-input";
+
 export function Hero() {
   return (
     <section className="flex flex-col items-center overflow-hidden bg-[#F7FAF7] pt-48">
@@ -10,21 +14,9 @@ export function Hero() {
           Claim your free profile, update your amenities, and control your
           digital storefront in minutes.
         </p>
-        <form className="mt-8 w-full max-w-xl">
-          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
-            <input
-              type="text"
-              placeholder="Search for your cafe..."
-              className="w-full rounded-md border border-gray-200 bg-white px-5 py-4 text-base text-gray-900 shadow-sm outline-none transition focus:border-gray-300 focus:ring-2 focus:ring-[#3A5A40]/20"
-            />
-            <button
-              type="button"
-              className="w-full shrink-0 rounded-md bg-[#3A5A40] px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-[#2b442f] sm:w-auto"
-            >
-              Verify &amp; Claim
-            </button>
-          </div>
-        </form>
+        <div className="mt-8 w-full max-w-xl">
+          <CafeSearchInput />
+        </div>
       </div>
 
       {/* Mockups + Background */}

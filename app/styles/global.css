@@ -1,5 +1,20 @@
 @import 'tailwindcss';
 
+:root {
+  --font-display: 'Fraunces', serif;
+  --color-primary: #3a5a40;
+}
+
+body {
+  background: #f7faf7;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+
+
 .navbar {
   position: fixed;
   top: 0;

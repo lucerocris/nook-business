@@ -10,6 +10,7 @@ export default function Home() {
       <Hero />
       <ValueProposition />
       <HowItWorks />
+      <CallToAction />
       <Footer />
     </>
   );

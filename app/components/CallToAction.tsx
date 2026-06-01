@@ -16,12 +16,20 @@ export default function CallToAction() {
         </p>
         
         {/* Link this href to the ID of your hero search section */}
-        <a 
-          href="#hero" 
-          className="inline-flex items-center justify-center px-8 py-4 text-base md:text-lg font-bold text-[#3A5A40] bg-white rounded-md shadow-lg hover:bg-gray-50 hover:scale-105 transition-all duration-200"
-        >
-          Search for your cafe
-        </a>
+        <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <a
+            href="#hero"
+            className="inline-flex items-center justify-center px-8 py-4 text-base md:text-lg font-bold text-[#3A5A40] bg-white rounded-md shadow-lg hover:bg-gray-50 hover:scale-105 transition-all duration-200"
+          >
+            Search for your cafe
+          </a>
+          <a
+            href="/claim"
+            className="inline-flex items-center justify-center px-8 py-4 text-base md:text-lg font-semibold text-white/90 border border-white/40 rounded-md hover:bg-white/10 transition-colors"
+          >
+            Preview dashboard
+          </a>
+        </div>
       </div>
     </section>
   )

@@ -91,13 +91,13 @@ export function CafeSearchInput() {
           value={searchQuery}
           onChange={handleChange}
           placeholder="Search for your cafe..."
-          className="w-full rounded-md border border-gray-200 bg-white px-5 py-4 text-base text-gray-900 shadow-sm outline-none transition focus:border-gray-300 focus:ring-2 focus:ring-[#3A5A40]/20"
+          className="w-full rounded-xl border border-gray-200 bg-white px-5 py-4 text-base text-gray-900 shadow-sm outline-none transition focus:border-gray-300 focus:ring-2 focus:ring-[#3A5A40]/20"
         />
         <button
           type="button"
           disabled={!selectedCafeId}
           onClick={handleVerifyClaim}
-          className="w-full shrink-0 rounded-md bg-[#3A5A40] px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-[#2b442f] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          className="w-full shrink-0 rounded-xl bg-[#3A5A40] px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-[#2b442f] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           Verify &amp; Claim
         </button>

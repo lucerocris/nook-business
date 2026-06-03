@@ -1,108 +1,103 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import React, { useEffect, useMemo, useState } from 'react'
-import { useSupabase } from '@/lib/supabase/context'
+import Link from "next/link";
+import React, { useEffect, useMemo, useState } from "react";
+import { User } from "@supabase/supabase-js";
+import { useSupabase } from "@/lib/supabase/context";
 
-export function Navbar() {
-  const supabase = useSupabase()
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-  const [user, setUser] = useState<
-    | {
-        email?: string | null
-        user_metadata?: {
-          full_name?: string | null
-          avatar_url?: string | null
-        }
-      }
-    | null
-  >(null)
+type NavbarProps = {
+  initialUser: User | null;
+};
 
-  const avatarUrl = user?.user_metadata?.avatar_url ?? null
+export function Navbar({ initialUser }: NavbarProps) {
+  const supabase = useSupabase();
+
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  const [user, setUser] = useState<User | null>(initialUser);
+
+  const avatarUrl = user?.user_metadata?.avatar_url ?? null;
+
   const displayName =
-    user?.user_metadata?.full_name || user?.email || 'Account'
+    user?.user_metadata?.full_name || user?.email || "Account";
 
   const initials = useMemo(() => {
-    const raw = displayName.trim()
-    if (!raw) return 'A'
-    const parts = raw.split(' ').filter(Boolean)
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-  }, [displayName])
+    const raw = displayName.trim();
+
+    if (!raw) return "A";
+
+    const parts = raw.split(" ").filter(Boolean);
+
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }, [displayName]);
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 8)
-    }
+      setIsScrolled(window.scrollY > 8);
+    };
 
-    handleScroll()
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
-    let isMounted = true
+    let isMounted = true;
 
     const loadUser = async () => {
-      const { data } = await supabase.auth.getUser()
-      if (isMounted) {
-        setUser(data?.user ?? null)
-      }
-    }
+      const { data, error } = await supabase.auth.getUser();
 
-    loadUser()
+      if (isMounted) {
+        setUser(data.user ?? null);
+      }
+    };
+
+    void loadUser();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         if (isMounted) {
-          setUser(session?.user ?? null)
-          setIsUserMenuOpen(false)
+          setUser(session?.user ?? null);
+          setIsUserMenuOpen(false);
         }
-      }
-    )
+      },
+    );
 
     return () => {
-      isMounted = false
-      authListener?.subscription.unsubscribe()
-    }
-  }, [supabase])
+      isMounted = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, [supabase, initialUser]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    setIsUserMenuOpen(false)
-    setIsMobileMenuOpen(false)
-  }
+    await supabase.auth.signOut();
+
+    setIsUserMenuOpen(false);
+    setIsMobileMenuOpen(false);
+  };
+
+  // KEEP THE REST OF YOUR JSX EXACTLY THE SAME
 
   return (
     <>
       <nav
-        className={`navbar${isMobileMenuOpen ? ' is-menu-open' : ''}${isScrolled ? ' is-scrolled' : ''} py-4 transition-colors`}
+        className={`navbar${isMobileMenuOpen ? " bg-white" : ""}${isScrolled ? " is-scrolled" : ""} py-4 transition-colors`}
       >
         <div className="navbar-content flex justify-between items-center max-w-7xl mx-auto w-full">
-          
           {/* Desktop Navigation */}
           <div className="hidden md:flex w-full items-center justify-between">
-            
             {/* Left side: Logo & Navigation Links */}
             <div className="flex items-center gap-10">
               <Link href="/" className="navbar-logo flex items-center shrink-0">
                 <img src="/logo.svg" alt="Nook for Business" className="w-20" />
               </Link>
-
-              <ul className="navbar-links flex items-center gap-6 text-sm lg:text-base font-medium text-gray-700">
-                <li>
-                  <Link href="/" className="hover:text-[#3A5A40] transition-colors">
-                    Home
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#features" className="hover:text-[#3A5A40] transition-colors">
-                    Features
-                  </Link>
-                </li>
-              </ul>
             </div>
 
             {/* Right side: Auth & CTA Buttons */}
@@ -136,8 +131,8 @@ export function Navbar() {
                   <div
                     className={`absolute right-0 mt-2 w-40 rounded-xl border border-gray-200 bg-white p-2 shadow-lg transition-opacity ${
                       isUserMenuOpen
-                        ? 'pointer-events-auto opacity-100'
-                        : 'pointer-events-none opacity-0'
+                        ? "pointer-events-auto opacity-100"
+                        : "pointer-events-none opacity-0"
                     }`}
                     role="menu"
                   >
@@ -199,14 +194,20 @@ export function Navbar() {
               ) : null}
 
               <button
-                className={`navbar-hamburger p-2 flex flex-col gap-1.5 ${isMobileMenuOpen ? 'open' : ''}`}
+                className={`navbar-hamburger p-2 flex flex-col gap-1.5 ${isMobileMenuOpen ? "open" : ""}`}
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 aria-label="Toggle menu"
               >
-              {/* Simple CSS Hamburger lines if you aren't using an icon library */}
-              <span className={`block w-6 h-0.5 bg-gray-800 transition-transform ${isMobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
-              <span className={`block w-6 h-0.5 bg-gray-800 transition-opacity ${isMobileMenuOpen ? 'opacity-0' : ''}`} />
-              <span className={`block w-6 h-0.5 bg-gray-800 transition-transform ${isMobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+                {/* Simple CSS Hamburger lines if you aren't using an icon library */}
+                <span
+                  className={`block w-6 h-0.5 bg-gray-800 transition-transform ${isMobileMenuOpen ? "rotate-45 translate-y-2" : ""}`}
+                />
+                <span
+                  className={`block w-6 h-0.5 bg-gray-800 transition-opacity ${isMobileMenuOpen ? "opacity-0" : ""}`}
+                />
+                <span
+                  className={`block w-6 h-0.5 bg-gray-800 transition-transform ${isMobileMenuOpen ? "-rotate-45 -translate-y-2" : ""}`}
+                />
               </button>
             </div>
 
@@ -214,8 +215,8 @@ export function Navbar() {
               <div
                 className={`absolute right-0 top-14 w-40 rounded-xl border border-gray-200 bg-white p-2 shadow-lg transition-opacity ${
                   isUserMenuOpen
-                    ? 'pointer-events-auto opacity-100'
-                    : 'pointer-events-none opacity-0'
+                    ? "pointer-events-auto opacity-100"
+                    : "pointer-events-none opacity-0"
                 }`}
                 role="menu"
               >
@@ -234,23 +235,11 @@ export function Navbar() {
       </nav>
 
       {/* Mobile Menu Drawer */}
-      <div className={`mobile-menu-wrapper block md:hidden fixed inset-0 z-50 bg-white transform transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`} style={{ top: '72px' }}>
-        <div className="flex flex-col gap-8 w-full p-6 h-full border-t border-gray-100">
-          
-          <ul className="flex flex-col gap-6 text-2xl font-medium text-gray-800">
-            <li>
-              <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>
-                Home
-              </Link>
-            </li>
-            <li>
-              <Link href="#features" onClick={() => setIsMobileMenuOpen(false)}>
-                Features
-              </Link>
-            </li>
-          </ul>
-
-          <div className="flex flex-col gap-4 mt-auto pb-12">
+      <div
+        className={`mobile-menu-wrapper block md:hidden fixed inset-0 z-40 bg-white transform transition-transform duration-300 ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"}`}
+      >
+        <div className="flex flex-col gap-8 w-full p-6 pt-28 h-full">
+          <div className="flex flex-col gap-4">
             {user ? (
               <button
                 type="button"
@@ -280,5 +269,5 @@ export function Navbar() {
         </div>
       </div>
     </>
-  )
+  );
 }

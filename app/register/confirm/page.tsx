@@ -1,3 +1,5 @@
+import { FunnelShell } from "@/app/components/funnel-shell";
+
 type RegisterConfirmPageProps = {
   searchParams?: Promise<{
     email?: string;
@@ -11,10 +13,21 @@ export default async function RegisterConfirmPage({
   const trimmedEmail = email?.trim();
 
   return (
-    <div className="flex min-h-[calc(100vh-72px)] items-center justify-center bg-white px-6 py-16">
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-900">Check your email</h1>
-        <p className="mt-3 text-sm text-gray-500">
+    <FunnelShell contentClassName="max-w-4xl">
+      <div className="mx-auto w-full max-w-2xl rounded-[2rem] border border-white/80 bg-white/90 p-8 text-center shadow-[0_24px_80px_rgba(15,23,42,0.09)] backdrop-blur-sm sm:p-10">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#3A5A40]/10 text-xs font-semibold uppercase tracking-[0.28em] text-[#3A5A40] animate-funnel-rise">
+          Mail
+        </div>
+
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40] animate-funnel-fade funnel-delay-1">
+          Registration complete
+        </p>
+
+        <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-gray-900 animate-funnel-rise funnel-delay-2 sm:text-4xl">
+          Check your email
+        </h1>
+
+        <p className="mx-auto mt-4 max-w-xl text-sm text-gray-600 animate-funnel-fade funnel-delay-3 sm:text-base">
           {trimmedEmail ? (
             <>
               We sent a confirmation link to{" "}
@@ -25,10 +38,11 @@ export default async function RegisterConfirmPage({
           )}{" "}
           Click it to finish setting up your account.
         </p>
-        <p className="mt-4 text-sm text-gray-500">
+
+        <p className="mt-4 text-sm text-gray-500 animate-funnel-fade funnel-delay-3">
           You can close this tab after confirming your email.
         </p>
       </div>
-    </div>
+    </FunnelShell>
   );
 }

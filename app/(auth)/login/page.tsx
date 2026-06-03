@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "@/components/auth/login-form";
+import { FunnelShell } from "@/app/components/funnel-shell";
 
 type LoginPageProps = {
   searchParams?: Promise<{
@@ -33,22 +34,26 @@ export default async function LoginPage({
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-72px)] items-center justify-center bg-white px-6 py-16">
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-10 shadow-sm">
-        <div className="flex justify-center">
-          <img src="/logo.svg" alt="Nook" className="h-10 w-auto" />
+    <FunnelShell contentClassName="max-w-4xl">
+      <div className="mx-auto w-full max-w-2xl rounded-[2rem] border border-white/80 bg-white/90 p-7 shadow-[0_24px_80px_rgba(15,23,42,0.09)] backdrop-blur-sm sm:p-10">
+        <div className="flex justify-center animate-funnel-fade">
+          <img src="/logo.svg" alt="Nook" className="h-9 w-auto" />
         </div>
 
-        <h1 className="mt-6 text-2xl font-bold text-gray-900">
+        <p className="mt-6 text-center text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40] animate-funnel-fade funnel-delay-1">
+          Owner account
+        </p>
+
+        <h1 className="mt-3 text-center font-display text-3xl font-semibold tracking-tight text-gray-900 animate-funnel-rise funnel-delay-2 sm:text-4xl">
           Welcome back
         </h1>
 
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mx-auto mt-3 max-w-lg text-center text-sm text-gray-600 animate-funnel-fade funnel-delay-3 sm:text-base">
           Log in to manage your listings and respond to claims.
         </p>
 
         <LoginForm redirectTo={redirectTo} />
       </div>
-    </div>
+    </FunnelShell>
   );
 }

@@ -91,20 +91,20 @@ export function CafeSearchInput() {
           value={searchQuery}
           onChange={handleChange}
           placeholder="Search for your cafe..."
-          className="w-full rounded-xl border border-gray-200 bg-white px-5 py-4 text-base text-gray-900 shadow-sm outline-none transition focus:border-gray-300 focus:ring-2 focus:ring-[#3A5A40]/20"
+          className="w-full rounded-2xl border border-[#3A5A40]/15 bg-white px-5 py-4 text-base text-gray-900 shadow-[0_12px_35px_rgba(15,23,42,0.08)] outline-none transition placeholder:text-gray-400 focus:border-[#3A5A40]/40 focus:ring-4 focus:ring-[#3A5A40]/12"
         />
         <button
           type="button"
           disabled={!selectedCafeId}
           onClick={handleVerifyClaim}
-          className="w-full shrink-0 rounded-xl bg-[#3A5A40] px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-[#2b442f] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          className="w-full shrink-0 rounded-2xl bg-[#3A5A40] px-6 py-4 text-base font-semibold text-white shadow-[0_14px_30px_rgba(58,90,64,0.32)] transition hover:-translate-y-0.5 hover:bg-[#2f4a35] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           Verify &amp; Claim
         </button>
       </div>
 
       {showDropdown ? (
-        <div className="absolute left-0 right-0 top-full z-30 mt-2 rounded-md border border-gray-200 bg-white shadow-lg">
+        <div className="absolute left-0 right-0 top-full z-30 mt-3 overflow-hidden rounded-2xl border border-[#3A5A40]/15 bg-white shadow-[0_24px_50px_rgba(15,23,42,0.12)]">
           <ul className="max-h-80 overflow-auto py-2 text-left text-sm text-gray-700">
             {loading ? (
               <li className="px-4 py-3 text-sm text-gray-500">
@@ -129,7 +129,7 @@ export function CafeSearchInput() {
                 return (
                   <li
                     key={cafeId}
-                    className={`px-4 ${isLast ? "" : "border-b border-gray-100"}`}
+                    className={`px-4 ${isLast ? "" : "border-b border-[#3A5A40]/10"}`}
                   >
                     <button
                       type="button"
@@ -137,7 +137,7 @@ export function CafeSearchInput() {
                         setSelectedCafeId(cafeId);
                         router.push(`/claim/${cafeId}`);
                       }}
-                      className="flex w-full flex-col items-start gap-1 rounded-md px-2 py-2 text-left transition-colors hover:bg-gray-50"
+                      className="flex w-full flex-col items-start gap-1 rounded-xl px-3 py-3 text-left transition-colors hover:bg-[#F7FAF7]"
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-gray-900">

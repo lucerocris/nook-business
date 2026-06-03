@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ClaimForm } from "@/app/components/claim/claim-form";
+import { FunnelShell } from "@/app/components/funnel-shell";
 
 type ClaimPageProps = {
   params: Promise<{
@@ -46,42 +47,48 @@ export default async function ClaimPage({
 
   if (!user) {
     return (
-      <div className="flex min-h-[calc(100vh-72px)] items-center justify-center bg-white px-6 py-16">
-        <div className="w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+      <FunnelShell contentClassName="max-w-4xl">
+        <div className="mx-auto w-full max-w-2xl rounded-[2rem] border border-white/80 bg-white/90 p-8 text-center shadow-[0_24px_80px_rgba(15,23,42,0.09)] backdrop-blur-sm sm:p-11">
           {cafe.featured_image_url ? (
             <img
               src={cafe.featured_image_url}
               alt={cafe.name ?? "Cafe"}
-              className="mx-auto mb-6 h-20 w-20 rounded-xl object-cover"
+              className="animate-funnel-rise mx-auto mb-7 h-24 w-24 rounded-2xl object-cover shadow-[0_16px_35px_rgba(58,90,64,0.18)]"
             />
-          ) : null}
+          ) : (
+            <div className="animate-funnel-rise mx-auto mb-7 flex h-24 w-24 items-center justify-center rounded-2xl bg-[#3A5A40]/10 text-xs font-semibold uppercase tracking-[0.24em] text-[#3A5A40]">
+              Nook
+            </div>
+          )}
 
-          <h1 className="text-3xl font-bold text-gray-900">
+          <p className="animate-funnel-fade text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40]">
+            Claim verification
+          </p>
+          <h1 className="animate-funnel-rise funnel-delay-1 mt-4 text-balance font-display text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
             Claim {cafe.name ?? "this cafe"}
           </h1>
 
-          <p className="mt-3 text-sm text-gray-500">
-            Create a free business account to manage{" "}
-            {cafe.name ?? "this cafe"} on Nook.
+          <p className="animate-funnel-fade funnel-delay-2 mx-auto mt-4 max-w-xl text-base text-gray-600">
+            Create a free business account to verify ownership and manage {cafe.name ?? "this cafe"} on Nook.
           </p>
 
-          <div className="mt-8 flex flex-col items-center gap-3">
+          <div className="animate-funnel-rise funnel-delay-3 mt-9 flex flex-col items-center gap-4">
             <Link
               href={`/register?redirect=${redirectPath}`}
-              className="inline-flex w-full items-center justify-center rounded-md bg-[#3A5A40] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2b442f]"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-[#3A5A40] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(58,90,64,0.3)] transition hover:-translate-y-0.5 hover:bg-[#2f4a35]"
             >
               Create free account
             </Link>
 
             <Link
               href={`/login?redirect=${redirectPath}`}
-              className="text-sm font-semibold text-[#3A5A40] hover:text-[#2b442f]"
+              className="text-sm font-semibold text-[#3A5A40] transition hover:text-[#2b442f]"
             >
               Already have an account? Log in
             </Link>
           </div>
         </div>
-      </div>
+      </FunnelShell>
     );
   }
 
@@ -98,11 +105,12 @@ export default async function ClaimPage({
     }>();
 
   return (
-    <ClaimForm
-      cafeId={String(cafe.id)}
-      cafeName={cafe.name ?? "this cafe"}
-      userId={user.id}
-      existingClaim={existingClaim}
-    />
+    <FunnelShell contentClassName="max-w-5xl">
+      <ClaimForm
+        cafeId={String(cafe.id)}
+        cafeName={cafe.name ?? "this cafe"}
+        existingClaim={existingClaim}
+      />
+    </FunnelShell>
   );
 }

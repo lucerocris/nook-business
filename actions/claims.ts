@@ -1,6 +1,5 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,8 +25,7 @@ type InitiateClaimResult =
 export async function initiateClaim(
   payload: InitiateClaimPayload
 ): Promise<InitiateClaimResult> {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
   const user = userData?.user;
@@ -90,8 +88,7 @@ type WithdrawClaimResult = {
 export async function withdrawClaim(
   claimId: string
 ): Promise<WithdrawClaimResult> {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
   const user = userData?.user;

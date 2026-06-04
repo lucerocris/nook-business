@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { FunnelShell } from "@/app/components/funnel-shell";
 
 type RegisterConfirmPageProps = {
@@ -5,6 +6,8 @@ type RegisterConfirmPageProps = {
     email?: string;
   }>;
 };
+
+export const metadata: Metadata = { title: "Check your email" }
 
 export default async function RegisterConfirmPage({
   searchParams,

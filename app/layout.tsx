@@ -20,7 +20,15 @@ const fraunces = Fraunces({
 
 export const metadata = {
   description: 'A blank template using Payload in a Next.js app.',
-  title: 'Nook',
+  title: {
+    default: 'Nook',
+    template: '%s - Nook',
+  },
+  icons: {
+    icon: '/nookGlasses.svg',
+    shortcut: '/nookGlasses.svg',
+    apple: '/nookGlasses.svg',
+  },
 }
 
 export default async function RootLayout({

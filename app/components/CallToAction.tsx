@@ -24,12 +24,6 @@ export default function CallToAction() {
           >
             Search for your cafe
           </a>
-          <Link
-            href="/claim"
-            className="inline-flex items-center justify-center px-8 py-4 text-base md:text-lg font-semibold text-white/90 border border-white/40 rounded-md hover:bg-white/10 transition-colors"
-          >
-            Preview dashboard
-          </Link>
         </div>
       </div>
     </section>

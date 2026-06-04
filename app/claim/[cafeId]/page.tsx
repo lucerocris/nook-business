@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -9,6 +10,22 @@ type ClaimPageProps = {
     cafeId: string;
   }>;
 };
+
+export async function generateMetadata({
+  params,
+}: ClaimPageProps): Promise<Metadata> {
+  const { cafeId } = await params;
+  const supabase = await createClient();
+  const { data: cafe } = await supabase
+    .from("cafes")
+    .select("name")
+    .eq("id", cafeId)
+    .maybeSingle<{ name: string | null }>();
+
+  return {
+    title: cafe?.name ? `Claim ${cafe.name}` : "Claim your cafe",
+  };
+}
 
 type CafeRecord = {
   id: string | number;

@@ -40,7 +40,17 @@ export async function getOwners() {
   type CafeLinkRow = {
     owner_id: string;
     role: string;
-    cafes: Record<string, unknown> | Record<string, unknown>[] | null;
+    cafes: {
+      id: string;
+      name: string;
+      neighborhood: string;
+      status: string;
+    } | {
+      id: string;
+      name: string;
+      neighborhood: string;
+      status: string;
+    }[] | null;
   };
 
   const normalizedLinks: LinkedCafe[] = (links ?? []).map((link: CafeLinkRow) => {

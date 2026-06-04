@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { RegisterForm } from "@/components/auth/register-form";
@@ -11,6 +12,8 @@ type RegisterPageProps = {
 
 const getSafeRedirect = (value?: string) =>
   value?.startsWith("/") ? value : "/";
+
+export const metadata: Metadata = { title: "Create account" }
 
 export default async function RegisterPage({
   searchParams,

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "@/components/auth/login-form";
@@ -16,6 +17,8 @@ const getSafeRedirect = (value?: string) => {
 
   return "/";
 };
+
+export const metadata: Metadata = { title: "Log in" }
 
 export default async function LoginPage({
   searchParams,

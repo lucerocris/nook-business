@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useTransition,
 } from "react";
@@ -35,6 +36,7 @@ export function ClaimForm({
   const [isLoading, setIsLoading] = useState(!existingClaim);
   const [isCopying, setIsCopying] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const hasInitiated = useRef(false);
 
   const codeValue = useMemo(() => claim?.verification_code ?? "", [claim]);
 
@@ -55,14 +57,17 @@ export function ClaimForm({
   }, [cafeId]);
 
   useEffect(() => {
-    if (!existingClaim) {
-      const timer = window.setTimeout(() => {
-        void fetchClaim();
-      }, 0);
+    if (existingClaim !== null || hasInitiated.current) return;
 
-      return () => window.clearTimeout(timer);
-    }
-  }, [existingClaim, fetchClaim]);
+    hasInitiated.current = true;
+
+    const timer = window.setTimeout(() => {
+      void fetchClaim();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCopy = async () => {
     if (!codeValue || typeof navigator === "undefined") {
@@ -149,7 +154,7 @@ export function ClaimForm({
             <div className="rounded-2xl border border-[#3A5A40]/15 bg-[#F7FAF7] px-6 py-4 font-mono text-2xl font-semibold tracking-[0.3em] text-gray-900 shadow-inner shadow-[#3A5A40]/5">
               {codeValue || "----"}
             </div>
-          <button
+            <button
               type="button"
               onClick={handleCopy}
               disabled={!codeValue || isCopying}

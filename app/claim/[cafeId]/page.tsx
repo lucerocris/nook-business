@@ -84,6 +84,7 @@ export default async function ClaimPage({
               href={`/login?redirect=${redirectPath}`}
               className="text-sm font-semibold text-[#3A5A40] transition hover:text-[#2b442f]"
             >
+              
               Already have an account? Log in
             </Link>
           </div>

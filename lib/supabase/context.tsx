@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { createContext, useContext, useRef } from "react";
+import React, { createContext, useContext, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database.types";
@@ -15,14 +15,10 @@ type SupabaseProviderProps = {
 };
 
 export function SupabaseProvider({ children }: SupabaseProviderProps) {
-  const clientRef = useRef<SupabaseContextValue | null>(null);
-
-  if (!clientRef.current) {
-    clientRef.current = createClient() as SupabaseContextValue;
-  }
+  const [client] = useState(() => createClient() as SupabaseContextValue);
 
   return (
-    <SupabaseContext.Provider value={clientRef.current}>
+    <SupabaseContext.Provider value={client}>
       {children}
     </SupabaseContext.Provider>
   );

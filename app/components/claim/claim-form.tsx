@@ -138,7 +138,7 @@ export function ClaimForm({
               confirm ownership of{" "}
               <span className="font-semibold">{cafeName}</span>.
               <span className="block mt-2 font-semibold text-red-600">
-                Important: The message must be sent from the cafe's official
+                Important: The message must be sent from the cafe&apos;s official
                 Instagram account. Personal accounts will not be accepted for
                 verification.
               </span>
@@ -191,3 +191,5 @@ export function ClaimForm({
     </div>
   );
 }
+
+

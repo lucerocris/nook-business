@@ -37,7 +37,13 @@ export async function getOwners() {
     (u) => u.app_metadata?.role === "cafe_owner"
   )
 
-  const normalizedLinks: LinkedCafe[] = (links ?? []).map((link: any) => {
+  type CafeLinkRow = {
+    owner_id: string;
+    role: string;
+    cafes: Record<string, unknown> | Record<string, unknown>[] | null;
+  };
+
+  const normalizedLinks: LinkedCafe[] = (links ?? []).map((link: CafeLinkRow) => {
     const cafe = Array.isArray(link.cafes)
       ? (link.cafes[0] ?? null)
       : (link.cafes ?? null)

@@ -48,7 +48,7 @@ export function Hero() {
             {/* Desktop Dashboard */}
             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.15)]">
               <img
-                src="/dashboardScreen.png"
+                src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/dashboardScreen.png"
                 alt="Dashboard interface"
                 className="h-auto w-full object-cover"
               />
@@ -77,7 +77,7 @@ export function Hero() {
               "
             >
               <img
-                src="/phoneScreen.png"
+                src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/phoneScreen.png"
                 alt="Mobile interface"
                 className="h-auto w-full object-cover"
               />

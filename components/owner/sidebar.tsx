@@ -66,7 +66,7 @@ export function OwnerSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
             <SidebarMenuButton size="lg" asChild>
               <Link href="/owner/dashboard">
                 <Image
-                  src="/app_icon.png"
+                  src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/app_icon.png"
                   alt="Nook"
                   width={32}
                   height={32}

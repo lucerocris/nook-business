@@ -96,7 +96,7 @@ export function Navbar({ initialUser }: NavbarProps) {
             {/* Left side: Logo & Navigation Links */}
             <div className="flex items-center gap-10">
               <Link href="/" className="navbar-logo flex items-center shrink-0">
-                <img src="/logo.svg" alt="Nook for Business" className="w-20" />
+                <img src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/logo.svg" alt="Nook for Business" className="w-20" />
               </Link>
             </div>
 
@@ -167,7 +167,7 @@ export function Navbar({ initialUser }: NavbarProps) {
           {/* Mobile Navigation Header */}
           <div className="flex md:hidden w-full h-full items-center justify-between relative">
             <Link href="/" className="navbar-logo flex items-center">
-              <img src="/logo.svg" alt="Nook for Business" className="w-24" />
+              <img src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/logo.svg" alt="Nook for Business" className="w-24" />
             </Link>
             <div className="flex items-center gap-3">
               {user ? (

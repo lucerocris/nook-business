@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="flex items-center justify-center md:justify-start">
           <Link href="/" className="flex items-center">
             <img
-              src="/logo.svg"
+              src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/logo.svg"
               alt="Nook for Business"
               className="h-8 w-auto opacity-90 hover:opacity-100 transition-opacity filter brightness-0 invert"
             />

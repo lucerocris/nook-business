@@ -35,7 +35,7 @@ export default async function RegisterPage({
     <FunnelShell contentClassName="max-w-4xl">
       <div className="mx-auto w-full max-w-2xl rounded-[2rem] border border-white/80 bg-white/90 p-7 shadow-[0_24px_80px_rgba(15,23,42,0.09)] backdrop-blur-sm sm:p-10">
         <div className="flex justify-center animate-funnel-fade">
-          <img src="/logo.svg" alt="Nook" className="h-9 w-auto" />
+          <img src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/logo.svg" alt="Nook" className="h-9 w-auto" />
         </div>
 
         <p className="mt-6 text-center text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40] animate-funnel-fade funnel-delay-1">

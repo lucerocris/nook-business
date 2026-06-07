@@ -2,23 +2,12 @@
 
 import * as React from "react"
 import {
-  ChatCircle,
+  CheckCircle,
   Flag,
   MagnifyingGlass,
   Star,
 } from "@phosphor-icons/react"
-import { toast } from "sonner"
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -37,8 +26,11 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 
+import { ReviewReportDialog } from "@/components/owner/review-report-dialog"
+
 type Review = {
   id: string
+  cafe_id: string
   rating: number
   content: string
   created_at: string
@@ -50,6 +42,7 @@ type Review = {
 }
 
 type Cafe = {
+  id: string
   rating: number | null
   review_count: number
 }
@@ -96,14 +89,20 @@ function formatRelativeDate(dateStr: string) {
 export function OwnerReviewsClient({
   reviews,
   cafe,
+  reportedReviewIds,
 }: {
   reviews: Review[]
   cafe: Cafe
+  reportedReviewIds: string[]
 }) {
   const [search, setSearch] = React.useState("")
   const [ratingFilter, setRatingFilter] = React.useState("all")
   const [sort, setSort] = React.useState("recent")
-  const [reportReview, setReportReview] = React.useState<string | null>(null)
+  const [reportReviewId, setReportReviewId] = React.useState<string | null>(null)
+  const [reportSession, setReportSession] = React.useState(0)
+  const [reportedIds, setReportedIds] = React.useState<Set<string>>(
+    () => new Set(reportedReviewIds)
+  )
 
   const ratingBreakdown = React.useMemo(() => {
     const counts: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
@@ -147,6 +146,20 @@ export function OwnerReviewsClient({
       ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
       : null
   )
+
+  function handleReported(reviewId: string) {
+    setReportedIds((prev) => {
+      if (prev.has(reviewId)) return prev
+      const next = new Set(prev)
+      next.add(reviewId)
+      return next
+    })
+  }
+
+  function openReportDialog(reviewId: string) {
+    setReportSession((s) => s + 1)
+    setReportReviewId(reviewId)
+  }
 
   return (
     <>
@@ -275,90 +288,91 @@ export function OwnerReviewsClient({
                 No reviews match your filters.
               </p>
             ) : (
-              filtered.map((review) => (
-                <div
-                  key={review.id}
-                  className="flex flex-row items-start gap-4 px-6 py-4 border-b last:border-0"
-                >
-                  {/* Avatar */}
-                  <div className="size-9 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0">
-                    {getInitials(
-                      review.profiles?.full_name ?? null,
-                      review.profiles?.username ?? null
-                    )}
-                  </div>
+              filtered.map((review) => {
+                const isReported = reportedIds.has(review.id)
+                return (
+                  <div
+                    key={review.id}
+                    className="flex flex-row items-start gap-4 px-6 py-4 border-b last:border-0"
+                  >
+                    {/* Avatar */}
+                    <div className="size-9 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0">
+                      {getInitials(
+                        review.profiles?.full_name ?? null,
+                        review.profiles?.username ?? null
+                      )}
+                    </div>
 
-                  {/* Content */}
-                  <div className="flex-1 space-y-2 min-w-0">
-                    <div className="flex flex-row items-center justify-between gap-2">
-                      <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="text-sm font-medium truncate">
-                          {review.profiles?.full_name ?? "Anonymous"}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {review.profiles?.username
-                            ? `@${review.profiles.username}`
-                            : ""}
+                    {/* Content */}
+                    <div className="flex-1 space-y-2 min-w-0">
+                      <div className="flex flex-row items-center justify-between gap-2">
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span className="text-sm font-medium truncate">
+                            {review.profiles?.full_name ?? "Anonymous"}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {review.profiles?.username
+                              ? `@${review.profiles.username}`
+                              : ""}
+                          </span>
+                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                          {formatRelativeDate(review.created_at)}
                         </span>
                       </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                        {formatRelativeDate(review.created_at)}
-                      </span>
-                    </div>
 
-                    <StarRow rating={review.rating} />
+                      <StarRow rating={review.rating} />
 
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {review.content}
-                    </p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {review.content}
+                      </p>
 
-                    <div className="flex flex-row justify-end">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs text-muted-foreground gap-1.5 hover:text-destructive"
-                        onClick={() => setReportReview(review.id)}
-                      >
-                        <Flag size={14} />
-                        Report
-                      </Button>
+                      <div className="flex flex-row justify-end">
+                        {isReported ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-muted-foreground gap-1.5"
+                            disabled
+                            aria-label="Already reported"
+                          >
+                            <CheckCircle data-icon="inline-start" weight="fill" />
+                            Already Reported
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-muted-foreground gap-1.5 hover:text-destructive"
+                            onClick={() => openReportDialog(review.id)}
+                            aria-label="Report review"
+                          >
+                            <Flag data-icon="inline-start" />
+                            Report
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                )
+              })
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Report Review Dialog */}
-      <AlertDialog
-        open={reportReview !== null}
-        onOpenChange={() => setReportReview(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Report this review?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will send a notification to the Nook team for review. The
-              review will remain visible until the team takes action. We do not
-              remove reviews on behalf of owners.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setReportReview(null)
-                console.log("Review reported — the Nook team will take a look.")
-                toast.success("Report sent to the Nook team")
-              }}
-            >
-              Send Report
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ReviewReportDialog
+        open={reportReviewId !== null}
+        onOpenChange={(open) => {
+          if (!open) setReportReviewId(null)
+        }}
+        reviewId={reportReviewId}
+        cafeId={cafe.id}
+        onSubmitted={handleReported}
+        resetKey={reportSession}
+      />
     </>
   )
 }

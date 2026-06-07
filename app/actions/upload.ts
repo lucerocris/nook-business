@@ -236,3 +236,46 @@ export async function deleteMenuItemImageAction(
   revalidatePath(`/admin/cafes/${targetCafeId}/edit`)
   revalidatePath("/owner/menu")
 }
+
+// ── REVIEW REPORT EVIDENCE ────────────────────────────
+// Key: nook/review-reports/{reviewId}/{timestamp}.{ext}
+
+export async function uploadReviewReportEvidenceAction(
+  formData: FormData,
+  reviewId: string,
+  cafeId: string
+) {
+  if (!reviewId) throw new Error("reviewId is required")
+  const targetCafeId = requireCafeId(cafeId)
+
+  const supabase = createAdminClient()
+  const { data: ownership } = await supabase
+    .from("cafe_owner_cafe")
+    .select("cafe_id")
+    .eq("cafe_id", targetCafeId)
+    .maybeSingle()
+
+  if (!ownership) throw new Error("Not authorized for this cafe")
+
+  const { data: review } = await supabase
+    .from("reviews")
+    .select("id, cafe_id")
+    .eq("id", reviewId)
+    .eq("cafe_id", targetCafeId)
+    .maybeSingle()
+
+  if (!review) throw new Error("Review not found for this cafe")
+
+  const file = formData.get("file") as File
+  if (!file) throw new Error("No file provided")
+  validateFile(file)
+
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const ext = file.type.split("/")[1]
+  const timestamp = Date.now()
+  const key = `nook/review-reports/${reviewId}/${timestamp}.${ext}`
+
+  const url = await uploadFile({ key, buffer, contentType: file.type })
+
+  return { url }
+}

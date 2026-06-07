@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 
 export type Review = {
   id: string
+  cafe_id: string
   rating: number
   content: string
   created_at: string
@@ -20,7 +21,7 @@ export async function getReviewsForCafe(
   let query = supabase
     .from("reviews")
     .select(`
-      id, rating, content, created_at,
+      id, cafe_id, rating, content, created_at,
       profiles!reviews_user_id_fkey ( full_name, username, avatar_url )
     `)
     .eq("cafe_id", cafeId)

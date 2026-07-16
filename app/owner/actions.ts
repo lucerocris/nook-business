@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Cafe } from "@/lib/queries/cafes"
 import { updateCafe } from "@/lib/queries/cafes"
-import { isSpecialtyTag, setCafeTags } from "@/lib/queries/tags"
 import {
   upsertMenuItem,
   deleteMenuItem,
@@ -39,93 +38,34 @@ export async function updateProfileAction(payload: UpdateProfilePayload) {
   revalidatePath("/owner/dashboard")
 }
 
+export type UpdateTagsResult = { ok: true } | { ok: false; error: string }
+
+// Validation, specialty-tag preservation and the delete+insert all live in
+// set_owner_cafe_tags now, so this runs as one statement in one transaction.
+// It must use the user-context client: the RPC authorizes against auth.uid(),
+// which the service-role client does not have.
 export async function updateTagsAction(
   tagIds: string[],
   featuredTagIds: string[]
-) {
+): Promise<UpdateTagsResult> {
   const cafeId = await getOwnerCafeId()
-  const supabase = createAdminClient()
+  const supabase = await createClient()
 
-  const normalizedTagIds = Array.from(new Set(tagIds))
-  const normalizedFeaturedTagIds = Array.from(new Set(featuredTagIds))
-
-  if (normalizedFeaturedTagIds.length > 3) {
-    throw new Error("You can select up to 3 featured tags only")
-  }
-
-  const featuredMustBeSelected = normalizedFeaturedTagIds.every((tagId) =>
-    normalizedTagIds.includes(tagId)
-  )
-  if (!featuredMustBeSelected) {
-    throw new Error("Featured tags must be included in selected tags")
-  }
-
-  const requestedTagIds = Array.from(
-    new Set([...normalizedTagIds, ...normalizedFeaturedTagIds])
-  )
-
-  if (requestedTagIds.length > 0) {
-    const { data: requestedTags, error } = await supabase
-      .from("tags")
-      .select("id, name, category")
-      .in("id", requestedTagIds)
-
-    if (error) throw error
-
-    if ((requestedTags ?? []).length !== requestedTagIds.length) {
-      throw new Error("One or more selected tags are invalid")
-    }
-
-    const hasSpecialtyTag = (requestedTags ?? []).some((tag) =>
-      isSpecialtyTag(tag)
-    )
-
-    if (hasSpecialtyTag) {
-      throw new Error("Specialty tag can only be assigned by admin")
-    }
-  }
-
-  if (normalizedFeaturedTagIds.length > 0) {
-    const { data: bestForTags, error } = await supabase
-      .from("tags")
-      .select("id")
-      .eq("category", "best_for")
-      .in("id", normalizedFeaturedTagIds)
-
-    if (error) throw error
-
-    if ((bestForTags ?? []).length !== normalizedFeaturedTagIds.length) {
-      throw new Error("Featured tags must come from Best For tags")
-    }
-  }
-
-  const { data: existingCafeTags, error: existingCafeTagsError } = await supabase
-    .from("cafe_tags")
-    .select("tag_id, is_featured, tags!inner(name, category)")
-    .eq("cafe_id", cafeId)
-
-  if (existingCafeTagsError) throw existingCafeTagsError
-
-  const preservedSpecialtyTags = (existingCafeTags ?? []).filter((row) => {
-    const joinedTag = Array.isArray(row.tags) ? row.tags[0] : row.tags
-    return joinedTag ? isSpecialtyTag(joinedTag) : false
+  const { error } = await supabase.rpc("set_owner_cafe_tags", {
+    p_cafe_id: cafeId,
+    p_tag_ids: tagIds,
+    p_featured_tag_ids: featuredTagIds,
   })
 
-  const mergedTagIds = Array.from(
-    new Set([...normalizedTagIds, ...preservedSpecialtyTags.map((row) => row.tag_id)])
-  )
+  // Rule violations arrive as Postgres errors, not thrown exceptions. Return
+  // them as data so the message survives to the client — Next redacts the
+  // message of anything thrown from a server action in production.
+  if (error) return { ok: false, error: error.message }
 
-  const mergedFeaturedTagIds = Array.from(
-    new Set([
-      ...normalizedFeaturedTagIds,
-      ...preservedSpecialtyTags
-        .filter((row) => row.is_featured)
-        .map((row) => row.tag_id),
-    ])
-  )
-
-  await setCafeTags(cafeId, mergedTagIds, mergedFeaturedTagIds)
   revalidatePath("/owner/tags")
+  revalidatePath("/owner/preview")
+  revalidatePath("/owner/dashboard")
+  return { ok: true }
 }
 
 export async function upsertMenuItemAction(

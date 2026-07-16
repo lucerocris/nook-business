@@ -193,32 +193,3 @@ export async function deleteTag(id: string): Promise<void> {
   if (error) throw new Error(getErrorMessage(error, "Failed to delete tag"))
 }
 
-export async function setCafeTags(
-  cafeId: string,
-  tagIds: string[],
-  featuredTagIds: string[] | string | null
-) {
-  const supabase = createAdminClient()
-
-  const featuredTagIdSet = new Set(
-    Array.isArray(featuredTagIds)
-      ? featuredTagIds
-      : featuredTagIds
-        ? [featuredTagIds]
-        : []
-  )
-
-  await supabase.from("cafe_tags").delete().eq("cafe_id", cafeId)
-
-  if (tagIds.length === 0) return
-
-  const { error } = await supabase.from("cafe_tags").insert(
-    tagIds.map((tagId) => ({
-      cafe_id: cafeId,
-      tag_id: tagId,
-      is_featured: featuredTagIdSet.has(tagId),
-    }))
-  )
-
-  if (error) throw new Error(getErrorMessage(error, "Failed to save cafe tags"))
-}

@@ -109,7 +109,12 @@ export function OwnerTagsClient({
     setIsSaving(true)
     setSaveError(null)
     try {
-      await updateTagsAction(selectedTags, featuredTags)
+      const result = await updateTagsAction(selectedTags, featuredTags)
+      if (!result.ok) {
+        setSaveError(result.error)
+        toast.error(result.error)
+        return
+      }
       setIsDirty(false)
       toast.success("Tags saved")
     } catch (error) {

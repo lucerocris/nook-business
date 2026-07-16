@@ -31,9 +31,24 @@ async function getOwnerCafeId(): Promise<string> {
   return data.cafe_id
 }
 
+// The only cafes columns an owner may write. UpdateProfilePayload's Pick<> is a
+// compile-time type and is erased at runtime, while server action arguments are
+// attacker-controlled JSON — so the type alone whitelists nothing. Without this,
+// updateProfileAction({status:"active", is_featured:true, rating:5}) writes
+// straight through updateCafe's service-role client: an owner could publish
+// their own draft listing, feature themselves, and invent their own rating.
 export async function updateProfileAction(payload: UpdateProfilePayload) {
   const cafeId = await getOwnerCafeId()
-  await updateCafe(cafeId, payload)
+
+  // Copied field by field: whatever else the caller sent is dropped here rather
+  // than reaching updateCafe's .update(payload).
+  const safePayload: UpdateProfilePayload = {}
+  if (payload.name !== undefined) safePayload.name = payload.name
+  if (payload.description !== undefined) safePayload.description = payload.description
+  if (payload.operating_hours !== undefined) safePayload.operating_hours = payload.operating_hours
+  if (payload.social_links !== undefined) safePayload.social_links = payload.social_links
+
+  await updateCafe(cafeId, safePayload)
   revalidatePath("/owner/profile")
   revalidatePath("/owner/dashboard")
 }
@@ -78,7 +93,10 @@ export async function upsertMenuItemAction(
 }
 
 export async function deleteMenuItemAction(id: string) {
-  await deleteMenuItem(id)
+  // Had no authorization at all and reached a service-role delete scoped only
+  // by the client-supplied id — any signed-in user could delete any cafe's menu.
+  const cafeId = await getOwnerCafeId()
+  await deleteMenuItem(id, cafeId)
   revalidatePath("/owner/menu")
 }
 
@@ -86,7 +104,9 @@ export async function upsertMenuItemVariantsAction(
   menuItemId: string,
   variants: Parameters<typeof upsertMenuItemVariants>[1]
 ) {
-  const data = await upsertMenuItemVariants(menuItemId, variants)
+  // Same shape of hole as deleteMenuItemAction above.
+  const cafeId = await getOwnerCafeId()
+  const data = await upsertMenuItemVariants(menuItemId, variants, cafeId)
   revalidatePath("/owner/menu")
   return data
 }

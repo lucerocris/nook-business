@@ -53,6 +53,27 @@ export async function getGlobalCategories() {
   return (data ?? []) as Category[]
 }
 
+// Every write below runs as the service role, so RLS will not scope it — the
+// explicit cafe_id equality IS the authorization check. cafeId must always be
+// derived from the session (getOwnerCafeId), never accepted from the client.
+
+// Confirms a menu item belongs to the given cafe. Needed wherever the item id
+// comes from the client but the row cannot be scoped by cafe_id in-statement.
+async function assertMenuItemBelongsToCafe(
+  supabase: ReturnType<typeof createAdminClient>,
+  menuItemId: string,
+  cafeId: string
+) {
+  const { data } = await supabase
+    .from("menu_items")
+    .select("id")
+    .eq("id", menuItemId)
+    .eq("cafe_id", cafeId)
+    .maybeSingle()
+
+  if (!data) throw new Error("Not authorized for this menu item")
+}
+
 export async function upsertMenuItem(item: {
   id?: string
   cafe_id: string
@@ -64,6 +85,13 @@ export async function upsertMenuItem(item: {
   image_url?: string | null
 }) {
   const supabase = createAdminClient()
+
+  // On update, the row must already belong to this cafe. Without this, passing
+  // another cafe's menu_items.id would reassign that item to the caller's cafe.
+  if (item.id) {
+    await assertMenuItemBelongsToCafe(supabase, item.id, item.cafe_id)
+  }
+
   const { data, error } = await supabase
     .from("menu_items")
     .upsert(item)
@@ -74,18 +102,34 @@ export async function upsertMenuItem(item: {
   return data
 }
 
-export async function deleteMenuItem(id: string) {
+export async function deleteMenuItem(id: string, cafeId: string) {
   const supabase = createAdminClient()
-  const { error } = await supabase.from("menu_items").delete().eq("id", id)
+
+  // Scoped by cafe_id as well as id, so the delete cannot touch another cafe's
+  // row. Returning the deleted ids lets us tell "not yours" from "not found".
+  const { data, error } = await supabase
+    .from("menu_items")
+    .delete()
+    .eq("id", id)
+    .eq("cafe_id", cafeId)
+    .select("id")
 
   if (error) throw error
+  if (!data || data.length === 0) {
+    throw new Error("Not authorized for this menu item")
+  }
 }
 
 export async function upsertMenuItemVariants(
   menuItemId: string,
-  variants: Array<Omit<MenuItemVariant, "id"> & { id?: string }>
+  variants: Array<Omit<MenuItemVariant, "id"> & { id?: string }>,
+  cafeId: string
 ) {
   const supabase = createAdminClient()
+
+  // menu_item_variants has no cafe_id, so ownership is checked against the
+  // parent item before the delete+insert.
+  await assertMenuItemBelongsToCafe(supabase, menuItemId, cafeId)
 
   const { error: deleteError } = await supabase
     .from("menu_item_variants")

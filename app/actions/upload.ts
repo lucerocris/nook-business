@@ -2,15 +2,31 @@
 
 import { uploadFile, deleteFile, getKeyFromUrl } from "@/lib/upload"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { createClient }      from "@/lib/supabase/server"
 import { revalidatePath }    from "next/cache"
 
 const CAFE_PHOTO_LIMIT = 5
 const ALLOWED_TYPES    = ["image/jpeg", "image/png", "image/webp"]
 const MAX_SIZE_BYTES   = 10 * 1024 * 1024
 
-function requireCafeId(cafeId: string | undefined): string {
+// Verifies the calling user actually owns `cafeId` before any service-role
+// write. Never trust the client-supplied id on its own.
+async function requireOwnedCafeId(cafeId: string | undefined): Promise<string> {
   if (!cafeId) throw new Error("cafeId is required")
-  return cafeId
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("Not authenticated")
+
+  const { data } = await supabase
+    .from("cafe_owner_cafe")
+    .select("cafe_id")
+    .eq("owner_id", user.id)
+    .eq("cafe_id", cafeId)
+    .maybeSingle()
+
+  if (!data) throw new Error("Not authorized for this cafe")
+  return data.cafe_id
 }
 
 function validateFile(file: File) {
@@ -31,7 +47,7 @@ export async function uploadCafeHeroAction(
   if (!file) throw new Error("No file provided")
   validateFile(file)
 
-  const targetCafeId = requireCafeId(cafeId)
+  const targetCafeId = await requireOwnedCafeId(cafeId)
   const buffer       = Buffer.from(await file.arrayBuffer())
   const ext          = file.type.split("/")[1]
   const key          = `nook/cafes/${targetCafeId}/hero.${ext}`
@@ -64,7 +80,7 @@ export async function uploadCafePhotoAction(
   if (!file) throw new Error("No file provided")
   validateFile(file)
 
-  const targetCafeId = requireCafeId(cafeId)
+  const targetCafeId = await requireOwnedCafeId(cafeId)
   const supabase     = createAdminClient()
 
   const { data: cafe } = await supabase
@@ -108,7 +124,7 @@ export async function deleteCafePhotoAction(
   isHero: boolean,
   cafeId: string
 ) {
-  const targetCafeId = requireCafeId(cafeId)
+  const targetCafeId = await requireOwnedCafeId(cafeId)
   const supabase     = createAdminClient()
 
   await deleteFile(getKeyFromUrl(photoUrl))
@@ -156,7 +172,7 @@ export async function reorderCafePhotosAction(
   orderedPhotoUrls: string[],
   cafeId: string
 ) {
-  const targetCafeId = requireCafeId(cafeId)
+  const targetCafeId = await requireOwnedCafeId(cafeId)
 
   if (orderedPhotoUrls.length > CAFE_PHOTO_LIMIT) {
     throw new Error(`Maximum ${CAFE_PHOTO_LIMIT} photos per cafe`)
@@ -195,7 +211,7 @@ export async function uploadMenuItemImageAction(
   if (!file) throw new Error("No file provided")
   validateFile(file)
 
-  const targetCafeId = requireCafeId(cafeId)
+  const targetCafeId = await requireOwnedCafeId(cafeId)
   const buffer       = Buffer.from(await file.arrayBuffer())
   const ext          = file.type.split("/")[1]
   const key          = `nook/cafes/${targetCafeId}/menu/${menuItemId}.${ext}`
@@ -207,6 +223,7 @@ export async function uploadMenuItemImageAction(
     .from("menu_items")
     .update({ image_url: url })
     .eq("id", menuItemId)
+    .eq("cafe_id", targetCafeId)
 
   if (error) throw error
 
@@ -223,7 +240,7 @@ export async function deleteMenuItemImageAction(
   imageUrl: string,
   cafeId: string
 ) {
-  const targetCafeId = requireCafeId(cafeId)
+  const targetCafeId = await requireOwnedCafeId(cafeId)
 
   await deleteFile(getKeyFromUrl(imageUrl))
 
@@ -232,6 +249,7 @@ export async function deleteMenuItemImageAction(
     .from("menu_items")
     .update({ image_url: null })
     .eq("id", menuItemId)
+    .eq("cafe_id", targetCafeId)
 
   revalidatePath(`/admin/cafes/${targetCafeId}/edit`)
   revalidatePath("/owner/menu")
@@ -246,17 +264,9 @@ export async function uploadReviewReportEvidenceAction(
   cafeId: string
 ) {
   if (!reviewId) throw new Error("reviewId is required")
-  const targetCafeId = requireCafeId(cafeId)
+  const targetCafeId = await requireOwnedCafeId(cafeId)
 
   const supabase = createAdminClient()
-  const { data: ownership } = await supabase
-    .from("cafe_owner_cafe")
-    .select("cafe_id")
-    .eq("cafe_id", targetCafeId)
-    .maybeSingle()
-
-  if (!ownership) throw new Error("Not authorized for this cafe")
-
   const { data: review } = await supabase
     .from("reviews")
     .select("id, cafe_id")

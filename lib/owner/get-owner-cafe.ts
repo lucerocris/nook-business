@@ -11,7 +11,10 @@ export async function getOwnerCafeContext() {
   if (!user) redirect("/login")
 
   const context = await getOwnerCafeContextByOwnerUserId(user.id)
-  if (!context) redirect("/login")
+  // The owner is signed in and gated in (they have an owner link), but no cafe
+  // resolved. Send them to a dedicated screen — redirecting to /login here would
+  // bounce back through middleware into a loop.
+  if (!context) redirect("/owner/no-cafe")
 
   return context
 }
@@ -22,7 +25,7 @@ export async function getOwnerCafe() {
   if (!user) redirect("/login")
 
   const cafe = await getCafeForOwner(user.id)
-  if (!cafe) redirect("/login")
+  if (!cafe) redirect("/owner/no-cafe")
 
   return cafe
 }

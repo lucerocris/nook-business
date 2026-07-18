@@ -277,20 +277,23 @@ function ItemRow({
         </span>
       </div>
 
-      <div className="flex items-center shrink-0">
+      {/* gap-1 so the destructive Delete isn't flush against Edit — they're
+          adjacent tap targets and a mis-tap here is unrecoverable. */}
+      <div className="flex items-center gap-1 shrink-0">
         <Button
           variant="ghost"
           size="icon"
-          className="size-8"
           onClick={() => onEdit(item)}
+          aria-label={`Edit ${item.name}`}
         >
           <PencilSimple size={14} className="text-muted-foreground" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="size-8 hover:text-destructive"
+          className="hover:text-destructive"
           onClick={() => onDelete(item.id)}
+          aria-label={`Delete ${item.name}`}
         >
           <Trash size={14} className="text-muted-foreground" />
         </Button>
@@ -975,7 +978,7 @@ export function OwnerMenuClient({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {!itemForm.hasVariants && (
                 <div className="space-y-2">
                   <Label htmlFor="item-price">Price (₱)</Label>

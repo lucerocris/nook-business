@@ -48,13 +48,27 @@ export async function uploadCafeHeroAction(
   validateFile(file)
 
   const targetCafeId = await requireOwnedCafeId(cafeId)
-  const buffer       = Buffer.from(await file.arrayBuffer())
-  const ext          = file.type.split("/")[1]
-  const key          = `nook/cafes/${targetCafeId}/hero.${ext}`
+  const supabase     = createAdminClient()
+
+  // Adding a brand-new hero (none set yet) counts toward the total cap;
+  // replacing an existing hero doesn't change the count.
+  const { data: cafe } = await supabase
+    .from("cafes")
+    .select("featured_image_url, photo_urls")
+    .eq("id", targetCafeId)
+    .single()
+
+  const gallery = (cafe?.photo_urls as string[]) ?? []
+  if (!cafe?.featured_image_url && gallery.length >= CAFE_PHOTO_LIMIT) {
+    throw new Error(`Maximum ${CAFE_PHOTO_LIMIT} photos per cafe`)
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const ext    = file.type.split("/")[1]
+  const key    = `nook/cafes/${targetCafeId}/hero.${ext}`
 
   const url = await uploadFile({ key, buffer, contentType: file.type })
 
-  const supabase = createAdminClient()
   const { error } = await supabase
     .from("cafes")
     .update({ featured_image_url: url })
@@ -102,6 +116,22 @@ export async function uploadCafePhotoAction(
   const key       = `nook/cafes/${targetCafeId}/gallery-${timestamp}.${ext}`
 
   const url = await uploadFile({ key, buffer, contentType: file.type })
+
+  // No hero yet → promote this upload to hero instead of leaving the listing
+  // heroless (cards/map pins/detail header all key off featured_image_url).
+  if (!cafe?.featured_image_url) {
+    const { error } = await supabase
+      .from("cafes")
+      .update({ featured_image_url: url })
+      .eq("id", targetCafeId)
+
+    if (error) throw error
+
+    revalidatePath(`/admin/cafes/${targetCafeId}/edit`)
+    revalidatePath("/owner/photos")
+
+    return { url, total: existing.length + 1 }
+  }
 
   const updated = [...existing, url]
   const { error } = await supabase

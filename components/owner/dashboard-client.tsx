@@ -57,7 +57,6 @@ type AnalyticsTotals = {
   favorites: number
 }
 
-const SHOW_PREVIEW = false
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -111,7 +110,7 @@ export function OwnerDashboardClient({
   const location = [cafe.neighborhood, cafe.city].filter(Boolean).join(", ")
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-6 py-8 space-y-8">
+    <div className="w-full max-w-6xl mx-auto px-4 py-6 space-y-8 sm:px-6 sm:py-8">
       
       {/* Section 1 — Listing Status Banner */}
       {isActive ? (
@@ -252,7 +251,7 @@ export function OwnerDashboardClient({
                     <div className="size-8 rounded-md bg-muted flex items-center justify-center shrink-0">
                       <PencilSimple size={16} className="text-muted-foreground" />
                     </div>
-                    <div className="flex flex-col items-start gap-0.5">
+                    <div className="flex min-w-0 flex-col items-start gap-0.5 whitespace-normal text-left">
                       <span className="text-sm font-medium">Edit Listing</span>
                       <span className="text-xs text-muted-foreground">
                         Update description and details
@@ -270,7 +269,7 @@ export function OwnerDashboardClient({
                     <div className="size-8 rounded-md bg-muted flex items-center justify-center shrink-0">
                       <Images size={16} className="text-muted-foreground" />
                     </div>
-                    <div className="flex flex-col items-start gap-0.5">
+                    <div className="flex min-w-0 flex-col items-start gap-0.5 whitespace-normal text-left">
                       <span className="text-sm font-medium">Manage Photos</span>
                       <span className="text-xs text-muted-foreground">
                         Upload and reorder gallery
@@ -288,7 +287,7 @@ export function OwnerDashboardClient({
                     <div className="size-8 rounded-md bg-muted flex items-center justify-center shrink-0">
                       <Clock size={16} className="text-muted-foreground" />
                     </div>
-                    <div className="flex flex-col items-start gap-0.5">
+                    <div className="flex min-w-0 flex-col items-start gap-0.5 whitespace-normal text-left">
                       <span className="text-sm font-medium">Update Hours</span>
                       <span className="text-xs text-muted-foreground">
                         Set your opening times
@@ -306,7 +305,7 @@ export function OwnerDashboardClient({
                     <div className="size-8 rounded-md bg-muted flex items-center justify-center shrink-0">
                       <ChatCircle size={16} className="text-muted-foreground" />
                     </div>
-                    <div className="flex flex-col items-start gap-0.5">
+                    <div className="flex min-w-0 flex-col items-start gap-0.5 whitespace-normal text-left">
                       <span className="text-sm font-medium">View Reviews</span>
                       <span className="text-xs text-muted-foreground">
                         See what customers are saying
@@ -350,20 +349,24 @@ export function OwnerDashboardClient({
                         review.profiles?.username ?? null
                       )}
                     </div>
-                    <div className="flex flex-col flex-1 gap-1">
-                      <div className="flex flex-row items-center justify-between">
-                        <span className="text-sm font-medium">
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <div className="flex flex-row items-center justify-between gap-2">
+                        <span className="truncate text-sm font-medium">
                           {review.profiles?.full_name ??
                             review.profiles?.username ??
                             "Anonymous"}
                         </span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
                           {formatRelativeDate(review.created_at)}
                         </span>
                       </div>
                       <StarRating rating={review.rating} />
                       <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
-                        {review.content}
+                        {review.content ?? (
+                          <span className="italic text-muted-foreground/70">
+                            No written review — rating only.
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>

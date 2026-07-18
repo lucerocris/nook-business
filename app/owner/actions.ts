@@ -211,23 +211,6 @@ export async function deleteCategoryAction(
   }
 }
 
-export async function updatePhotoAction(url: string, isHero: boolean) {
-  const cafeId = await getOwnerCafeId()
-  if (isHero) {
-    await updateCafe(cafeId, { featured_image_url: url })
-  } else {
-    const supabase = createAdminClient()
-    const { data } = await supabase
-      .from("cafes")
-      .select("photo_urls")
-      .eq("id", cafeId)
-      .single()
-    const existing = (data?.photo_urls as string[]) ?? []
-    await updateCafe(cafeId, { photo_urls: [...existing, url] })
-  }
-  revalidatePath("/owner/photos")
-}
-
 export type CorrectionResult = { ok: true } | { ok: false; error: string }
 
 // Emails the Nook team an owner's address/map correction request. Requires

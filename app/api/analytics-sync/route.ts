@@ -13,8 +13,11 @@ export async function GET(request: Request) {
   // ------------------------------------------------------------------
   // 1. SECURITY
   // ------------------------------------------------------------------         
+  const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Fail closed if the secret isn't configured — otherwise the check becomes
+  // `Bearer undefined`, which anyone could send.
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return new Response('Unauthorized', { status: 401 });
   }
 
@@ -22,7 +25,15 @@ export async function GET(request: Request) {
     // ------------------------------------------------------------------
     // 2. FETCH FROM POSTHOG
     // ------------------------------------------------------------------
-    const today = new Date().toISOString().split('T')[0];
+    // Aggregate the COMPLETE previous day in the reporting timezone. Using the
+    // current date would only capture the partial day up to the cron's run time
+    // (and PostHog's toDate() evaluates in the project timezone), silently
+    // dropping the rest of the day's events.
+    const REPORT_TZ = 'Asia/Manila';
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const targetDate = new Intl.DateTimeFormat('en-CA', {
+      timeZone: REPORT_TZ,
+    }).format(yesterday);
 
     const posthogResponse = await fetch(
       `https://app.posthog.com/api/projects/${POSTHOG_PROJECT_ID}/query/`,
@@ -45,7 +56,7 @@ export async function GET(request: Request) {
                 countIf(event = 'directions_tapped')   AS directions_tapped_count,
                 countIf(event = 'cafe_favorited')      AS favorites_count
               FROM events
-              WHERE toDate(timestamp) = '${today}'
+              WHERE toDate(timestamp) = '${targetDate}'
                 AND event IN ('cafe_detail_viewed', 'check_hours', 'directions_tapped', 'cafe_favorited')
                 AND properties.cafe_id IS NOT NULL
               GROUP BY properties.cafe_id
@@ -69,15 +80,15 @@ export async function GET(request: Request) {
     // ------------------------------------------------------------------
     // 3. SHAPE THE DATA
     // ------------------------------------------------------------------
-    const aggregatedData = results.map((row: any[]) => {
-      const entry: Record<string, any> = {};
+    const aggregatedData = results.map((row: unknown[]) => {
+      const entry: Record<string, unknown> = {};
       columns.forEach((col: string, i: number) => {
         entry[col] = row[i];
       });
 
       return {
         cafe_id:                 entry.cafe_id,
-        summary_date:            today,
+        summary_date:            targetDate,
         views_count:             Number(entry.views_count)             || 0,
         hours_checked_count:     Number(entry.hours_checked_count)     || 0,
         directions_tapped_count: Number(entry.directions_tapped_count) || 0,
@@ -101,7 +112,7 @@ export async function GET(request: Request) {
       success: true,
       message: 'Daily analytics synced successfully',
       synced: count,
-      date: today,
+      date: targetDate,
     });
 
   } catch (error) {

@@ -127,38 +127,47 @@ export async function deleteCafePhotoAction(
   const targetCafeId = await requireOwnedCafeId(cafeId)
   const supabase     = createAdminClient()
 
+  // Load this cafe's own images and confirm the URL belongs to it BEFORE
+  // touching storage. Without this, a client could pass any cafe's (public)
+  // image URL and delete that object from storage.
+  const { data: cafe } = await supabase
+    .from("cafes")
+    .select("featured_image_url, photo_urls")
+    .eq("id", targetCafeId)
+    .single()
+
+  const gallery   = (cafe?.photo_urls as string[]) ?? []
+  const ownedUrls = new Set<string>([
+    ...(cafe?.featured_image_url ? [cafe.featured_image_url] : []),
+    ...gallery,
+  ])
+
+  if (!ownedUrls.has(photoUrl)) {
+    throw new Error("Photo does not belong to this cafe")
+  }
+
   await deleteFile(getKeyFromUrl(photoUrl))
 
   if (isHero) {
-    const { data: cafe } = await supabase
-      .from("cafes")
-      .select("photo_urls")
-      .eq("id", targetCafeId)
-      .single()
+    const newHero    = gallery[0] ?? null
+    const newGallery = gallery.slice(1)
 
-    const existing   = (cafe?.photo_urls as string[]) ?? []
-    const newHero    = existing[0] ?? null
-    const newGallery = existing.slice(1)
-
-    await supabase
+    const { error } = await supabase
       .from("cafes")
       .update({ featured_image_url: newHero, photo_urls: newGallery })
       .eq("id", targetCafeId)
 
+    if (error) throw error
+
   } else {
-    const { data: cafe } = await supabase
-      .from("cafes")
-      .select("photo_urls")
-      .eq("id", targetCafeId)
-      .single()
+    const updated = gallery.filter(u => u !== photoUrl)
 
-    const existing = (cafe?.photo_urls as string[]) ?? []
-    const updated  = existing.filter(u => u !== photoUrl)
-
-    await supabase
+    const { error } = await supabase
       .from("cafes")
       .update({ photo_urls: updated })
       .eq("id", targetCafeId)
+
+    if (error) throw error
   }
 
   revalidatePath(`/admin/cafes/${targetCafeId}/edit`)
@@ -241,15 +250,30 @@ export async function deleteMenuItemImageAction(
   cafeId: string
 ) {
   const targetCafeId = await requireOwnedCafeId(cafeId)
+  const supabase     = createAdminClient()
+
+  // Confirm the menu item belongs to this cafe AND the URL matches the stored
+  // image before deleting from storage — never delete a client-supplied URL blindly.
+  const { data: item } = await supabase
+    .from("menu_items")
+    .select("id, image_url")
+    .eq("id", menuItemId)
+    .eq("cafe_id", targetCafeId)
+    .maybeSingle()
+
+  if (!item || item.image_url !== imageUrl) {
+    throw new Error("Image does not belong to this cafe")
+  }
 
   await deleteFile(getKeyFromUrl(imageUrl))
 
-  const supabase = createAdminClient()
-  await supabase
+  const { error } = await supabase
     .from("menu_items")
     .update({ image_url: null })
     .eq("id", menuItemId)
     .eq("cafe_id", targetCafeId)
+
+  if (error) throw error
 
   revalidatePath(`/admin/cafes/${targetCafeId}/edit`)
   revalidatePath("/owner/menu")

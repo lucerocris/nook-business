@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { withdrawClaim } from "@/actions/claims";
+import { startClaim, withdrawClaim } from "@/actions/claims";
 
 type ClaimRecord = {
   id: string;
@@ -10,17 +10,35 @@ type ClaimRecord = {
 };
 
 type ClaimFormProps = {
+  cafeId: string;
   cafeName: string;
-  claim: ClaimRecord | null;
-  error: string | null;
+  initialClaim: ClaimRecord | null;
 };
 
-export function ClaimForm({ cafeName, claim, error }: ClaimFormProps) {
+export function ClaimForm({ cafeId, cafeName, initialClaim }: ClaimFormProps) {
+  const [claim, setClaim] = useState<ClaimRecord | null>(initialClaim);
+  const [error, setError] = useState<string | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const codeValue = claim?.verification_code ?? "";
+
+  const handleStart = async () => {
+    setError(null);
+    setIsStarting(true);
+    try {
+      const result = await startClaim({ cafeId, role: "owner" });
+      if ("error" in result) {
+        setError(result.error);
+        return;
+      }
+      setClaim(result.claim);
+    } finally {
+      setIsStarting(false);
+    }
+  };
 
   const handleCopy = async () => {
     if (!codeValue || typeof navigator === "undefined") return;
@@ -39,13 +57,37 @@ export function ClaimForm({ cafeName, claim, error }: ClaimFormProps) {
     });
   };
 
-  if (error || !claim) {
+  // No claim yet — show an explicit confirm step (creating the claim is a
+  // deliberate action, not a page-load side effect).
+  if (!claim) {
     return (
       <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-        <div className="rounded-[2rem] border border-red-200 bg-red-50 p-8 text-red-700 shadow-[0_20px_60px_rgba(220,38,38,0.15)]">
-          <p className="text-sm font-semibold">
-            {error ?? "We couldn't set up your claim. Please try again."}
+        <div className="rounded-[2rem] border border-white/80 bg-white/90 p-7 shadow-[0_24px_80px_rgba(15,23,42,0.09)] backdrop-blur-sm sm:p-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40]">
+            Claim verification
           </p>
+          <h1 className="mt-3 text-balance font-display text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
+            Claim {cafeName}
+          </h1>
+          <p className="mt-3 max-w-xl text-sm text-gray-600 sm:text-base">
+            Confirm to generate a verification code. You&apos;ll then DM it to us
+            on Instagram from{" "}
+            <span className="font-semibold">{cafeName}</span>&apos;s official
+            account so our team can approve your claim.
+          </p>
+
+          {error && (
+            <p className="mt-4 text-sm font-semibold text-red-600">{error}</p>
+          )}
+
+          <button
+            type="button"
+            onClick={handleStart}
+            disabled={isStarting}
+            className="mt-7 inline-flex items-center justify-center rounded-xl bg-[#3A5A40] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(58,90,64,0.3)] transition hover:-translate-y-0.5 hover:bg-[#2f4a35] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isStarting ? "Setting up…" : "Confirm & get code"}
+          </button>
         </div>
       </div>
     );

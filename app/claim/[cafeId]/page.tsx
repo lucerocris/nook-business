@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { resolveClaim } from "@/lib/claims/resolve-claim";
 import { ClaimForm } from "@/app/components/claim/claim-form";
 import { FunnelShell } from "@/app/components/funnel-shell";
 
@@ -111,16 +110,27 @@ export default async function ClaimPage({
     );
   }
 
-  // Create-or-get the claim here (server-side) so the form renders ready — no
-  // client "Setting up your claim…" round-trip / spinner.
-  const result = await resolveClaim(supabase, user.id, String(cafe.id), "owner");
+  // Read-only: fetch the caller's existing active claim (if any). Creating a
+  // claim is an explicit action (the "Confirm" button → startClaim), never a
+  // side effect of rendering this page.
+  const { data: existingClaim } = await supabase
+    .from("cafe_claims")
+    .select("id, verification_code, status")
+    .eq("cafe_id", cafe.id)
+    .eq("claimant_id", user.id)
+    .in("status", ["pending", "under_review"])
+    .maybeSingle<{
+      id: string;
+      verification_code: string | null;
+      status: string;
+    }>();
 
   return (
     <FunnelShell contentClassName="max-w-5xl">
       <ClaimForm
+        cafeId={String(cafe.id)}
         cafeName={cafe.name ?? "this cafe"}
-        claim={"claim" in result ? result.claim : null}
-        error={"error" in result ? result.error : null}
+        initialClaim={existingClaim ?? null}
       />
     </FunnelShell>
   );

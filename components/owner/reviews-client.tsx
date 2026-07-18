@@ -323,9 +323,15 @@ export function OwnerReviewsClient({
 
                       <StarRow rating={review.rating} />
 
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {review.content}
-                      </p>
+                      {review.content ? (
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {review.content}
+                        </p>
+                      ) : (
+                        <p className="text-sm italic text-muted-foreground/70">
+                          No written review — rating only.
+                        </p>
+                      )}
 
                       <div className="flex flex-row justify-end">
                         {isReported ? (

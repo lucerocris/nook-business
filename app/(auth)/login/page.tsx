@@ -11,7 +11,13 @@ type LoginPageProps = {
 };
 
 const getSafeRedirect = (value?: string) => {
-  if (value?.startsWith("/")) {
+  // Same-origin path only — reject protocol-relative ("//host") / backslash.
+  if (
+    value &&
+    value.startsWith("/") &&
+    !value.startsWith("//") &&
+    !value.startsWith("/\\")
+  ) {
     return value;
   }
 

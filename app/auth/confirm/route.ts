@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 const getSafeRedirect = (value?: string | null) => {
-  if (value?.startsWith("/")) {
+  // Same-origin path only — reject protocol-relative ("//host") / backslash.
+  if (
+    value &&
+    value.startsWith("/") &&
+    !value.startsWith("//") &&
+    !value.startsWith("/\\")
+  ) {
     return value;
   }
 

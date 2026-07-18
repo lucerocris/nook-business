@@ -11,7 +11,12 @@ type RegisterPageProps = {
 };
 
 const getSafeRedirect = (value?: string) =>
-  value?.startsWith("/") ? value : "/";
+  value &&
+  value.startsWith("/") &&
+  !value.startsWith("//") &&
+  !value.startsWith("/\\")
+    ? value
+    : "/";
 
 export const metadata: Metadata = { title: "Create account" }
 

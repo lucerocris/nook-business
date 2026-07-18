@@ -30,6 +30,7 @@ import {
   updateProfileAction,
   submitCorrectionRequestAction,
 } from "@/app/owner/actions"
+import { validateAndNormalizeProfile } from "@/lib/validation/profile"
 
 type DayKey =
   | "monday"
@@ -119,14 +120,28 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
   }
 
   async function handleSave() {
+    const input = {
+      name,
+      description,
+      operating_hours: hours,
+      social_links: { instagram, facebook, tiktok, website },
+    }
+
+    // Fast client-side check so the owner gets the exact field/message before a
+    // round-trip; the server re-validates the same way.
+    const check = validateAndNormalizeProfile(input)
+    if (!check.ok) {
+      toast.error(check.error)
+      return
+    }
+
     setIsSaving(true)
     try {
-      await updateProfileAction({
-        name,
-        description,
-        operating_hours: hours,
-        social_links: { instagram, facebook, tiktok, website },
-      })
+      const res = await updateProfileAction(input)
+      if (!res.ok) {
+        toast.error(res.error)
+        return
+      }
       setIsDirty(false)
       toast.success("Profile updated")
     } catch (error) {
@@ -141,7 +156,11 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
     if (!correctionText.trim()) return
     setIsSendingCorrection(true)
     try {
-      await submitCorrectionRequestAction(correctionText)
+      const res = await submitCorrectionRequestAction(correctionText)
+      if (!res.ok) {
+        toast.error(res.error)
+        return
+      }
       setCorrectionText("")
       setCorrectionSent(true)
       toast.success("Correction request sent")

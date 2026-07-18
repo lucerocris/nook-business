@@ -3,18 +3,19 @@
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import type { Cafe } from "@/lib/queries/cafes"
 import { updateCafe } from "@/lib/queries/cafes"
 import {
   upsertMenuItem,
   deleteMenuItem,
   upsertMenuItemVariants,
+  createMenuCategory,
+  updateMenuCategory,
+  deleteMenuCategory,
 } from "@/lib/queries/menu"
 
-type UpdateProfilePayload = Partial<Pick<
-  Cafe,
-  "name" | "description" | "operating_hours" | "social_links"
->>
+import { validateAndNormalizeProfile, type ProfileInput } from "@/lib/validation/profile"
+
+export type ProfileResult = { ok: true } | { ok: false; error: string }
 
 async function getOwnerCafeId(): Promise<string> {
   const supabase = await createClient()
@@ -37,20 +38,31 @@ async function getOwnerCafeId(): Promise<string> {
 // updateProfileAction({status:"active", is_featured:true, rating:5}) writes
 // straight through updateCafe's service-role client: an owner could publish
 // their own draft listing, feature themselves, and invent their own rating.
-export async function updateProfileAction(payload: UpdateProfilePayload) {
+export async function updateProfileAction(
+  input: ProfileInput
+): Promise<ProfileResult> {
   const cafeId = await getOwnerCafeId()
 
-  // Copied field by field: whatever else the caller sent is dropped here rather
-  // than reaching updateCafe's .update(payload).
-  const safePayload: UpdateProfilePayload = {}
-  if (payload.name !== undefined) safePayload.name = payload.name
-  if (payload.description !== undefined) safePayload.description = payload.description
-  if (payload.operating_hours !== undefined) safePayload.operating_hours = payload.operating_hours
-  if (payload.social_links !== undefined) safePayload.social_links = payload.social_links
+  // Validate + normalize server-side (authoritative). This also whitelists the
+  // fields that reach updateCafe — status/is_featured/rating can't be smuggled
+  // in via extra JSON keys because we only forward the validator's output.
+  const result = validateAndNormalizeProfile(input)
+  if (!result.ok) return { ok: false, error: result.error }
 
-  await updateCafe(cafeId, safePayload)
+  try {
+    await updateCafe(cafeId, {
+      name: result.value.name,
+      description: result.value.description,
+      operating_hours: result.value.operating_hours,
+      social_links: result.value.social_links,
+    })
+  } catch {
+    return { ok: false, error: "Couldn't save your changes. Please try again." }
+  }
+
   revalidatePath("/owner/profile")
   revalidatePath("/owner/dashboard")
+  return { ok: true }
 }
 
 export type UpdateTagsResult = { ok: true } | { ok: false; error: string }
@@ -111,6 +123,89 @@ export async function upsertMenuItemVariantsAction(
   return data
 }
 
+// ── MENU CATEGORIES ───────────────────────────────────
+// createMenuCategory/updateMenuCategory/deleteMenuCategory run as the service
+// role, so cafe scoping is enforced here, not by RLS. Custom categories store
+// the cafe id in `created_by` (see getCategoriesForCafe).
+
+export type CategoryResult =
+  | { ok: true; category: { id: string; name: string } }
+  | { ok: false; error: string }
+
+export type DeleteCategoryResult = { ok: true } | { ok: false; error: string }
+
+function validateCategoryName(name: string): string | null {
+  const trimmed = name.trim()
+  if (!trimmed) return "Category name is required"
+  if (trimmed.length > 60) return "Category name must be 60 characters or fewer"
+  return null
+}
+
+// A custom category may only be edited/deleted by the cafe that owns it.
+async function assertCategoryOwnedByCafe(id: string, cafeId: string) {
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from("menu_categories")
+    .select("id, is_global, created_by")
+    .eq("id", id)
+    .maybeSingle()
+
+  if (!data || data.is_global || data.created_by !== cafeId) {
+    throw new Error("Category not found for this cafe")
+  }
+}
+
+export async function createCategoryAction(name: string): Promise<CategoryResult> {
+  const cafeId = await getOwnerCafeId()
+  const err = validateCategoryName(name)
+  if (err) return { ok: false, error: err }
+
+  try {
+    const category = await createMenuCategory({
+      name: name.trim(),
+      is_global: false,
+      created_by: cafeId,
+    })
+    revalidatePath("/owner/menu")
+    return { ok: true, category: { id: category.id, name: category.name } }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed to create category" }
+  }
+}
+
+export async function updateCategoryAction(
+  id: string,
+  name: string
+): Promise<CategoryResult> {
+  const cafeId = await getOwnerCafeId()
+  const err = validateCategoryName(name)
+  if (err) return { ok: false, error: err }
+
+  try {
+    await assertCategoryOwnedByCafe(id, cafeId)
+    const category = await updateMenuCategory({ id, name: name.trim() })
+    revalidatePath("/owner/menu")
+    return { ok: true, category: { id: category.id, name: category.name } }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed to update category" }
+  }
+}
+
+export async function deleteCategoryAction(
+  id: string
+): Promise<DeleteCategoryResult> {
+  const cafeId = await getOwnerCafeId()
+
+  try {
+    await assertCategoryOwnedByCafe(id, cafeId)
+    await deleteMenuCategory(id)
+    revalidatePath("/owner/menu")
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed to delete category" }
+  }
+}
+
 export async function updatePhotoAction(url: string, isHero: boolean) {
   const cafeId = await getOwnerCafeId()
   if (isHero) {
@@ -128,8 +223,68 @@ export async function updatePhotoAction(url: string, isHero: boolean) {
   revalidatePath("/owner/photos")
 }
 
-export async function submitCorrectionRequestAction(correction: string) {
-  console.log("Correction request:", correction)
-  // TODO: Send via Resend email to team
-  revalidatePath("/owner/profile")
+export type CorrectionResult = { ok: true } | { ok: false; error: string }
+
+// Emails the Nook team an owner's address/map correction request. Requires
+// RESEND_API_KEY and CORRECTION_REQUEST_TO (destination inbox); optionally
+// CORRECTION_REQUEST_FROM (a verified Resend sender). Returns a real failure
+// instead of silently succeeding when email isn't configured or the send fails.
+export async function submitCorrectionRequestAction(
+  correction: string
+): Promise<CorrectionResult> {
+  const trimmed = correction.trim()
+  if (!trimmed) return { ok: false, error: "Please describe the correction." }
+  if (trimmed.length > 2000) {
+    return { ok: false, error: "Please keep the request under 2000 characters." }
+  }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { ok: false, error: "Not authenticated" }
+
+  const cafeId = await getOwnerCafeId()
+
+  const apiKey = process.env.RESEND_API_KEY
+  const to = process.env.CORRECTION_REQUEST_TO
+  const from = process.env.CORRECTION_REQUEST_FROM ?? "Nook <onboarding@resend.dev>"
+  if (!apiKey || !to) {
+    return {
+      ok: false,
+      error: "Correction requests aren't configured yet. Please contact the Nook team directly.",
+    }
+  }
+
+  // Pull cafe context for the email (service role — read only).
+  const admin = createAdminClient()
+  const { data: cafe } = await admin
+    .from("cafes")
+    .select("name, address")
+    .eq("id", cafeId)
+    .single()
+
+  try {
+    const { Resend } = await import("resend")
+    const resend = new Resend(apiKey)
+    const { error } = await resend.emails.send({
+      from,
+      to,
+      replyTo: user.email ?? undefined,
+      subject: `Address correction: ${cafe?.name ?? cafeId}`,
+      text: [
+        `Cafe: ${cafe?.name ?? "(unknown)"} (${cafeId})`,
+        `Current address: ${cafe?.address ?? "(none on file)"}`,
+        `Owner: ${user.email ?? user.id}`,
+        "",
+        "Requested correction:",
+        trimmed,
+      ].join("\n"),
+    })
+
+    if (error) {
+      return { ok: false, error: "Couldn't send your request. Please try again." }
+    }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: "Couldn't send your request. Please try again." }
+  }
 }

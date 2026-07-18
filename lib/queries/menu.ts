@@ -86,10 +86,33 @@ export async function upsertMenuItem(item: {
 }) {
   const supabase = createAdminClient()
 
+  // Server-side backstop for input the client should already have validated.
+  if (!item.name?.trim()) {
+    throw new Error("Item name is required")
+  }
+  if (!Number.isFinite(item.price) || item.price < 0) {
+    throw new Error("Price must be a valid amount of 0 or more")
+  }
+
   // On update, the row must already belong to this cafe. Without this, passing
   // another cafe's menu_items.id would reassign that item to the caller's cafe.
   if (item.id) {
     await assertMenuItemBelongsToCafe(supabase, item.id, item.cafe_id)
+  }
+
+  // Enforce the 5-highlight cap on the server too (the client also enforces it,
+  // but two tabs / non-UI callers could otherwise exceed it).
+  if (item.is_highlight) {
+    const { count } = await supabase
+      .from("menu_items")
+      .select("id", { count: "exact", head: true })
+      .eq("cafe_id", item.cafe_id)
+      .eq("is_highlight", true)
+      .neq("id", item.id ?? "00000000-0000-0000-0000-000000000000")
+
+    if ((count ?? 0) >= 5) {
+      throw new Error("You can feature up to 5 highlights only")
+    }
   }
 
   const { data, error } = await supabase

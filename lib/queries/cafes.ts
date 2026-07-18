@@ -21,10 +21,10 @@ export type Cafe = {
     open: string; close: string; closed: boolean
   }> | null
   social_links: {
-    instagram?: string
-    facebook?: string
-    tiktok?: string
-    website?: string
+    instagram?: string | null
+    facebook?: string | null
+    tiktok?: string | null
+    website?: string | null
   } | null
   created_at: string
 }

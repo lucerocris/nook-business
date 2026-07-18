@@ -50,6 +50,9 @@ import {
   upsertMenuItemAction,
   deleteMenuItemAction,
   upsertMenuItemVariantsAction,
+  createCategoryAction,
+  updateCategoryAction,
+  deleteCategoryAction,
 } from "@/app/owner/actions"
 import {
   uploadMenuItemImageAction,
@@ -312,8 +315,80 @@ export function OwnerMenuClient({
     variants: [createVariantDraft({ isDefault: true })],
   })
 
-  const globalCategories = categories.filter((c) => c.is_global)
-  const customCategories = categories.filter((c) => !c.is_global)
+  const [categoryList, setCategoryList] = React.useState<Category[]>(categories)
+  const [categoryName, setCategoryName] = React.useState("")
+  const [categorySaving, setCategorySaving] = React.useState(false)
+  const [editingCategory, setEditingCategory] =
+    React.useState<{ id: string; name: string } | null>(null)
+  const [deleteCategoryId, setDeleteCategoryId] = React.useState<string | null>(null)
+
+  const globalCategories = categoryList.filter((c) => c.is_global)
+  const customCategories = categoryList.filter((c) => !c.is_global)
+
+  function openAddCategory() {
+    setEditingCategory(null)
+    setCategoryName("")
+    setAddCategoryOpen(true)
+  }
+
+  function openEditCategory(cat: Category) {
+    setEditingCategory({ id: cat.id, name: cat.name })
+    setCategoryName(cat.name)
+    setAddCategoryOpen(true)
+  }
+
+  function closeCategoryDialog() {
+    setAddCategoryOpen(false)
+    setEditingCategory(null)
+    setCategoryName("")
+  }
+
+  async function handleSaveCategory() {
+    if (categorySaving) return
+    setCategorySaving(true)
+    try {
+      if (editingCategory) {
+        const res = await updateCategoryAction(editingCategory.id, categoryName)
+        if (!res.ok) {
+          toast.error(res.error)
+          return
+        }
+        setCategoryList((prev) =>
+          prev.map((c) =>
+            c.id === res.category.id ? { ...c, name: res.category.name } : c
+          )
+        )
+        toast.success("Category updated")
+      } else {
+        const res = await createCategoryAction(categoryName)
+        if (!res.ok) {
+          toast.error(res.error)
+          return
+        }
+        setCategoryList((prev) => [
+          ...prev,
+          { id: res.category.id, name: res.category.name, is_global: false, created_by: cafeId },
+        ])
+        toast.success("Category added")
+      }
+      closeCategoryDialog()
+    } finally {
+      setCategorySaving(false)
+    }
+  }
+
+  async function handleDeleteCategory() {
+    if (!deleteCategoryId) return
+    const res = await deleteCategoryAction(deleteCategoryId)
+    if (!res.ok) {
+      toast.error(res.error)
+      setDeleteCategoryId(null)
+      return
+    }
+    setCategoryList((prev) => prev.filter((c) => c.id !== deleteCategoryId))
+    toast.success("Category deleted")
+    setDeleteCategoryId(null)
+  }
 
   const highlightCount = items.filter((i) => i.is_highlight).length
   const isEditing = editingItemId !== null
@@ -448,16 +523,29 @@ export function OwnerMenuClient({
         return
       }
 
-      const invalidPrice = normalizedVariants.some((variant) =>
-        variant.price_override === null || Number.isNaN(variant.price_override)
+      const invalidPrice = normalizedVariants.some(
+        (variant) =>
+          variant.price_override === null ||
+          !Number.isFinite(variant.price_override) ||
+          (variant.price_override as number) <= 0
       )
       if (invalidPrice) {
-        toast.error("Variant price is required")
+        toast.error("Each variant needs a price greater than 0")
         return
       }
 
       if (!normalizedVariants.some((variant) => variant.is_default)) {
         normalizedVariants[0].is_default = true
+      }
+    }
+
+    // Items without variants need a real base price — blank/NaN/≤0 is rejected
+    // here rather than silently saved as ₱0.00 (or a negative).
+    if (!itemForm.hasVariants) {
+      const parsed = Number.parseFloat(itemForm.price)
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        toast.error("Enter a price greater than 0")
+        return
       }
     }
 
@@ -525,7 +613,7 @@ export function OwnerMenuClient({
         variantsPayload
       )
 
-      const category = categories.find((c) => c.id === itemForm.categoryId)
+      const category = categoryList.find((c) => c.id === itemForm.categoryId)
       const updatedItem: MenuItem = {
         id: menuItemId,
         name: itemForm.name,
@@ -782,7 +870,7 @@ export function OwnerMenuClient({
                       variant="outline"
                       size="sm"
                       className="gap-1.5"
-                      onClick={() => setAddCategoryOpen(true)}
+                      onClick={openAddCategory}
                     >
                       <Plus size={14} />
                       Add Category
@@ -803,13 +891,21 @@ export function OwnerMenuClient({
                           <ForkKnife size={14} className="text-muted-foreground" />
                         </div>
                         <span className="text-sm flex-1">{cat.name}</span>
-                        <Button variant="ghost" size="icon" className="size-8">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          onClick={() => openEditCategory(cat)}
+                          title="Rename category"
+                        >
                           <PencilSimple size={14} className="text-muted-foreground" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="size-8 hover:text-destructive"
+                          onClick={() => setDeleteCategoryId(cat.id)}
+                          title="Delete category"
                         >
                           <Trash size={14} className="text-muted-foreground" />
                         </Button>
@@ -885,7 +981,7 @@ export function OwnerMenuClient({
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((cat) => (
+                    {categoryList.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
                       </SelectItem>
@@ -1108,12 +1204,22 @@ export function OwnerMenuClient({
       </Dialog>
 
       {/* Add Category Dialog */}
-      <Dialog open={addCategoryOpen} onOpenChange={setAddCategoryOpen}>
+      <Dialog
+        open={addCategoryOpen}
+        onOpenChange={(open) => {
+          if (!open) closeCategoryDialog()
+          else setAddCategoryOpen(true)
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add custom category</DialogTitle>
+            <DialogTitle>
+              {editingCategory ? "Rename category" : "Add custom category"}
+            </DialogTitle>
             <DialogDescription>
-              menu_categories — is_global = false, created_by = your cafe
+              {editingCategory
+                ? "Update the name of this category."
+                : "Create a category for grouping your menu items."}
             </DialogDescription>
           </DialogHeader>
 
@@ -1123,25 +1229,63 @@ export function OwnerMenuClient({
               <Input
                 id="cat-name"
                 placeholder="e.g. Seasonal Specials"
+                value={categoryName}
+                maxLength={60}
+                onChange={(e) => setCategoryName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && categoryName.trim() && !categorySaving) {
+                    e.preventDefault()
+                    handleSaveCategory()
+                  }
+                }}
+                autoFocus
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddCategoryOpen(false)}>
+            <Button variant="outline" onClick={closeCategoryDialog} disabled={categorySaving}>
               Cancel
             </Button>
             <Button
               variant="default"
-              onClick={() => {
-                setAddCategoryOpen(false)
-              }}
+              onClick={handleSaveCategory}
+              disabled={categorySaving || !categoryName.trim()}
             >
-              Add Category
+              {categorySaving
+                ? "Saving…"
+                : editingCategory
+                  ? "Save changes"
+                  : "Add Category"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Category Dialog */}
+      <AlertDialog
+        open={deleteCategoryId !== null}
+        onOpenChange={() => setDeleteCategoryId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete category?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This category will be removed. Items using it must be reassigned
+              first. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCategory}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Item Dialog */}
       <AlertDialog

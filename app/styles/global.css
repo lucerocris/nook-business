@@ -1,12 +1,17 @@
 @import 'tailwindcss';
 
+@theme {
+  --color-gray-900: #3b3b3b;
+}
+
 :root {
-  --font-display: 'Fraunces', serif;
+  --font-display: var(--font-sans);
   --color-primary: #3a5a40;
 }
 
 body {
   background: #f7faf7;
+  color: #3b3b3b;
 }
 
 .font-display {

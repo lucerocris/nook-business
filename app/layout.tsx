@@ -5,17 +5,13 @@ import { NavbarGate } from './components/NavbarGate'
 import { SupabaseProvider } from '@/lib/supabase/context'
 import { createClient } from '@/lib/supabase/server'
 
-import { Fraunces, Onest } from 'next/font/google'
+import { Poppins } from 'next/font/google'
 import { cn } from '@/lib/utils'
 
-const onest = Onest({
+const poppins = Poppins({
   subsets: ['latin'],
+  weight: ['400', '500', '600'],
   variable: '--font-sans',
-})
-
-const fraunces = Fraunces({
-  subsets: ['latin'],
-  variable: '--font-display',
 })
 
 export const metadata = {
@@ -47,8 +43,7 @@ export default async function RootLayout({
       lang="en"
       className={cn(
         'font-sans',
-        onest.variable,
-        fraunces.variable
+        poppins.variable
       )}
     >
       <body>

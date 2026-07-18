@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nook for Business
 
-## Getting Started
+The cafe-owner side of Nook — a Next.js 16 app where owners claim their cafe
+listing and manage it (profile, hours, photos, menu, tags, reviews, and traffic
+analytics).
 
-First, run the development server:
+Backed by Supabase (Postgres + Auth + RLS), with images on DigitalOcean Spaces
+and analytics sourced from PostHog.
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.example .env.local   # then fill in the values
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+If `pnpm dev` fails on a dependency pre-check, run Next directly:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+./node_modules/.bin/next dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment
 
-## Learn More
+See [`.env.example`](./.env.example) for the full list and what breaks when each
+is missing. The short version:
 
-To learn more about Next.js, take a look at the following resources:
+- **Supabase URL + publishable key** — required; the app won't boot without them.
+- **`SUPABASE_SERVICE_ROLE_KEY`** — required; backs every privileged owner write.
+- **`DO_SPACES_*`** — image uploads.
+- **`RESEND_API_KEY` + `CORRECTION_REQUEST_TO`** — owner address-correction email.
+- **`POSTHOG_*` + `CRON_SECRET`** — the daily analytics sync.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## How owners get in
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. An owner searches for their cafe and confirms a claim, which generates a
+   verification code (`/claim/[cafeId]`).
+2. They DM that code to Nook from the cafe's official Instagram account.
+3. A superadmin approves the claim in **nook-admin**, which links the owner to
+   the cafe and grants the `cafe_owner` role.
+4. The owner signs in and lands on `/owner/dashboard`.
 
-## Deploy on Vercel
+Owners can alternatively be invited directly from nook-admin, which sends an
+invite email that lands on `/accept-invite`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Access to `/owner/*` is gated by `middleware.ts`, which requires an authenticated
+user with a `cafe_owner_cafe` row.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+```bash
+pnpm dev      # dev server
+pnpm build    # production build (fails on type or lint errors)
+pnpm lint     # eslint
+```
+
+## Notes
+
+- The database schema, RPCs, and edge functions live in the **nook-supabase**
+  repo, which is the source of truth for the shared Supabase project.
+- Self-serve claiming can be toggled via `SELF_SERVE_CLAIM_ENABLED` in
+  `lib/features.ts`.

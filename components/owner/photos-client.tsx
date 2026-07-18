@@ -361,13 +361,43 @@ export function OwnerPhotosClient({
                       Hero
                     </Badge>
                   )}
+                  {/* Drag is desktop-only — hide the hint on touch. */}
                   <Badge
                     variant="outline"
-                    className="absolute top-2 right-2 text-[10px] z-10 bg-background/90"
+                    className="absolute top-2 right-2 z-10 hidden text-[10px] bg-background/90 sm:flex"
                   >
                     <DotsSixVertical size={10} />
                     <span className="hidden sm:inline">Drag</span>
                   </Badge>
+
+                  {/* Touch: the hover overlay below never appears, so surface
+                      set-hero / delete as persistent controls on small screens. */}
+                  <div className="absolute top-2 right-2 z-10 flex items-center gap-1 sm:hidden">
+                    {url !== currentHeroUrl && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="icon"
+                        className="size-7"
+                        onClick={() => void setAsHero(url)}
+                        disabled={isUploading || isReordering}
+                        aria-label={`Set photo ${i + 1} as hero`}
+                      >
+                        <Crown size={12} />
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon"
+                      className="size-7 text-destructive"
+                      onClick={() => setDeleteConfirm(i)}
+                      disabled={isUploading || isReordering}
+                      aria-label={`Delete photo ${i + 1}`}
+                    >
+                      <Trash size={12} />
+                    </Button>
+                  </div>
                   <div className="absolute bottom-2 left-2 right-2 z-10 flex items-center justify-between gap-2">
                     <Button
                       type="button"
@@ -392,7 +422,7 @@ export function OwnerPhotosClient({
                       <CaretRight size={14} />
                     </Button>
                   </div>
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+                  <div className="absolute inset-0 hidden rounded-lg bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 sm:flex sm:items-center sm:justify-center sm:gap-2">
                     {url !== currentHeroUrl && (
                       <Button
                         variant="secondary"

@@ -186,12 +186,16 @@ function ItemRow({
           <div className="relative size-10 rounded-md bg-muted shrink-0 flex items-center justify-center border overflow-hidden group/img">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+            {/* Visible on touch (no hover), hover-revealed from sm: up. Opens a
+                confirm rather than deleting outright, since on mobile the whole
+                thumbnail is the tap target. */}
             <button
               type="button"
-              className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center"
+              className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-100 transition-opacity sm:opacity-0 sm:group-hover/img:opacity-100"
               onClick={() => onImageDelete(item.id, item.image_url!)}
               disabled={isUploadingImage}
               title="Remove image"
+              aria-label={`Remove photo from ${item.name}`}
             >
               <Trash size={12} className="text-white" />
             </button>
@@ -221,11 +225,12 @@ function ItemRow({
           </>
         )
       ) : (
-        <div className="size-10 shrink-0" />
+        // Pure alignment spacer — reclaim its 40px for content on phones.
+        <div className="hidden size-10 shrink-0 sm:block" />
       )}
 
       <div className="flex-1 min-w-0">
-        <div className="flex flex-row items-center gap-2">
+        <div className="flex flex-row items-center gap-2 min-w-0">
           <span className="text-sm font-medium truncate">{item.name}</span>
           {item.is_highlight && (
             <Badge
@@ -236,17 +241,21 @@ function ItemRow({
             </Badge>
           )}
         </div>
-        <div className="flex flex-row items-center gap-2 mt-0.5">
-          <Badge variant="secondary" className="text-xs">{categoryName}</Badge>
+        {/* Wraps instead of overflowing: on a phone the category + price would
+            otherwise spill out of this column and overlap the toggle. */}
+        <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <Badge variant="secondary" className="max-w-full truncate text-xs">
+            {categoryName}
+          </Badge>
           <span className="text-xs text-muted-foreground">·</span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs whitespace-nowrap text-muted-foreground">
             {getItemPriceDisplay(item)}
           </span>
         </div>
         {showMissingImageWarning && item.is_highlight && !item.image_url && (
-          <div className="flex flex-row items-center gap-1 mt-0.5">
-            <Warning size={12} className="text-amber-500 shrink-0" />
-            <span className="text-xs text-amber-600 dark:text-amber-400">
+          <div className="mt-0.5 flex min-w-0 flex-row items-start gap-1">
+            <Warning size={12} className="mt-0.5 text-amber-500 shrink-0" />
+            <span className="min-w-0 text-xs text-amber-600 dark:text-amber-400">
               Add a photo to show this highlight in the app
             </span>
           </div>
@@ -258,9 +267,14 @@ function ItemRow({
           checked={item.is_highlight}
           disabled={highlightCapReached}
           onCheckedChange={(v) => onToggleHighlight(item.id, v)}
+          aria-label={`Highlight ${item.name}`}
           className={highlightCapReached ? "opacity-50" : ""}
         />
-        <span className="text-xs text-muted-foreground">Highlight</span>
+        {/* Label costs ~50px — drop it on phones; the toggle + the green
+            "Highlight" badge above already carry the meaning. */}
+        <span className="hidden text-xs text-muted-foreground sm:block">
+          Highlight
+        </span>
       </div>
 
       <div className="flex items-center shrink-0">
@@ -319,6 +333,9 @@ export function OwnerMenuClient({
   const [editingCategory, setEditingCategory] =
     React.useState<{ id: string; name: string } | null>(null)
   const [deleteCategoryId, setDeleteCategoryId] = React.useState<string | null>(null)
+  const [imageDeleteTarget, setImageDeleteTarget] = React.useState<
+    { id: string; url: string } | null
+  >(null)
 
   const globalCategories = categoryList.filter((c) => c.is_global)
   const customCategories = categoryList.filter((c) => !c.is_global)
@@ -741,13 +758,19 @@ export function OwnerMenuClient({
           <TabsList className="grid grid-cols-3 w-full">
             <TabsTrigger value="all">
               All Items
-              <Badge variant="secondary" className="ml-1.5 text-xs">
+              <Badge
+                variant="secondary"
+                className="ml-1.5 hidden text-xs sm:inline-flex"
+              >
                 {items.length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="highlights">
               Highlights
-              <Badge variant="secondary" className="ml-1.5 text-xs">
+              <Badge
+                variant="secondary"
+                className="ml-1.5 hidden text-xs sm:inline-flex"
+              >
                 {highlightCount}
               </Badge>
             </TabsTrigger>
@@ -772,7 +795,7 @@ export function OwnerMenuClient({
                       onEdit={openEditDialog}
                       onDelete={setDeleteItem}
                       onImageUpload={handleItemImageUpload}
-                      onImageDelete={handleItemImageDelete}
+                      onImageDelete={(id, url) => setImageDeleteTarget({ id, url })}
                       isUploadingImage={uploadingItemId === item.id}
                     />
                   ))
@@ -812,7 +835,7 @@ export function OwnerMenuClient({
                       onEdit={openEditDialog}
                       onDelete={setDeleteItem}
                       onImageUpload={handleItemImageUpload}
-                      onImageDelete={handleItemImageDelete}
+                      onImageDelete={(id, url) => setImageDeleteTarget({ id, url })}
                       isUploadingImage={uploadingItemId === item.id}
                       showMissingImageWarning
                     />
@@ -849,7 +872,9 @@ export function OwnerMenuClient({
                         <div className="size-7 rounded-md bg-muted flex items-center justify-center shrink-0">
                           <ForkKnife size={14} className="text-muted-foreground" />
                         </div>
-                        <span className="text-sm flex-1">{cat.name}</span>
+                        <span className="min-w-0 flex-1 truncate text-sm">
+                          {cat.name}
+                        </span>
                         <Badge variant="secondary" className="text-xs">
                           Global
                         </Badge>
@@ -888,7 +913,9 @@ export function OwnerMenuClient({
                         <div className="size-7 rounded-md bg-muted flex items-center justify-center shrink-0">
                           <ForkKnife size={14} className="text-muted-foreground" />
                         </div>
-                        <span className="text-sm flex-1">{cat.name}</span>
+                        <span className="min-w-0 flex-1 truncate text-sm">
+                          {cat.name}
+                        </span>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -1307,6 +1334,39 @@ export function OwnerMenuClient({
               onClick={handleDeleteConfirm}
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove Item Photo Dialog */}
+      <AlertDialog
+        open={imageDeleteTarget !== null}
+        onOpenChange={() => setImageDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this photo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The photo will be removed from this menu item. You can upload a new
+              one afterwards.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (imageDeleteTarget) {
+                  void handleItemImageDelete(
+                    imageDeleteTarget.id,
+                    imageDeleteTarget.url
+                  )
+                }
+                setImageDeleteTarget(null)
+              }}
+            >
+              Remove
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -262,29 +262,32 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
               >
                 <span className="text-sm font-medium sm:w-28 sm:shrink-0">{label}</span>
 
-                <div className="flex flex-row items-center gap-2 flex-1">
+                <div className="flex min-w-0 flex-1 flex-row items-center gap-2">
                   <Input
                     type="time"
-                    className="flex-1 sm:w-32 sm:flex-none"
+                    className="min-w-0 flex-1 sm:w-32 sm:flex-none"
                     value={hours[key].open}
                     disabled={hours[key].closed}
                     onChange={(e) => updateHours(key, "open", e.target.value)}
                   />
-                  <span className="text-xs text-muted-foreground">to</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">to</span>
                   <Input
                     type="time"
-                    className="flex-1 sm:w-32 sm:flex-none"
+                    className="min-w-0 flex-1 sm:w-32 sm:flex-none"
                     value={hours[key].close}
                     disabled={hours[key].closed}
                     onChange={(e) => updateHours(key, "close", e.target.value)}
                   />
-                  <div className="flex items-center gap-2 sm:hidden ml-auto">
-                    <Switch
-                      checked={hours[key].closed}
-                      onCheckedChange={(v) => updateHours(key, "closed", v)}
-                    />
-                    <Label className="text-xs text-muted-foreground">Closed</Label>
-                  </div>
+                </div>
+
+                {/* Mobile: own row — inside the time row it stole ~80px and
+                    clipped the time values on every day. */}
+                <div className="flex items-center gap-2 sm:hidden">
+                  <Switch
+                    checked={hours[key].closed}
+                    onCheckedChange={(v) => updateHours(key, "closed", v)}
+                  />
+                  <Label className="text-xs text-muted-foreground">Closed</Label>
                 </div>
 
                 <div className="hidden sm:flex items-center gap-2 ml-auto">

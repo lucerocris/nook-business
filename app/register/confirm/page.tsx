@@ -34,7 +34,7 @@ export default async function RegisterConfirmPage({
           {trimmedEmail ? (
             <>
               We sent a verification code to{" "}
-              <span className="font-semibold text-gray-900">{trimmedEmail}</span>.
+              <span className="font-semibold text-gray-900 break-words">{trimmedEmail}</span>.
             </>
           ) : (
             <>We sent a verification code to your email.</>

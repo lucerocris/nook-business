@@ -324,7 +324,10 @@ export function OwnerReviewsClient({
                       <StarRow rating={review.rating} />
 
                       {review.content ? (
-                        <p className="text-sm text-muted-foreground leading-relaxed">
+                        // break-words: a pasted URL/long token has no break
+                        // opportunity and would be clipped by the layout's
+                        // overflow-x-hidden rather than wrapping.
+                        <p className="text-sm text-muted-foreground leading-relaxed break-words">
                           {review.content}
                         </p>
                       ) : (

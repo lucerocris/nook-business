@@ -15,7 +15,7 @@ export function FunnelShell({
   return (
     <section
       className={cn(
-        "relative isolate min-h-[calc(100vh-72px)] overflow-hidden px-4 pb-16 pt-28 sm:px-6 sm:pt-32 lg:px-8",
+        "relative isolate min-h-[calc(100dvh-72px)] overflow-hidden px-4 pb-16 pt-28 sm:px-6 sm:pt-32 lg:px-8",
         className
       )}
     >

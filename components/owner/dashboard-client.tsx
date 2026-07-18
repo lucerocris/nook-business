@@ -147,9 +147,9 @@ export function OwnerDashboardClient({
 
       {/* Section 2 — App Traffic (Last 30 Days) */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold tracking-tight">App Traffic (Last 30 Days)</h2>
-          <Badge variant="secondary" className="font-normal">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="min-w-0 text-lg font-semibold tracking-tight">App Traffic (Last 30 Days)</h2>
+          <Badge variant="secondary" className="shrink-0 font-normal">
             Updated daily
           </Badge>
         </div>
@@ -361,7 +361,7 @@ export function OwnerDashboardClient({
                         </span>
                       </div>
                       <StarRating rating={review.rating} />
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5 break-words">
                         {review.content ?? (
                           <span className="italic text-muted-foreground/70">
                             No written review — rating only.
@@ -401,7 +401,7 @@ export function OwnerDashboardClient({
               </div>
 
               <div className="flex flex-col gap-1">
-                <p className="text-sm font-semibold">{cafe.name}</p>
+                <p className="text-sm font-semibold break-words">{cafe.name}</p>
                 {location && (
                   <div className="flex flex-row items-center gap-1.5">
                     <MapPin size={12} className="text-muted-foreground" />

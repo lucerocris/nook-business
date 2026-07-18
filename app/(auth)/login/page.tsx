@@ -3,25 +3,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "@/components/auth/login-form";
 import { FunnelShell } from "@/app/components/funnel-shell";
+import { getSafeRedirect } from "@/lib/safe-redirect";
 
 type LoginPageProps = {
   searchParams?: Promise<{
     redirect?: string;
   }>;
-};
-
-const getSafeRedirect = (value?: string) => {
-  // Same-origin path only — reject protocol-relative ("//host") / backslash.
-  if (
-    value &&
-    value.startsWith("/") &&
-    !value.startsWith("//") &&
-    !value.startsWith("/\\")
-  ) {
-    return value;
-  }
-
-  return "/";
 };
 
 export const metadata: Metadata = { title: "Log in" }

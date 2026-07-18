@@ -3,26 +3,13 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { getSafeRedirect } from "@/lib/safe-redirect";
 
 type AuthResult =
   | {
       error: string;
     }
   | null;
-
-// Same-origin path only. Rejects protocol-relative ("//host") and backslash
-// ("/\\host") values that browsers resolve to an external origin (open redirect).
-const getSafeRedirect = (redirectTo?: string) => {
-  if (
-    redirectTo &&
-    redirectTo.startsWith("/") &&
-    !redirectTo.startsWith("//") &&
-    !redirectTo.startsWith("/\\")
-  ) {
-    return redirectTo;
-  }
-  return "/";
-};
 
 // Absolute base URL for email links: prefer the configured site URL, fall back
 // to the request's own origin so confirmation links aren't "undefined/..." when

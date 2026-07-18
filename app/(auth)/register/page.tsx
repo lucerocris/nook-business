@@ -3,20 +3,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { RegisterForm } from "@/components/auth/register-form";
 import { FunnelShell } from "@/app/components/funnel-shell";
+import { getSafeRedirect } from "@/lib/safe-redirect";
 
 type RegisterPageProps = {
   searchParams?: Promise<{
     redirect?: string;
   }>;
 };
-
-const getSafeRedirect = (value?: string) =>
-  value &&
-  value.startsWith("/") &&
-  !value.startsWith("//") &&
-  !value.startsWith("/\\")
-    ? value
-    : "/";
 
 export const metadata: Metadata = { title: "Create account" }
 

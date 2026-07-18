@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { FunnelShell } from "@/app/components/funnel-shell";
 import { OtpConfirmForm } from "@/components/auth/otp-confirm-form";
+import { getSafeRedirect } from "@/lib/safe-redirect";
 
 type RegisterConfirmPageProps = {
   searchParams?: Promise<{
@@ -8,16 +9,6 @@ type RegisterConfirmPageProps = {
     redirect?: string;
   }>;
 };
-
-// Same-origin path only; falls back to the homepage (a fresh owner has no cafe
-// linked yet, so /owner would just bounce them).
-const getSafeRedirect = (value?: string) =>
-  value &&
-  value.startsWith("/") &&
-  !value.startsWith("//") &&
-  !value.startsWith("/\\")
-    ? value
-    : "/";
 
 export const metadata: Metadata = { title: "Confirm your account" };
 

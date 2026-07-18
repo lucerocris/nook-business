@@ -1,19 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-
-const getSafeRedirect = (value?: string | null) => {
-  // Same-origin path only — reject protocol-relative ("//host") / backslash.
-  if (
-    value &&
-    value.startsWith("/") &&
-    !value.startsWith("//") &&
-    !value.startsWith("/\\")
-  ) {
-    return value;
-  }
-
-  return "/";
-};
+import { getSafeRedirect } from "@/lib/safe-redirect";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;

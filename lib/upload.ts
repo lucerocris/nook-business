@@ -1,4 +1,4 @@
-import s3Client from "@/config/digitalOcean"
+import { getS3Client } from "@/config/digitalOcean"
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3"
 
 const BUCKET = process.env.DO_SPACES_BUCKET
@@ -29,7 +29,7 @@ export async function uploadFile({
   buffer: Buffer
   contentType: string
 }): Promise<string> {
-  await s3Client.send(
+  await getS3Client().send(
     new PutObjectCommand({
       Bucket:      requireBucket(),
       Key:         key,
@@ -42,7 +42,7 @@ export async function uploadFile({
 }
 
 export async function deleteFile(key: string): Promise<void> {
-  await s3Client.send(
+  await getS3Client().send(
     new DeleteObjectCommand({
       Bucket: requireBucket(),
       Key:    key,

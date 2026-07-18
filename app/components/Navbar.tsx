@@ -4,6 +4,7 @@ import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { useSupabase } from "@/lib/supabase/context";
+import { SELF_SERVE_CLAIM_ENABLED } from "@/lib/features";
 
 type NavbarProps = {
   initialUser: User | null;
@@ -155,12 +156,14 @@ export function Navbar({ initialUser }: NavbarProps) {
                 </Link>
               )}
 
-              <Link
-                href="/claim"
-                className="inline-flex items-center justify-center px-6 py-2.5 border border-[#3A5A40] bg-[#3A5A40] text-white rounded-md text-sm font-medium hover:bg-[#2b442f] transition-colors shadow-sm"
-              >
-                Claim Your Cafe
-              </Link>
+              {SELF_SERVE_CLAIM_ENABLED && (
+                <Link
+                  href="/claim"
+                  className="inline-flex items-center justify-center px-6 py-2.5 border border-[#3A5A40] bg-[#3A5A40] text-white rounded-md text-sm font-medium hover:bg-[#2b442f] transition-colors shadow-sm"
+                >
+                  Claim Your Cafe
+                </Link>
+              )}
             </div>
           </div>
 
@@ -258,13 +261,15 @@ export function Navbar({ initialUser }: NavbarProps) {
               </Link>
             )}
 
-            <Link
-              href="/claim"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="w-full inline-flex items-center justify-center px-6 py-3 border border-[#3A5A40] bg-[#3A5A40] text-white rounded-md text-lg font-medium"
-            >
-              Claim Your Cafe
-            </Link>
+            {SELF_SERVE_CLAIM_ENABLED && (
+              <Link
+                href="/claim"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="w-full inline-flex items-center justify-center px-6 py-3 border border-[#3A5A40] bg-[#3A5A40] text-white rounded-md text-lg font-medium"
+              >
+                Claim Your Cafe
+              </Link>
+            )}
           </div>
         </div>
       </div>

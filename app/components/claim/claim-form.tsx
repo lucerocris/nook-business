@@ -1,24 +1,7 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
-import { initiateClaim, withdrawClaim } from "@/actions/claims";
-
-type ClaimFormProps = {
-  cafeId: string;
-  cafeName: string;
-  existingClaim?: {
-    id: string;
-    verification_code: string | null;
-    status: string;
-  } | null;
-};
+import { useState, useTransition } from "react";
+import { withdrawClaim } from "@/actions/claims";
 
 type ClaimRecord = {
   id: string;
@@ -26,56 +9,22 @@ type ClaimRecord = {
   status: string;
 };
 
-export function ClaimForm({
-  cafeId,
-  cafeName,
-  existingClaim = null,
-}: ClaimFormProps) {
-  const [claim, setClaim] = useState<ClaimRecord | null>(existingClaim);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(!existingClaim);
+type ClaimFormProps = {
+  cafeName: string;
+  claim: ClaimRecord | null;
+  error: string | null;
+};
+
+export function ClaimForm({ cafeName, claim, error }: ClaimFormProps) {
   const [isCopying, setIsCopying] = useState(false);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const hasInitiated = useRef(false);
 
-  const codeValue = useMemo(() => claim?.verification_code ?? "", [claim]);
-
-  const fetchClaim = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
-
-    const result = await initiateClaim({ cafeId, role: "owner" });
-
-    if ("error" in result) {
-      setErrorMessage(result.error);
-      setIsLoading(false);
-      return;
-    }
-
-    setClaim(result.claim);
-    setIsLoading(false);
-  }, [cafeId]);
-
-  useEffect(() => {
-    if (existingClaim !== null || hasInitiated.current) return;
-
-    hasInitiated.current = true;
-
-    const timer = window.setTimeout(() => {
-      void fetchClaim();
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const codeValue = claim?.verification_code ?? "";
 
   const handleCopy = async () => {
-    if (!codeValue || typeof navigator === "undefined") {
-      return;
-    }
-
+    if (!codeValue || typeof navigator === "undefined") return;
     setIsCopying(true);
-
     try {
       await navigator.clipboard.writeText(codeValue);
     } finally {
@@ -84,39 +33,19 @@ export function ClaimForm({
   };
 
   const handleWithdraw = () => {
-    if (!claim?.id) {
-      return;
-    }
-
+    if (!claim?.id) return;
     startTransition(() => {
       void withdrawClaim(claim.id);
     });
   };
 
-  if (isLoading) {
-    return (
-      <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-        <div className="rounded-[2rem] border border-white/80 bg-white/90 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.09)] backdrop-blur-sm">
-          <p className="text-sm font-semibold text-gray-700">
-            Setting up your claim...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (errorMessage) {
+  if (error || !claim) {
     return (
       <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="rounded-[2rem] border border-red-200 bg-red-50 p-8 text-red-700 shadow-[0_20px_60px_rgba(220,38,38,0.15)]">
-          <p className="text-sm font-semibold">{errorMessage}</p>
-          <button
-            type="button"
-            onClick={fetchClaim}
-            className="mt-4 inline-flex items-center justify-center rounded-xl bg-[#3A5A40] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(58,90,64,0.25)] transition hover:bg-[#2b442f]"
-          >
-            Retry
-          </button>
+          <p className="text-sm font-semibold">
+            {error ?? "We couldn't set up your claim. Please try again."}
+          </p>
         </div>
       </div>
     );
@@ -178,18 +107,43 @@ export function ClaimForm({
             your status.
           </p>
 
-          <button
-            type="button"
-            onClick={handleWithdraw}
-            disabled={isPending}
-            className="text-left text-sm font-semibold text-gray-500 transition hover:text-[#3A5A40] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Wrong cafe?
-          </button>
+          {confirmingCancel ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-gray-600">
+                Cancel your claim for{" "}
+                <span className="font-semibold">{cafeName}</span>? You&apos;ll
+                have to start the claim over.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={handleWithdraw}
+                  disabled={isPending}
+                  className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isPending ? "Cancelling…" : "Yes, cancel claim"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmingCancel(false)}
+                  disabled={isPending}
+                  className="inline-flex items-center justify-center rounded-xl border border-[#3A5A40]/20 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-[#3A5A40] hover:text-[#3A5A40] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Keep my claim
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingCancel(true)}
+              className="text-left text-sm font-semibold text-gray-500 transition hover:text-[#3A5A40]"
+            >
+              Cancel this claim
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
 }
-
-

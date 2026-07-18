@@ -1,5 +1,7 @@
 "use client";
+import Link from "next/link";
 import { CafeSearchInput } from "./claim/cafe-search-input";
+import { SELF_SERVE_CLAIM_ENABLED } from "@/lib/features";
 
 export function Hero() {
   return (
@@ -23,7 +25,26 @@ export function Hero() {
           digital storefront in minutes.
         </p>
         <div className="mt-8 w-full max-w-xl">
-          <CafeSearchInput />
+          {SELF_SERVE_CLAIM_ENABLED ? (
+            <CafeSearchInput />
+          ) : (
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/login"
+                className="rounded-xl bg-[#3A5A40] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#3A5A40]/90"
+              >
+                Owner sign in
+              </Link>
+              <a
+                href="https://instagram.com/nook_cafefinder"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl border border-[#3A5A40]/25 bg-white px-6 py-3 text-sm font-semibold text-[#3A5A40] shadow-sm transition hover:bg-[#3A5A40]/5"
+              >
+                Get your cafe listed
+              </a>
+            </div>
+          )}
         </div>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
           <span>Verified listings</span>

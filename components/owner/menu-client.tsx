@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import {
-  DotsSixVertical,
   ForkKnife,
   ImageSquare,
   PencilSimple,
@@ -181,7 +180,6 @@ function ItemRow({
 
   return (
     <div className="flex items-center gap-3 py-3 border-b last:border-0">
-      <DotsSixVertical size={16} className="text-muted-foreground cursor-grab shrink-0" />
 
       {item.is_highlight ? (
         item.image_url ? (
@@ -931,7 +929,9 @@ export function OwnerMenuClient({
           <DialogHeader>
             <DialogTitle>{isEditing ? "Edit menu item" : "Add menu item"}</DialogTitle>
             <DialogDescription>
-              menu_items — price stored as numeric
+              {isEditing
+                ? "Update this item's details."
+                : "Add a new item to your menu."}
             </DialogDescription>
           </DialogHeader>
 
@@ -964,7 +964,7 @@ export function OwnerMenuClient({
                     }
                   />
                   <p className="text-xs text-muted-foreground">
-                    Stored as numeric — e.g. 180.00
+                    In pesos, e.g. 180.00
                   </p>
                 </div>
               )}

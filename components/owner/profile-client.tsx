@@ -7,7 +7,6 @@ import {
   FacebookLogo,
   FloppyDisk,
   Globe,
-  Info,
   InstagramLogo,
   TiktokLogo,
 } from "@phosphor-icons/react"
@@ -119,6 +118,17 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
     setIsDirty(true)
   }
 
+  // Warn before leaving (refresh / close / browser back) with unsaved edits.
+  React.useEffect(() => {
+    if (!isDirty) return
+    const handler = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ""
+    }
+    window.addEventListener("beforeunload", handler)
+    return () => window.removeEventListener("beforeunload", handler)
+  }, [isDirty])
+
   async function handleSave() {
     const input = {
       name,
@@ -189,7 +199,7 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
           <CardHeader>
             <CardTitle>Cafe name</CardTitle>
             <CardDescription>
-              For MVP, name validation is on hold and updates save immediately.
+              This is how your cafe appears across Nook.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

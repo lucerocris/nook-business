@@ -25,6 +25,8 @@ export async function getReviewsForCafe(
       profiles!reviews_user_id_fkey ( full_name, username, avatar_url )
     `)
     .eq("cafe_id", cafeId)
+    // Owners only see live reviews — not ones moderation has hidden/removed.
+    .eq("moderation_status", "visible")
     .order("created_at", { ascending: false })
 
   if (options?.limit) query = query.limit(options.limit)

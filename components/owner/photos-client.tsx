@@ -7,7 +7,6 @@ import {
   Crown,
   DotsSixVertical,
   Image,
-  Info,
   Lightbulb,
   Plus,
   Trash,

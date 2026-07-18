@@ -151,9 +151,19 @@ export function OwnerDashboardClient({
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold tracking-tight">App Traffic (Last 30 Days)</h2>
           <Badge variant="secondary" className="font-normal">
-            Updated daily @ 10PM
+            Updated daily
           </Badge>
         </div>
+        {analytics.views +
+          analytics.directions +
+          analytics.favorites +
+          analytics.hours ===
+          0 && (
+          <p className="text-sm text-muted-foreground">
+            No traffic data yet — these fill in once your listing starts getting
+            visits, and refresh daily.
+          </p>
+        )}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Card>
             <CardHeader>

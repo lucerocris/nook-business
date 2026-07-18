@@ -15,9 +15,10 @@ const poppins = Poppins({
 })
 
 export const metadata = {
-  description: 'A blank template using Payload in a Next.js app.',
+  description:
+    'Nook for Business — claim and manage your cafe listing on Nook.',
   title: {
-    default: 'Nook',
+    default: 'Nook for Business',
     template: '%s - Nook',
   },
   icons: {

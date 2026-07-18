@@ -77,6 +77,17 @@ export function OwnerTagsClient({
     featuredTagIds.slice(0, 3)
   )
 
+  // Warn before leaving (refresh / close / browser back) with unsaved edits.
+  React.useEffect(() => {
+    if (!isDirty) return
+    const handler = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ""
+    }
+    window.addEventListener("beforeunload", handler)
+    return () => window.removeEventListener("beforeunload", handler)
+  }, [isDirty])
+
   const bestForTags = allTags.filter((t) => t.category === "best_for")
   const amenitiesTags = allTags.filter((t) => t.category === "amenities")
   const paymentTags = allTags.filter((t) => t.category === "payment")

@@ -22,10 +22,15 @@ async function getOwnerCafeId(): Promise<string> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Not authenticated")
 
+  // .limit(1) + stable .order so a multi-cafe owner resolves to the same cafe
+  // here as in the read paths (getCafeForOwner / getOwnerCafeContext), instead
+  // of throwing on multiple rows or picking a different cafe per request.
   const { data } = await supabase
     .from("cafe_owner_cafe")
     .select("cafe_id")
     .eq("owner_id", user.id)
+    .order("cafe_id", { ascending: true })
+    .limit(1)
     .maybeSingle()
 
   if (!data) throw new Error("No cafe linked to this owner")

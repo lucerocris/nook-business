@@ -243,6 +243,8 @@ export async function getCafeForOwner(ownerUserId: string) {
     .from("cafe_owner_cafe")
     .select("cafe_id")
     .eq("owner_id", ownerUserId)
+    .order("cafe_id", { ascending: true })
+    .limit(1)
     .maybeSingle()
 
   if (!link) return null
@@ -278,6 +280,8 @@ export async function getOwnerCafeContextByOwnerUserId(
     .from("cafe_owner_cafe")
     .select("cafe_id")
     .eq("owner_id", ownerUserId)
+    .order("cafe_id", { ascending: true })
+    .limit(1)
     .maybeSingle()
 
   if (linkError) throw linkError

@@ -34,7 +34,7 @@ import { Separator } from "@/components/ui/separator"
 type Review = {
   id: string
   rating: number
-  content: string
+  content: string | null // star-only reviews have null content
   created_at: string
   profiles: { full_name: string | null; username: string | null } | null
 }

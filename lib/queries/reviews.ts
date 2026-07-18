@@ -4,7 +4,7 @@ export type Review = {
   id: string
   cafe_id: string
   rating: number
-  content: string
+  content: string | null
   created_at: string
   profiles: {
     full_name: string | null

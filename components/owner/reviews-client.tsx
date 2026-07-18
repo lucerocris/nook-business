@@ -32,7 +32,7 @@ type Review = {
   id: string
   cafe_id: string
   rating: number
-  content: string
+  content: string | null // star-only reviews have null content
   created_at: string
   profiles: {
     full_name: string | null
@@ -126,7 +126,7 @@ export function OwnerReviewsClient({
         (r) =>
           (r.profiles?.full_name ?? "").toLowerCase().includes(q) ||
           (r.profiles?.username ?? "").toLowerCase().includes(q) ||
-          r.content.toLowerCase().includes(q)
+          (r.content ?? "").toLowerCase().includes(q)
       )
     }
 

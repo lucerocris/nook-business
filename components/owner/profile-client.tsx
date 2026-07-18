@@ -451,12 +451,12 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
           </CardContent>
         </Card>
 
-        {isDirty && <div className="h-20" />}
+        {isDirty && <div className="h-28 sm:h-20" />}
       </div>
 
       {/* Sticky Save Bar */}
       {isDirty && (
-        <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur px-4 py-3 sm:px-6 sm:py-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between z-50">
+        <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-4 sm:pb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between z-50">
           <p className="text-sm text-muted-foreground">
             You have unsaved changes
           </p>

@@ -33,7 +33,10 @@ export default function OwnerLayout({
               className="mr-2 data-vertical:h-4 data-vertical:self-auto"
             />
           </header>
-          <main className="flex flex-1 flex-col gap-4">
+          {/* min-w-0 + overflow-x-hidden: without these, any over-wide
+              descendant widens the document and scrolls the whole page
+              sideways instead of being contained. */}
+          <main className="flex min-w-0 flex-1 flex-col gap-4 overflow-x-hidden">
             {children}
           </main>
         </SidebarInset>

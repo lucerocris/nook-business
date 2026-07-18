@@ -59,7 +59,7 @@ export function AcceptInviteForm() {
           autoComplete="new-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-slate-400"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base sm:text-sm text-slate-900 shadow-sm outline-none transition focus:border-slate-400"
           placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
         />
       </div>
@@ -75,7 +75,7 @@ export function AcceptInviteForm() {
           autoComplete="new-password"
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-slate-400"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base sm:text-sm text-slate-900 shadow-sm outline-none transition focus:border-slate-400"
         />
       </div>
 

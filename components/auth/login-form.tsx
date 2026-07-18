@@ -72,7 +72,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
           autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="mt-2 w-full rounded-xl border border-[#3A5A40]/20 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm transition placeholder:text-gray-400 focus:border-[#3A5A40]/45 focus:outline-none focus:ring-4 focus:ring-[#3A5A40]/12"
+          className="mt-2 w-full rounded-xl border border-[#3A5A40]/20 bg-white px-4 py-3 text-base sm:text-sm text-gray-900 shadow-sm transition placeholder:text-gray-400 focus:border-[#3A5A40]/45 focus:outline-none focus:ring-4 focus:ring-[#3A5A40]/12"
           aria-invalid={Boolean(fieldErrors.email)}
           aria-describedby={fieldErrors.email ? "email-error" : undefined}
         />
@@ -93,7 +93,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="mt-2 w-full rounded-xl border border-[#3A5A40]/20 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm transition placeholder:text-gray-400 focus:border-[#3A5A40]/45 focus:outline-none focus:ring-4 focus:ring-[#3A5A40]/12"
+          className="mt-2 w-full rounded-xl border border-[#3A5A40]/20 bg-white px-4 py-3 text-base sm:text-sm text-gray-900 shadow-sm transition placeholder:text-gray-400 focus:border-[#3A5A40]/45 focus:outline-none focus:ring-4 focus:ring-[#3A5A40]/12"
           aria-invalid={Boolean(fieldErrors.password)}
           aria-describedby={fieldErrors.password ? "password-error" : undefined}
         />

@@ -65,34 +65,34 @@ export default async function ClaimPage({
   if (!user) {
     return (
       <FunnelShell contentClassName="max-w-4xl">
-        <div className="mx-auto w-full max-w-2xl rounded-[2rem] border border-white/80 bg-white/90 p-8 text-center shadow-[0_24px_80px_rgba(15,23,42,0.09)] backdrop-blur-sm sm:p-11">
+        <div className="mx-auto w-full max-w-2xl rounded-2xl bg-white p-6 text-center shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70 sm:p-8">
           {cafe.featured_image_url ? (
             <img
               src={cafe.featured_image_url}
               alt={cafe.name ?? "Cafe"}
-              className="animate-funnel-rise mx-auto mb-7 h-24 w-24 rounded-2xl object-cover shadow-[0_16px_35px_rgba(58,90,64,0.18)]"
+              className="mx-auto mb-6 h-24 w-24 rounded-2xl object-cover shadow-[0_16px_35px_rgba(58,90,64,0.18)]"
             />
           ) : (
-            <div className="animate-funnel-rise mx-auto mb-7 flex h-24 w-24 items-center justify-center rounded-2xl bg-[#3A5A40]/10 text-xs font-semibold uppercase tracking-[0.24em] text-[#3A5A40]">
+            <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-2xl bg-[#3A5A40]/10 text-xs font-semibold uppercase tracking-[0.24em] text-[#3A5A40]">
               Nook
             </div>
           )}
 
-          <p className="animate-funnel-fade text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40]">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40]">
             Claim verification
           </p>
-          <h1 className="animate-funnel-rise funnel-delay-1 mt-4 text-balance font-display text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
+          <h1 className="mt-4 text-balance font-display text-3xl font-semibold tracking-tight text-[#101514] sm:text-4xl">
             Claim {cafe.name ?? "this cafe"}
           </h1>
 
-          <p className="animate-funnel-fade funnel-delay-2 mx-auto mt-4 max-w-xl text-base text-gray-600">
+          <p className="mx-auto mt-4 max-w-xl text-base text-[#3b3b3b]">
             Create a free business account to verify ownership and manage {cafe.name ?? "this cafe"} on Nook.
           </p>
 
-          <div className="animate-funnel-rise funnel-delay-3 mt-9 flex flex-col items-center gap-4">
+          <div className="mt-8 flex flex-col items-center gap-4">
             <Link
               href={`/register?redirect=${redirectPath}`}
-              className="inline-flex w-full items-center justify-center rounded-xl bg-[#3A5A40] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(58,90,64,0.3)] transition hover:-translate-y-0.5 hover:bg-[#2f4a35]"
+              className="inline-flex w-full items-center justify-center min-h-11 rounded-full bg-[#3A5A40] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#2f4833]"
             >
               Create free account
             </Link>

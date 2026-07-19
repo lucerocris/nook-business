@@ -62,14 +62,14 @@ export function ClaimForm({ cafeId, cafeName, initialClaim }: ClaimFormProps) {
   if (!claim) {
     return (
       <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-        <div className="rounded-[2rem] border border-white/80 bg-white/90 p-7 shadow-[0_24px_80px_rgba(15,23,42,0.09)] backdrop-blur-sm sm:p-10">
+        <div className="rounded-2xl bg-white p-6 shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40]">
             Claim verification
           </p>
-          <h1 className="mt-3 text-balance font-display text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
+          <h1 className="mt-3 text-balance font-display text-3xl font-semibold tracking-tight text-[#101514] sm:text-4xl">
             Claim {cafeName}
           </h1>
-          <p className="mt-3 max-w-xl text-sm text-gray-600 sm:text-base">
+          <p className="mt-3 max-w-xl text-sm text-[#3b3b3b] sm:text-base">
             Confirm to generate a verification code. You&apos;ll then DM it to us
             on Instagram from{" "}
             <span className="font-semibold">{cafeName}</span>&apos;s official
@@ -84,7 +84,7 @@ export function ClaimForm({ cafeId, cafeName, initialClaim }: ClaimFormProps) {
             type="button"
             onClick={handleStart}
             disabled={isStarting}
-            className="mt-7 inline-flex items-center justify-center rounded-xl bg-[#3A5A40] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(58,90,64,0.3)] transition hover:-translate-y-0.5 hover:bg-[#2f4a35] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-7 inline-flex items-center justify-center min-h-11 rounded-full bg-[#3A5A40] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#2f4833] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isStarting ? "Setting up…" : "Confirm & get code"}
           </button>
@@ -95,16 +95,16 @@ export function ClaimForm({ cafeId, cafeName, initialClaim }: ClaimFormProps) {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-      <div className="rounded-[2rem] border border-white/80 bg-white/90 p-7 shadow-[0_24px_80px_rgba(15,23,42,0.09)] backdrop-blur-sm sm:p-10">
-        <div className="animate-funnel-fade flex flex-wrap items-start justify-between gap-4">
+      <div className="rounded-2xl bg-white p-6 shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70 sm:p-8">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40]">
               Claim verification
             </p>
-            <h1 className="mt-3 text-balance font-display text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
+            <h1 className="mt-3 text-balance font-display text-3xl font-semibold tracking-tight text-[#101514] sm:text-4xl">
               Your claim is being reviewed
             </h1>
-            <p className="mt-3 max-w-xl text-sm text-gray-600 sm:text-base">
+            <p className="mt-3 max-w-xl text-sm text-[#3b3b3b] sm:text-base">
               Send us a DM on Instagram with the verification code below to
               confirm ownership of{" "}
               <span className="font-semibold">{cafeName}</span>.
@@ -115,21 +115,21 @@ export function ClaimForm({ cafeId, cafeName, initialClaim }: ClaimFormProps) {
               </span>
             </p>
           </div>
-          <span className="inline-flex items-center rounded-full border border-[#3A5A40]/15 bg-[#F7FAF7] px-3 py-1 text-xs font-semibold text-[#3A5A40]">
+          <span className="inline-flex items-center rounded-full border border-[#3A5A40]/15 bg-[#e3ebe4]/40 px-3 py-1 text-xs font-semibold text-[#3A5A40]">
             Pending verification
           </span>
         </div>
 
-        <div className="animate-funnel-rise funnel-delay-1 mt-9 flex flex-col gap-5">
+        <div className="mt-9 flex flex-col gap-5">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-2xl border border-[#3A5A40]/15 bg-[#F7FAF7] px-6 py-4 font-mono text-2xl font-semibold tracking-[0.3em] text-gray-900 shadow-inner shadow-[#3A5A40]/5">
+            <div className="rounded-2xl border border-[#3A5A40]/15 bg-[#e3ebe4]/40 px-6 py-4 font-mono text-2xl font-semibold tracking-[0.3em] text-[#101514] shadow-inner shadow-[#3A5A40]/5">
               {codeValue || "----"}
             </div>
             <button
               type="button"
               onClick={handleCopy}
               disabled={!codeValue || isCopying}
-              className="inline-flex items-center justify-center rounded-xl border border-[#3A5A40]/20 px-4 py-3 text-sm font-semibold text-gray-700 transition hover:border-[#3A5A40] hover:text-[#3A5A40] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center justify-center rounded-xl border border-[#3A5A40]/20 px-4 py-3 text-sm font-semibold text-[#101514] transition hover:border-[#3A5A40] hover:text-[#3A5A40] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isCopying ? "Copied" : "Copy code"}
             </button>
@@ -139,19 +139,19 @@ export function ClaimForm({ cafeId, cafeName, initialClaim }: ClaimFormProps) {
             href="https://instagram.com/nook_cafefinder"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center justify-center rounded-xl bg-[#3A5A40] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(58,90,64,0.3)] transition hover:-translate-y-0.5 hover:bg-[#2f4a35]"
+            className="inline-flex items-center justify-center min-h-11 rounded-full bg-[#3A5A40] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#2f4833]"
           >
             DM us on Instagram @nook_cafefinder
           </a>
 
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[#6b6b6b]">
             This code expires in 7 days. Come back to this page anytime to check
             your status.
           </p>
 
           {confirmingCancel ? (
             <div className="flex flex-col gap-2">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-[#3b3b3b]">
                 Cancel your claim for{" "}
                 <span className="font-semibold">{cafeName}</span>? You&apos;ll
                 have to start the claim over.
@@ -169,7 +169,7 @@ export function ClaimForm({ cafeId, cafeName, initialClaim }: ClaimFormProps) {
                   type="button"
                   onClick={() => setConfirmingCancel(false)}
                   disabled={isPending}
-                  className="inline-flex items-center justify-center rounded-xl border border-[#3A5A40]/20 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-[#3A5A40] hover:text-[#3A5A40] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center justify-center rounded-xl border border-[#3A5A40]/20 px-4 py-2 text-sm font-semibold text-[#101514] transition hover:border-[#3A5A40] hover:text-[#3A5A40] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Keep my claim
                 </button>
@@ -179,7 +179,7 @@ export function ClaimForm({ cafeId, cafeName, initialClaim }: ClaimFormProps) {
             <button
               type="button"
               onClick={() => setConfirmingCancel(true)}
-              className="text-left text-sm font-semibold text-gray-500 transition hover:text-[#3A5A40]"
+              className="text-left text-sm font-semibold text-[#6b6b6b] transition hover:text-[#3A5A40]"
             >
               Cancel this claim
             </button>

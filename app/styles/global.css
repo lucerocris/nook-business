@@ -9,9 +9,33 @@
   --color-primary: #3a5a40;
 }
 
+/* Matches nook-webapp's globals.css: white page with a faint green dot lattice.
+   Cards/sections sit on their own white surfaces; the dots show through gaps
+   and margins. `fixed` keeps the grid pinned to the viewport while scrolling.
+   Replaces the flat #F7FAF7 mint wash, which existed nowhere in the webapp. */
 body {
-  background: #f7faf7;
+  background-color: #ffffff;
+  background-image: radial-gradient(
+    circle,
+    rgba(58, 90, 64, 0.16) 1px,
+    transparent 1.6px
+  );
+  background-size: 22px 22px;
+  background-attachment: fixed;
   color: #3b3b3b;
+}
+
+/* Decorative hero backdrop — identical to the webapp's `.hero-glow`: a soft
+   brand-green radial anchored at top-center, warmed by a pale sage wash at the
+   very top, fading into the white page. Purely presentational; aria-hidden. */
+.hero-glow {
+  background:
+    radial-gradient(
+      62% 52% at 50% 0%,
+      rgba(58, 90, 64, 0.22),
+      transparent 70%
+    ),
+    linear-gradient(to bottom, rgba(227, 235, 228, 0.62), transparent 42%);
 }
 
 .font-display {
@@ -126,42 +150,18 @@ body {
 
 
 
-@keyframes funnel-rise {
-  0% {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* Entrance animations removed to match the webapp, which has no page-entry
+   motion at all (its only animations are the loading dots and the map popup,
+   both gated on prefers-reduced-motion). These staggered fade/rise effects also
+   delayed first paint of the login and claim copy by up to 240ms and shipped
+   with no reduced-motion guard.
 
-@keyframes funnel-fade {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-.animate-funnel-rise {
-  animation: funnel-rise 0.65s cubic-bezier(0.18, 0.71, 0.11, 1) both;
-}
-
-.animate-funnel-fade {
-  animation: funnel-fade 0.75s ease both;
-}
-
-.funnel-delay-1 {
-  animation-delay: 90ms;
-}
-
-.funnel-delay-2 {
-  animation-delay: 170ms;
-}
-
+   The class names are kept as inert no-ops so the ~30 call sites across the
+   funnel pages don't need touching and nothing breaks if one is missed. */
+.animate-funnel-rise,
+.animate-funnel-fade,
+.funnel-delay-1,
+.funnel-delay-2,
 .funnel-delay-3 {
-  animation-delay: 240ms;
+  animation: none;
 }

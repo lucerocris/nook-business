@@ -46,8 +46,8 @@ export default async function AcceptInvitePage({ searchParams }: PageProps) {
 
   return (
     <FunnelShell contentClassName="max-w-4xl">
-      <div className="mx-auto w-full max-w-2xl rounded-[2rem] border border-white/80 bg-white/90 p-7 shadow-[0_24px_80px_rgba(15,23,42,0.09)] backdrop-blur-sm sm:p-10">
-        <div className="flex justify-center animate-funnel-fade">
+      <div className="mx-auto w-full max-w-2xl rounded-2xl bg-white p-6 shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70 sm:p-8">
+        <div className="flex justify-center">
           <img
             src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/logo.svg"
             alt="Nook"
@@ -56,7 +56,7 @@ export default async function AcceptInvitePage({ searchParams }: PageProps) {
         </div>
 
         {!user ? (
-          <div className="mt-8 space-y-4 text-center animate-funnel-rise">
+          <div className="mt-8 space-y-4 text-center">
             <h1 className="text-xl font-semibold text-slate-900">
               This invite link isn&apos;t valid
             </h1>
@@ -69,7 +69,7 @@ export default async function AcceptInvitePage({ searchParams }: PageProps) {
           </div>
         ) : (
           <>
-            <div className="mt-8 space-y-2 text-center animate-funnel-rise">
+            <div className="mt-8 space-y-2 text-center">
               <h1 className="text-xl font-semibold text-slate-900">
                 Set your password
               </h1>

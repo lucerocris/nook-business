@@ -31,20 +31,20 @@ export default async function RegisterPage({
 
   return (
     <FunnelShell contentClassName="max-w-4xl">
-      <div className="mx-auto w-full max-w-2xl rounded-[2rem] border border-white/80 bg-white/90 p-7 shadow-[0_24px_80px_rgba(15,23,42,0.09)] backdrop-blur-sm sm:p-10">
-        <div className="flex justify-center animate-funnel-fade">
+      <div className="mx-auto w-full max-w-2xl rounded-2xl bg-white p-6 shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70 sm:p-8">
+        <div className="flex justify-center">
           <img src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/logo.svg" alt="Nook" className="h-9 w-auto" />
         </div>
 
-        <p className="mt-6 text-center text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40] animate-funnel-fade funnel-delay-1">
+        <p className="mt-6 text-center text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40]">
           New owner profile
         </p>
 
-        <h1 className="mt-3 text-center font-display text-3xl font-semibold tracking-tight text-gray-900 animate-funnel-rise funnel-delay-2 sm:text-4xl">
+        <h1 className="mt-3 text-center font-display text-3xl font-semibold tracking-tight text-[#101514] sm:text-4xl">
           Create your account
         </h1>
 
-        <p className="mx-auto mt-3 max-w-lg text-center text-sm text-gray-600 animate-funnel-fade funnel-delay-3 sm:text-base">
+        <p className="mx-auto mt-3 max-w-lg text-center text-sm text-[#3b3b3b] sm:text-base">
           Manage your cafe and stay connected with customers on Nook.
         </p>
 

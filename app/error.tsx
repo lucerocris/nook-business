@@ -21,7 +21,7 @@ export default function Error({
       <button
         type="button"
         onClick={reset}
-        className="mt-7 inline-flex items-center justify-center rounded-xl bg-[#3A5A40] px-6 py-3 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(58,90,64,0.3)] transition hover:-translate-y-0.5 hover:bg-[#2f4a35]"
+        className="mt-7 inline-flex items-center justify-center min-h-11 rounded-full bg-[#3A5A40] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#2f4833]"
       >
         Try again
       </button>

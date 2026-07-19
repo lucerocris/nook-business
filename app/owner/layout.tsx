@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import "@/app/globals.css"
 import { OwnerSidebar } from "@/components/owner/sidebar"
+import { SessionRoleSync } from "@/components/owner/session-role-sync"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import {
   SidebarInset,
@@ -22,6 +23,10 @@ export default function OwnerLayout({
 }) {
   return (
     <TooltipProvider>
+      {/* Upgrades a pre-approval JWT to one carrying the cafe_owner role, so
+          the dashboard works without a manual reload and saves aren't silently
+          rejected by RLS. Renders nothing. */}
+      <SessionRoleSync />
       <SidebarProvider>
         <OwnerSidebar />
         <SidebarInset>

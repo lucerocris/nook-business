@@ -1,5 +1,6 @@
 "use client";
 
+import { Spinner } from "@/components/ui/spinner";
 import { useState } from "react";
 import { verifySignupOtp, resendSignupOtp } from "@/actions/auth";
 
@@ -79,7 +80,14 @@ export function OtpConfirmForm({ email, redirectTo }: OtpConfirmFormProps) {
         disabled={isResending}
         className="text-sm font-semibold text-gray-500 transition hover:text-[#3A5A40] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isResending ? "Sending..." : "Didn't get a code? Resend"}
+        {isResending ? (
+          <span className="inline-flex items-center gap-2">
+            <Spinner className="size-3.5" />
+            Sending…
+          </span>
+        ) : (
+          "Didn't get a code? Resend"
+        )}
       </button>
     </form>
   );

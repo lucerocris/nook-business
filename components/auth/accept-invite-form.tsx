@@ -41,9 +41,9 @@ export function AcceptInviteForm() {
   }
 
   return (
-    <form className="mt-8 space-y-5 animate-funnel-rise funnel-delay-3" onSubmit={handleSubmit}>
+    <form className="mt-6 space-y-4 sm:mt-7" onSubmit={handleSubmit}>
       {formError ? (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
+        <p role="alert" className="rounded-lg border border-[#b94a48]/25 bg-[#b94a48]/5 px-4 py-3 text-sm text-[#b94a48]">
           {formError}
         </p>
       ) : null}

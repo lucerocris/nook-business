@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  type ChangeEvent,
+} from "react";
 import { useRouter } from "next/navigation";
 import { useCafeSearch } from "@/hooks/use-cafe-search";
+import { Spinner } from "@/components/ui/spinner";
 
 type CafeResult = {
   id?: string | number | null;
@@ -32,6 +39,13 @@ export function CafeSearchInput() {
   const debounceRef = useRef<number | null>(null);
   const { results, loading, error, search } = useCafeSearch();
 
+  // /claim/[cafeId] is a server-rendered route, so router.push can take a
+  // noticeable moment with no visual change — the row looked unresponsive and
+  // invited double-clicks. useTransition surfaces that wait; `navigatingId`
+  // tracks WHICH row was chosen so the spinner appears on that row.
+  const [isNavigating, startNavigation] = useTransition();
+  const [navigatingId, setNavigatingId] = useState<string | null>(null);
+
   useEffect(() => {
     return () => {
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
@@ -59,13 +73,20 @@ export function CafeSearchInput() {
   };
 
   const handleSelect = (cafeId: string) => {
+    if (isNavigating) return; // ignore repeat taps while a claim is opening
     setSelectedCafeId(cafeId);
-    router.push(`/claim/${cafeId}`);
+    setNavigatingId(cafeId);
+    startNavigation(() => {
+      router.push(`/claim/${cafeId}`);
+    });
   };
 
   const handleVerifyClaim = () => {
-    if (!selectedCafeId) return;
-    router.push(`/claim/${selectedCafeId}`);
+    if (!selectedCafeId || isNavigating) return;
+    setNavigatingId(selectedCafeId);
+    startNavigation(() => {
+      router.push(`/claim/${selectedCafeId}`);
+    });
   };
 
   const normalizedResults = Array.isArray(results) ? results : [];
@@ -78,35 +99,77 @@ export function CafeSearchInput() {
 
   return (
     <div className="relative w-full">
-      <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+      {/* Mirrors the webapp's HeroSearch: a single rounded-full form with the
+          magnifier inline, the action as a pill on the right, and the focus
+          indicator on the wrapper via :focus-within (the input itself has no
+          outline, so without this there'd be no visible focus state). */}
+      <div className="flex w-full items-center gap-2 rounded-full border border-zinc-200 bg-white p-2 transition-shadow focus-within:border-[#3A5A40] focus-within:ring-2 focus-within:ring-[#3A5A40]/40">
+        <span
+          aria-hidden="true"
+          className="flex h-5 w-5 shrink-0 items-center justify-center pl-2 text-[#3b3b3b] sm:pl-3"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle
+              cx="9"
+              cy="9"
+              r="6.25"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            />
+            <line
+              x1="13.5"
+              y1="13.5"
+              x2="17.5"
+              y2="17.5"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
+        </span>
         <input
           type="text"
           value={searchQuery}
           onChange={handleChange}
+          aria-label="Search for your cafe"
           placeholder="Search for your cafe..."
-          className="w-full rounded-2xl border border-[#3A5A40]/15 bg-white px-5 py-4 text-base text-gray-900 shadow-[0_12px_35px_rgba(15,23,42,0.08)] outline-none transition placeholder:text-gray-400 focus:border-[#3A5A40]/40 focus:ring-4 focus:ring-[#3A5A40]/12"
+          className="min-w-0 flex-1 bg-transparent text-sm text-[#101514] outline-none placeholder:text-zinc-400 focus:ring-0"
         />
         <button
           type="button"
-          disabled={!selectedCafeId}
+          disabled={!selectedCafeId || isNavigating}
           onClick={handleVerifyClaim}
-          className="w-full shrink-0 rounded-2xl bg-[#3A5A40] px-6 py-4 text-base font-semibold text-white shadow-[0_14px_30px_rgba(58,90,64,0.32)] transition hover:-translate-y-0.5 hover:bg-[#2f4a35] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          aria-busy={isNavigating}
+          className="flex shrink-0 items-center gap-2 rounded-full bg-[#3A5A40] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2f4833] disabled:cursor-not-allowed disabled:opacity-40 sm:px-5"
         >
-          Verify &amp; Claim
+          {isNavigating ? (
+            <>
+              <Spinner className="size-3.5" />
+              <span>Opening…</span>
+            </>
+          ) : (
+            <>
+              <span className="hidden sm:inline">Verify &amp; Claim</span>
+              <span className="sm:hidden">Claim</span>
+            </>
+          )}
         </button>
       </div>
 
+      {/* Dropdown chrome matches the webapp's SearchDropdown: rounded-2xl,
+          hairline ring, the standard card shadow. */}
       {showDropdown && (
-        <div className="absolute left-0 right-0 top-full z-30 mt-3 overflow-hidden rounded-2xl border border-[#3A5A40]/15 bg-white shadow-[0_24px_50px_rgba(15,23,42,0.12)]">
-          <ul className="max-h-80 overflow-auto py-2 text-left text-sm text-gray-700">
+        <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl bg-white shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70">
+          <ul className="max-h-80 overflow-auto py-2 text-left text-sm text-[#3b3b3b]">
             {loading ? (
-              <li className="px-4 py-3 text-sm text-gray-500">Searching...</li>
+              <li className="px-4 py-3 text-sm text-zinc-500">Searching…</li>
             ) : error ? (
-              <li className="px-4 py-3 text-sm text-red-600">
-                Search failed. Please try again.
+              <li className="px-4 py-3 text-sm text-[#b94a48]">
+                Couldn&apos;t load results — check your connection and try
+                again.
               </li>
             ) : cafes.length === 0 ? (
-              <li className="px-4 py-3 text-sm text-gray-500">
+              <li className="px-4 py-3 text-sm text-zinc-500">
                 No cafes found. Try a different name.
               </li>
             ) : (
@@ -118,26 +181,38 @@ export function CafeSearchInput() {
                 return (
                   <li
                     key={cafeId}
-                    className={`px-4 ${isLast ? "" : "border-b border-[#3A5A40]/10"}`}
+                    className={`px-2 ${isLast ? "" : "border-b border-zinc-100"}`}
                   >
                     <button
                       type="button"
                       onClick={() => handleSelect(cafeId)}
-                      className="flex w-full flex-col items-start gap-1 rounded-xl px-3 py-3 text-left transition-colors hover:bg-[#F7FAF7]"
+                      disabled={isNavigating}
+                      aria-busy={navigatingId === cafeId}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-[#e3ebe4]/50 disabled:cursor-default"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-900">
-                          {cafe.name?.trim() || "Unnamed cafe"}
-                        </span>
-                        {cafe.has_pending_claim && (
-                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-                            Claim pending
+                      <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-[#101514]">
+                            {cafe.name?.trim() || "Unnamed cafe"}
                           </span>
-                        )}
-                      </div>
-                      <span className="text-xs text-gray-500">
-                        {addressLine || "Address unavailable"}
+                          {cafe.has_pending_claim && (
+                            <span className="inline-flex items-center rounded-full bg-[#e3ebe4] px-2 py-0.5 text-[11px] font-medium text-[#3A5A40]">
+                              Claim pending
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-xs text-[#6b6b6b]">
+                          {addressLine || "Address unavailable"}
+                        </span>
                       </span>
+                      {/* Spinner sits on the row the user actually tapped, so
+                          the feedback is unambiguous when several are listed. */}
+                      {navigatingId === cafeId ? (
+                        <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-[#3A5A40]">
+                          <Spinner className="size-3.5" />
+                          Opening…
+                        </span>
+                      ) : null}
                     </button>
                   </li>
                 );

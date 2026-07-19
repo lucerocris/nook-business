@@ -15,6 +15,7 @@ import {
   SignOutIcon,
 } from "@phosphor-icons/react"
 import { createClient } from "@/lib/supabase/client"
+import { Spinner } from "@/components/ui/spinner"
 
 import {
   Sidebar,
@@ -52,10 +53,22 @@ export function OwnerSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
   const router = useRouter()
   const supabase = createClient()
 
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false)
+
   async function handleLogout() {
-    await supabase.auth.signOut()
-    router.push("/login")
-    router.refresh()
+    // signOut() is a network call and /login is server-rendered, so without a
+    // pending state the sidebar sat inert after the click and invited repeat
+    // presses.
+    if (isLoggingOut) return
+    setIsLoggingOut(true)
+    try {
+      await supabase.auth.signOut()
+      router.push("/login")
+      router.refresh()
+    } catch {
+      // Sign-out failed (offline, etc.) — let the owner try again.
+      setIsLoggingOut(false)
+    }
   }
 
   return (
@@ -106,9 +119,14 @@ export function OwnerSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Logout" onClick={handleLogout}>
-              <SignOutIcon />
-              <span>Logout</span>
+            <SidebarMenuButton
+              tooltip="Logout"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              aria-busy={isLoggingOut}
+            >
+              {isLoggingOut ? <Spinner className="size-4" /> : <SignOutIcon />}
+              <span>{isLoggingOut ? "Signing out…" : "Logout"}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

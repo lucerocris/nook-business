@@ -1225,9 +1225,10 @@ export function OwnerMenuClient({
             <Button
               variant="default"
               onClick={handleSaveItem}
-              disabled={isSaving || !itemForm.name.trim() || !itemForm.categoryId}
+              loading={isSaving}
+              disabled={!itemForm.name.trim() || !itemForm.categoryId}
             >
-              {isSaving ? "Saving..." : (isEditing ? "Save Changes" : "Add Item")}
+              {isEditing ? "Save Changes" : "Add Item"}
             </Button>
           </DialogFooter>
         </DialogContent>

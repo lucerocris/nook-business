@@ -440,11 +440,14 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
                   variant="outline"
                   size="sm"
                   className="mt-2"
-                  disabled={!correctionText.trim() || isSendingCorrection}
+                  disabled={!correctionText.trim()}
+                  loading={isSendingCorrection}
                   onClick={handleSendCorrection}
                 >
-                  <EnvelopeSimple className="size-4" />
-                  {isSendingCorrection ? "Sending..." : "Send Correction Request"}
+                  {isSendingCorrection ? null : (
+                    <EnvelopeSimple className="size-4" />
+                  )}
+                  Send Correction Request
                 </Button>
               )}
             </div>
@@ -481,10 +484,10 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
               variant="default"
               className="flex-1 sm:flex-none"
               onClick={handleSave}
-              disabled={isSaving}
+              loading={isSaving}
             >
               <FloppyDisk className="size-4" />
-              {isSaving ? "Saving..." : "Save Changes"}
+              Save Changes
             </Button>
           </div>
         </div>

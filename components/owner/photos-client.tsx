@@ -1,5 +1,6 @@
 "use client"
 
+import { Spinner } from "@/components/ui/spinner"
 import * as React from "react"
 import {
   CaretLeft,
@@ -297,9 +298,16 @@ export function OwnerPhotosClient({
                     disabled={isUploading}
                     asChild
                   >
+                    {/* asChild renders this span via Slot, so the Button's
+                        `loading` prop can't inject a spinner here — it's done
+                        inline instead. */}
                     <span>
-                      <UploadSimple size={16} />
-                      {isUploading ? "Uploading..." : "Replace hero photo"}
+                      {isUploading ? (
+                        <Spinner className="size-4" />
+                      ) : (
+                        <UploadSimple size={16} />
+                      )}
+                      {isUploading ? "Uploading…" : "Replace hero photo"}
                     </span>
                   </Button>
                   <input
@@ -457,10 +465,12 @@ export function OwnerPhotosClient({
                     disabled={isUploading}
                     asChild
                   >
+                    {/* asChild again — spinner inlined rather than via the
+                        Button's `loading` prop. */}
                     <span>
-                      <Plus size={20} />
+                      {isUploading ? <Spinner className="size-5" /> : <Plus size={20} />}
                       <span className="text-xs">
-                        {isUploading ? "Uploading..." : "Add photo"}
+                        {isUploading ? "Uploading…" : "Add photo"}
                       </span>
                     </span>
                   </Button>

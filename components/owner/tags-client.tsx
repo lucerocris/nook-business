@@ -307,10 +307,10 @@ export function OwnerTagsClient({
               variant="default"
               className="flex-1 sm:flex-none"
               onClick={handleSave}
-              disabled={isSaving}
+              loading={isSaving}
             >
-              <FloppyDisk className="size-4" />
-              {isSaving ? "Saving..." : "Save Changes"}
+              {isSaving ? null : <FloppyDisk className="size-4" />}
+              Save Changes
             </Button>
           </div>
         </div>

@@ -98,7 +98,7 @@ export async function signIn(
 
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -109,7 +109,27 @@ export async function signIn(
     };
   }
 
-  redirect(getSafeRedirect(redirectTo));
+  let destination = getSafeRedirect(redirectTo);
+
+  // Logging in from the landing page carries no ?redirect, so destination is
+  // "/" — and middleware then bounces owners on to /owner/dashboard. That
+  // second hop happens *during* the client-side transition the Server Action
+  // redirect started, which leaves the shared root layout rendering the state
+  // it had for the previous route (the marketing navbar stayed on screen over
+  // the dashboard until a manual reload). Resolve the real destination here so
+  // the navigation is a single hop.
+  if (destination === "/" && data.user) {
+    const { data: ownerRow } = await supabase
+      .from("cafe_owner_cafe")
+      .select("owner_id")
+      .eq("owner_id", data.user.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (ownerRow) destination = "/owner/dashboard";
+  }
+
+  redirect(destination);
 }
 
 // Confirms a new account with the 6-digit code from the confirmation email.

@@ -29,10 +29,11 @@ export function FunnelShell({
         className="hero-glow pointer-events-none absolute inset-x-0 top-0 -z-10 h-[480px]"
       />
 
-      {/* Main Content Area */}
-      <div className={cn("relative z-10 mx-auto w-full max-w-5xl", contentClassName)}>
+      {/* The funnel's main landmark. Every page built on FunnelShell gets it
+          from here, so individual pages must not render their own <main>. */}
+      <main className={cn("relative z-10 mx-auto w-full max-w-5xl", contentClassName)}>
         {children}
-      </div>
+      </main>
     </section>
   );
 }

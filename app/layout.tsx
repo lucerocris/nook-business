@@ -3,6 +3,7 @@ import './styles/global.css'
 
 import { NavbarGate } from './components/NavbarGate'
 import { SupabaseProvider } from '@/lib/supabase/context'
+import { Toaster } from '@/components/ui/sonner'
 import { createClient } from '@/lib/supabase/server'
 
 import { Poppins } from 'next/font/google'
@@ -70,7 +71,14 @@ export default async function RootLayout({
       <body>
         <SupabaseProvider>
           <NavbarGate initialUser={user} />
-          <main>{children}</main>
+          {/* Not a <main>: the owner shell (SidebarInset) and the funnel pages
+              render their own, which nested landmarks and is invalid HTML.
+              Each route now supplies exactly one. */}
+          <div>{children}</div>
+          {/* Every toast.* call in the app was a no-op until this was mounted:
+              the Toaster component existed but was never rendered, so owners
+              got no confirmation or error feedback on any mutation. */}
+          <Toaster position="top-center" richColors closeButton />
         </SupabaseProvider>
       </body>
     </html>

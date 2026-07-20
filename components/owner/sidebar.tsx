@@ -26,7 +26,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
+
+// The shared menu button is sized for a desktop pointer (h-8 / 12px text, 16px
+// icons). On mobile the sidebar is a full drawer with plenty of room, so size
+// rows for a fingertip and drop back to the compact desktop sizing at md.
+const MOBILE_ROW =
+  "h-11 text-sm [&_svg]:size-5 md:h-8 md:text-xs md:[&_svg]:size-4"
 
 type NavItem = {
   title: string
@@ -52,8 +59,16 @@ export function OwnerSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const { isMobile, setOpenMobile } = useSidebar()
 
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
+
+  // On mobile the sidebar is an overlay drawer. Navigating is a client-side
+  // transition that doesn't unmount it, so without this the drawer stayed open
+  // on top of the page the owner just navigated to.
+  function closeOnMobile() {
+    if (isMobile) setOpenMobile(false)
+  }
 
   async function handleLogout() {
     // signOut() is a network call and /login is server-rendered, so without a
@@ -63,6 +78,7 @@ export function OwnerSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
     setIsLoggingOut(true)
     try {
       await supabase.auth.signOut()
+      closeOnMobile()
       router.push("/login")
       router.refresh()
     } catch {
@@ -77,7 +93,7 @@ export function OwnerSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/owner/dashboard">
+              <Link href="/owner/dashboard" onClick={closeOnMobile}>
                 <Image
                   src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/app_icon.png"
                   alt="Nook"
@@ -103,8 +119,13 @@ export function OwnerSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
                 pathname === item.url || pathname.startsWith(item.url + "/")
               return (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
-                    <Link href={item.url}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    tooltip={item.title}
+                    className={MOBILE_ROW}
+                  >
+                    <Link href={item.url} onClick={closeOnMobile}>
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
@@ -124,6 +145,7 @@ export function OwnerSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
               onClick={handleLogout}
               disabled={isLoggingOut}
               aria-busy={isLoggingOut}
+              className={MOBILE_ROW}
             >
               {isLoggingOut ? <Spinner className="size-4" /> : <SignOutIcon />}
               <span>{isLoggingOut ? "Signing out…" : "Logout"}</span>

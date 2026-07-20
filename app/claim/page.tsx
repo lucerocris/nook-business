@@ -12,7 +12,7 @@ export default function ClaimSearchPage() {
 
   return (
     <FunnelShell contentClassName="max-w-4xl">
-      <main className="mx-auto w-full max-w-3xl rounded-2xl bg-white px-5 py-8 shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70 sm:px-8 sm:py-10">
+      <div className="mx-auto w-full max-w-3xl rounded-2xl bg-white px-5 py-8 shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70 sm:px-8 sm:py-10">
         <div className="w-full text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40]">
             Start claim flow
@@ -40,7 +40,7 @@ export default function ClaimSearchPage() {
             Continue to verification
           </p>
         </div>
-      </main>
+      </div>
     </FunnelShell>
   )
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { Spinner } from "@/components/ui/spinner"
 import {
   ForkKnife,
   ImageSquare,
@@ -333,6 +334,7 @@ export function OwnerMenuClient({
   const [categoryList, setCategoryList] = React.useState<Category[]>(categories)
   const [categoryName, setCategoryName] = React.useState("")
   const [categorySaving, setCategorySaving] = React.useState(false)
+  const [categoryDeleting, setCategoryDeleting] = React.useState(false)
   const [editingCategory, setEditingCategory] =
     React.useState<{ id: string; name: string } | null>(null)
   const [deleteCategoryId, setDeleteCategoryId] = React.useState<string | null>(null)
@@ -396,16 +398,23 @@ export function OwnerMenuClient({
   }
 
   async function handleDeleteCategory() {
-    if (!deleteCategoryId) return
-    const res = await deleteCategoryAction(deleteCategoryId)
-    if (!res.ok) {
-      toast.error(res.error)
+    if (!deleteCategoryId || categoryDeleting) return
+    // Had no pending state, so a slow delete looked unresponsive and the
+    // confirm button stayed live for repeat taps.
+    setCategoryDeleting(true)
+    try {
+      const res = await deleteCategoryAction(deleteCategoryId)
+      if (!res.ok) {
+        toast.error(res.error)
+        setDeleteCategoryId(null)
+        return
+      }
+      setCategoryList((prev) => prev.filter((c) => c.id !== deleteCategoryId))
+      toast.success("Category deleted")
       setDeleteCategoryId(null)
-      return
+    } finally {
+      setCategoryDeleting(false)
     }
-    setCategoryList((prev) => prev.filter((c) => c.id !== deleteCategoryId))
-    toast.success("Category deleted")
-    setDeleteCategoryId(null)
   }
 
   const highlightCount = items.filter((i) => i.is_highlight).length
@@ -672,6 +681,8 @@ export function OwnerMenuClient({
   async function handleItemImageUpload(id: string, file: File) {
     setUploadingItemId(id)
     setUploadError("")
+    // Compression runs before the request, so this covers the whole wait.
+    const toastId = toast.loading("Uploading item image…")
     try {
       // compressImage must stay inside the try: it rejects on HEIC, corrupt,
       // and zero-byte files, and outside the try that surfaced as an unhandled
@@ -683,11 +694,11 @@ export function OwnerMenuClient({
       setItems((prev) =>
         prev.map((i) => (i.id === id ? { ...i, image_url: url } : i))
       )
-      toast.success("Item image uploaded")
+      toast.success("Item image uploaded", { id: toastId })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Upload failed"
       setUploadError(msg)
-      toast.error(msg)
+      toast.error(msg, { id: toastId })
       setTimeout(() => setUploadError(""), 4000)
     } finally {
       setUploadingItemId(null)
@@ -696,16 +707,17 @@ export function OwnerMenuClient({
 
   async function handleItemImageDelete(id: string, imageUrl: string) {
     setUploadingItemId(id)
+    const toastId = toast.loading("Removing item image…")
     try {
       await deleteMenuItemImageAction(id, imageUrl, cafeId)
       setItems((prev) =>
         prev.map((i) => (i.id === id ? { ...i, image_url: null } : i))
       )
-      toast.success("Item image removed")
+      toast.success("Item image removed", { id: toastId })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Delete failed"
       setUploadError(msg)
-      toast.error(msg)
+      toast.error(msg, { id: toastId })
       setTimeout(() => setUploadError(""), 4000)
     } finally {
       setUploadingItemId(null)
@@ -1303,7 +1315,9 @@ export function OwnerMenuClient({
       {/* Delete Category Dialog */}
       <AlertDialog
         open={deleteCategoryId !== null}
-        onOpenChange={() => setDeleteCategoryId(null)}
+        onOpenChange={() => {
+          if (!categoryDeleting) setDeleteCategoryId(null)
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -1314,12 +1328,21 @@ export function OwnerMenuClient({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={categoryDeleting}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteCategory}
+              onClick={(event) => {
+                // Keep the dialog mounted while the delete is in flight so the
+                // pending state is visible instead of flashing closed.
+                event.preventDefault()
+                void handleDeleteCategory()
+              }}
+              disabled={categoryDeleting}
               className="bg-destructive text-white hover:bg-destructive/90"
             >
-              Delete
+              {categoryDeleting && <Spinner data-icon="inline-start" />}
+              {categoryDeleting ? "Deleting…" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -137,6 +137,17 @@ export function Navbar({ initialUser }: NavbarProps) {
                     }`}
                     role="menu"
                   >
+                    {/* A signed-in user with a pending claim has no owner row
+                        yet, so /owner/* redirects them away. Without this link
+                        there was no way back to their claim. */}
+                    <Link
+                      href="/claim/status"
+                      className="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      role="menuitem"
+                    >
+                      Claim status
+                    </Link>
                     <button
                       type="button"
                       className="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
@@ -244,13 +255,22 @@ export function Navbar({ initialUser }: NavbarProps) {
         <div className="flex flex-col gap-8 w-full p-6 pt-28 h-full">
           <div className="flex flex-col gap-4">
             {user ? (
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="w-full inline-flex items-center justify-center px-6 py-3 border border-gray-200 text-gray-700 bg-white rounded-md text-lg font-medium"
-              >
-                Log out
-              </button>
+              <>
+                <Link
+                  href="/claim/status"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-full inline-flex items-center justify-center px-6 py-3 border border-gray-200 text-gray-700 bg-white rounded-md text-lg font-medium"
+                >
+                  Claim status
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="w-full inline-flex items-center justify-center px-6 py-3 border border-gray-200 text-gray-700 bg-white rounded-md text-lg font-medium"
+                >
+                  Log out
+                </button>
+              </>
             ) : (
               <Link
                 href="/login"

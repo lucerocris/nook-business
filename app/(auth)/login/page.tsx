@@ -8,7 +8,17 @@ import { getSafeRedirect } from "@/lib/safe-redirect";
 type LoginPageProps = {
   searchParams?: Promise<{
     redirect?: string;
+    error?: string;
   }>;
+};
+
+// app/auth/confirm/route.ts redirects here with ?error=confirmation_failed when
+// an email confirmation link is expired or already used. Nothing read the param,
+// so the owner landed on a blank login form, tried their password, and got
+// "Invalid email or password" because the account was never confirmed.
+const ERROR_MESSAGES: Record<string, string> = {
+  confirmation_failed:
+    "That confirmation link has expired or was already used. Log in below and we'll send you a new one.",
 };
 
 export const metadata: Metadata = { title: "Log in" }
@@ -22,8 +32,10 @@ export default async function LoginPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { redirect: redirectParam } = (await searchParams) ?? {};
+  const { redirect: redirectParam, error: errorParam } =
+    (await searchParams) ?? {};
   const redirectTo = getSafeRedirect(redirectParam);
+  const errorMessage = errorParam ? ERROR_MESSAGES[errorParam] : undefined;
 
   if (user) {
     redirect(redirectTo);
@@ -55,6 +67,15 @@ export default async function LoginPage({
         <p className="mx-auto mt-2 max-w-sm text-center text-sm text-[#3b3b3b] sm:mt-3">
           Log in to manage your listings and respond to claims.
         </p>
+
+        {errorMessage ? (
+          <p
+            role="alert"
+            className="mt-5 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          >
+            {errorMessage}
+          </p>
+        ) : null}
 
         <LoginForm redirectTo={redirectTo} />
       </div>

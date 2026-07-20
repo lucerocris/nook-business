@@ -503,12 +503,16 @@ export function OwnerMenuClient({
     if (!deleteItem) return
     const id = deleteItem
     setDeleteItem(null)
+    const snapshot = items
     setItems((prev) => prev.filter((i) => i.id !== id))
     try {
       await deleteMenuItemAction(id)
       toast.success("Menu item deleted")
     } catch {
-      // Revert on error — server will revalidate on next load
+      // Restore the optimistic removal. Without this the item stayed gone
+      // locally while still live in the DB and on the public listing, so a
+      // failed delete looked like a successful one.
+      setItems(snapshot)
       toast.error("Failed to delete menu item")
     }
   }
@@ -666,12 +670,15 @@ export function OwnerMenuClient({
   }
 
   async function handleItemImageUpload(id: string, file: File) {
-    const compressed = await compressImage(file)
-    const formData = new FormData()
-    formData.append("file", compressed)
     setUploadingItemId(id)
     setUploadError("")
     try {
+      // compressImage must stay inside the try: it rejects on HEIC, corrupt,
+      // and zero-byte files, and outside the try that surfaced as an unhandled
+      // rejection with no toast and no spinner reset.
+      const compressed = await compressImage(file)
+      const formData = new FormData()
+      formData.append("file", compressed)
       const { url } = await uploadMenuItemImageAction(formData, id, cafeId)
       setItems((prev) =>
         prev.map((i) => (i.id === id ? { ...i, image_url: url } : i))

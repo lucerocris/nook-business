@@ -5,7 +5,12 @@ import HowItWorks from "./components/howItWorks";
 import CallToAction from "./components/CallToAction";
 import Footer from "./components/Footer";
 
-export const metadata: Metadata = { title: "Home" }
+// No title override: the template would render this as "Home - Nook" in search
+// results. Falling through to the layout default gives "Nook for Business".
+export const metadata: Metadata = {
+  description:
+    "Claim your cafe on Nook and manage your listing — photos, menu, hours, and reviews.",
+}
 
 export default function Home() {
   return (

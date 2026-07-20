@@ -324,7 +324,9 @@ export function OwnerDashboardClient({
                 <div className="flex flex-col gap-0.5">
                   <CardTitle>Recent reviews</CardTitle>
                   <CardDescription>
-                    Last {recentReviews.length} reviews
+                    {recentReviews.length === 0
+                      ? "No reviews yet"
+                      : `Last ${recentReviews.length} ${recentReviews.length === 1 ? "review" : "reviews"}`}
                   </CardDescription>
                 </div>
                 <Button variant="ghost" size="sm" asChild>

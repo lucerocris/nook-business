@@ -14,7 +14,11 @@ const poppins = Poppins({
   variable: '--font-sans',
 })
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://business.nookph.app'
+
 export const metadata = {
+  // metadataBase is required for OG/Twitter image URLs to resolve absolutely.
+  metadataBase: new URL(siteUrl),
   description:
     'Nook for Business — claim and manage your cafe listing on Nook.',
   title: {
@@ -25,6 +29,22 @@ export const metadata = {
     icon: '/nookGlasses.svg',
     shortcut: '/nookGlasses.svg',
     apple: '/nookGlasses.svg',
+  },
+  // Owners are sent here from Instagram DMs, so the link preview is the first
+  // thing most of them see. Without these it unfurled as a bare URL.
+  openGraph: {
+    type: 'website',
+    siteName: 'Nook for Business',
+    title: 'Nook for Business',
+    description:
+      'Claim your cafe on Nook and manage your listing — photos, menu, hours, and reviews.',
+    url: siteUrl,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Nook for Business',
+    description:
+      'Claim your cafe on Nook and manage your listing — photos, menu, hours, and reviews.',
   },
 }
 

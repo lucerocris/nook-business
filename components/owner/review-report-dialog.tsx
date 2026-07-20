@@ -298,6 +298,65 @@ function ReviewReportForm({
             </FieldDescription>
           </div>
         </Field>
+
+        {/* The pick/remove/preview logic and the upload action already existed;
+            there was simply no input rendered, so reports could never carry
+            evidence. */}
+        <Field>
+          <FieldLabel htmlFor="report-evidence">Screenshots</FieldLabel>
+          <FieldDescription>
+            Optional — attach up to {REPORT_EVIDENCE_MAX_FILES} images (JPG, PNG,
+            or WEBP) that support your report.
+          </FieldDescription>
+
+          <input
+            ref={fileInputRef}
+            id="report-evidence"
+            type="file"
+            accept={EVIDENCE_ALLOWED_TYPES.join(",")}
+            multiple
+            className="sr-only"
+            onChange={handleEvidencePick}
+            disabled={isBusy || remainingSlots <= 0}
+          />
+
+          <div className="flex flex-wrap items-center gap-3">
+            {evidencePreviews.map((preview, index) => (
+              <div
+                key={preview}
+                className="relative h-20 w-20 overflow-hidden rounded-md border"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={preview}
+                  alt={`Evidence ${index + 1}`}
+                  className="h-full w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleEvidenceRemove(index)}
+                  disabled={isBusy}
+                  aria-label={`Remove evidence ${index + 1}`}
+                  className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80 disabled:opacity-50"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+
+            {remainingSlots > 0 ? (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isBusy}
+                className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-md border border-dashed text-muted-foreground transition hover:bg-muted disabled:opacity-50"
+              >
+                <Plus size={18} />
+                <span className="text-xs">Add</span>
+              </button>
+            ) : null}
+          </div>
+        </Field>
       </FieldGroup>
 
       <DialogFooter>

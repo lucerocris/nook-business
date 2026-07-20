@@ -1,13 +1,29 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { timingSafeEqual } from 'node:crypto';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Constant-time comparison so the bearer check doesn't short-circuit on the
+// first differing byte.
+function timingSafeEqualStr(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
 
-const POSTHOG_PROJECT_ID = process.env.POSTHOG_PROJECT_ID;
-const POSTHOG_PERSONAL_API_KEY = process.env.POSTHOG_PERSONAL_API_KEY;
+// Built lazily. At module scope this threw "supabaseKey is required" during
+// `next build` (and at import time in any environment missing the key), which
+// fails the route before the try/catch below can report anything.
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    throw new Error(
+      'Analytics sync is not configured: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required'
+    );
+  }
+  return createClient(url, key);
+}
 
 export async function GET(request: Request) {
   // ------------------------------------------------------------------
@@ -17,11 +33,24 @@ export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
   // Fail closed if the secret isn't configured — otherwise the check becomes
   // `Bearer undefined`, which anyone could send.
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || !authHeader || !timingSafeEqualStr(authHeader, `Bearer ${cronSecret}`)) {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  try {                                                     
+  try {
+    // Validate PostHog config up front. Without this the project id fell
+    // through as `undefined` into the request URL, PostHog 404s, and the cron
+    // fails every night indistinguishably from "this cafe had no traffic".
+    const POSTHOG_PROJECT_ID = process.env.POSTHOG_PROJECT_ID;
+    const POSTHOG_PERSONAL_API_KEY = process.env.POSTHOG_PERSONAL_API_KEY;
+    if (!POSTHOG_PROJECT_ID || !POSTHOG_PERSONAL_API_KEY) {
+      throw new Error(
+        'Analytics sync is not configured: POSTHOG_PROJECT_ID and POSTHOG_PERSONAL_API_KEY are required'
+      );
+    }
+
+    const supabaseAdmin = getSupabaseAdmin();
+
     // ------------------------------------------------------------------
     // 2. FETCH FROM POSTHOG
     // ------------------------------------------------------------------

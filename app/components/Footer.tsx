@@ -22,13 +22,26 @@ export default function Footer() {
         </p>
 
         {/* Right Side: Links */}
+        {/* These live in the separate nook-privacy site, not in this app —
+            they were relative hrefs pointing at routes that don't exist here,
+            so both 404'd on every page. */}
         <nav className="flex items-center justify-center md:justify-end flex-wrap gap-6 text-sm text-white/60">
-          <Link href="/privacy" className="hover:text-white transition-colors">
+          <a
+            href="https://privacy.nookph.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-white transition-colors"
+          >
             Privacy Policy
-          </Link>
-          <Link href="/support" className="hover:text-white transition-colors">
+          </a>
+          <a
+            href="https://privacy.nookph.app/support.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-white transition-colors"
+          >
             Merchant Support
-          </Link>
+          </a>
         </nav>
       </div>
     </footer>

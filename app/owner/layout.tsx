@@ -42,8 +42,14 @@ export default function OwnerLayout({
       <SidebarProvider>
         <OwnerSidebar />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
+          {/* Sticky on mobile: the drawer trigger is the only way back to
+              navigation there, and on long pages (menu, reviews) it scrolled
+              out of reach and forced a trip back to the top. */}
+          <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 md:static">
+            {/* Sized to the 44px touch minimum on mobile; the shared trigger
+                defaults to a 32px pointer-sized target. */}
+            <SidebarTrigger className="-ml-1 size-11 md:size-8" />
+            <span className="text-sm font-semibold md:hidden">Nook</span>
           </header>
           {/* min-w-0 + overflow-x-hidden: without these, any over-wide
               descendant widens the document and scrolls the whole page

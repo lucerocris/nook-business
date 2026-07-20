@@ -71,7 +71,10 @@ export default async function RootLayout({
       <body>
         <SupabaseProvider>
           <NavbarGate initialUser={user} />
-          <main>{children}</main>
+          {/* Not a <main>: the owner shell (SidebarInset) and the funnel pages
+              render their own, which nested landmarks and is invalid HTML.
+              Each route now supplies exactly one. */}
+          <div>{children}</div>
           {/* Every toast.* call in the app was a no-op until this was mounted:
               the Toaster component existed but was never rendered, so owners
               got no confirmation or error feedback on any mutation. */}

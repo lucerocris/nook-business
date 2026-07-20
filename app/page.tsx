@@ -15,10 +15,15 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <>
-      <Hero />
-      <ValueProposition />
-      <HowItWorks />
-      <CallToAction />
+      {/* The root layout no longer wraps children in <main>, so the landing
+          page supplies its own. Footer stays outside it — it's a separate
+          contentinfo landmark, not page content. */}
+      <main>
+        <Hero />
+        <ValueProposition />
+        <HowItWorks />
+        <CallToAction />
+      </main>
       <Footer />
     </>
   );

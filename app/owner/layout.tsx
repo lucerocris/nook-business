@@ -23,6 +23,18 @@ export default function OwnerLayout({
 }) {
   return (
     <TooltipProvider>
+      {/* The marketing navbar is rendered by the root layout and hidden by
+          NavbarGate based on usePathname(). Logging in ends in a Server Action
+          redirect, which is a client-side transition: the root layout is shared
+          with /login so it never re-renders, and the navbar could stay on screen
+          until a manual reload. It is position:fixed at z-index 1001, so it
+          floats over the dashboard.
+
+          Scoping the rule to this layout makes the owner shell authoritative —
+          while any /owner route is mounted the navbar is hidden, regardless of
+          how the route was reached, and it comes back automatically on exit. */}
+      <style>{`.navbar, .mobile-menu-wrapper { display: none !important; }`}</style>
+
       {/* Upgrades a pre-approval JWT to one carrying the cafe_owner role, so
           the dashboard works without a manual reload and saves aren't silently
           rejected by RLS. Renders nothing. */}

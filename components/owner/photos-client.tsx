@@ -74,6 +74,7 @@ export function OwnerPhotosClient({
   const [currentPhotoUrls, setCurrentPhotoUrls] = React.useState<string[]>(photoUrls)
   const [deleteConfirm, setDeleteConfirm] = React.useState<number | null>(null)
   const [isUploading, setIsUploading] = React.useState(false)
+  const [isDeleting, setIsDeleting] = React.useState(false)
   const [isReordering, setIsReordering] = React.useState(false)
   const [uploadError, setUploadError] = React.useState("")
   const [draggingIndex, setDraggingIndex] = React.useState<number | null>(null)
@@ -113,7 +114,7 @@ export function OwnerPhotosClient({
 
   async function movePhoto(index: number, direction: -1 | 1) {
     const target = index + direction
-    if (target < 0 || target >= allPhotos.length || isUploading || isReordering) {
+    if (target < 0 || target >= allPhotos.length || isUploading || isDeleting || isReordering) {
       return
     }
 
@@ -125,7 +126,7 @@ export function OwnerPhotosClient({
   }
 
   async function setAsHero(url: string) {
-    if (isUploading || isReordering || url === allPhotos[0]) return
+    if (isUploading || isDeleting || isReordering || url === allPhotos[0]) return
     const ordered = [url, ...allPhotos.filter((photoUrl) => photoUrl !== url)]
     const saved = await persistPhotoOrder(ordered)
     if (saved) toast.success("Hero photo updated")
@@ -145,7 +146,7 @@ export function OwnerPhotosClient({
       return
     }
 
-    if (isUploading || isReordering) {
+    if (isUploading || isDeleting || isReordering) {
       setDraggingIndex(null)
       return
     }
@@ -167,6 +168,12 @@ export function OwnerPhotosClient({
 
     setIsUploading(true)
     setUploadError("")
+    // Compressing a large photo on a mid-range phone takes seconds before the
+    // request even starts, so hold a loading toast across the whole operation
+    // and resolve it in place.
+    const toastId = toast.loading(
+      isHero ? "Uploading hero photo…" : "Uploading photo…"
+    )
     try {
       const compressed = await compressImage(file)
       const formData = new FormData()
@@ -175,16 +182,16 @@ export function OwnerPhotosClient({
       if (isHero) {
         const { url } = await uploadCafeHeroAction(formData, cafeId)
         setCurrentHeroUrl(url)
-        toast.success("Hero photo uploaded")
+        toast.success("Hero photo uploaded", { id: toastId })
       } else {
         const { url } = await uploadCafePhotoAction(formData, cafeId)
         setCurrentPhotoUrls((prev) => [...prev, url])
-        toast.success("Photo uploaded")
+        toast.success("Photo uploaded", { id: toastId })
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Upload failed"
       setUploadError(msg)
-      toast.error(msg)
+      toast.error(msg, { id: toastId })
       setTimeout(() => setUploadError(""), 4000)
     } finally {
       setIsUploading(false)
@@ -197,7 +204,10 @@ export function OwnerPhotosClient({
     const photo  = allPhotos[deleteConfirm]
     const isHero = photo === currentHeroUrl
     setDeleteConfirm(null)
-    setIsUploading(true)
+    // Tracked separately from isUploading: sharing that flag made every delete
+    // label its button "Uploading…".
+    setIsDeleting(true)
+    const toastId = toast.loading("Deleting photo…")
     try {
       await deleteCafePhotoAction(photo, isHero, cafeId)
       if (isHero) {
@@ -207,14 +217,14 @@ export function OwnerPhotosClient({
       } else {
         setCurrentPhotoUrls((prev) => prev.filter((u) => u !== photo))
       }
-      toast.success("Photo deleted")
+      toast.success("Photo deleted", { id: toastId })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Delete failed"
       setUploadError(msg)
-      toast.error(msg)
+      toast.error(msg, { id: toastId })
       setTimeout(() => setUploadError(""), 4000)
     } finally {
-      setIsUploading(false)
+      setIsDeleting(false)
     }
   }
 
@@ -295,7 +305,7 @@ export function OwnerPhotosClient({
                     variant="outline"
                     size="sm"
                     className="gap-2"
-                    disabled={isUploading}
+                    disabled={isUploading || isDeleting}
                     asChild
                   >
                     {/* asChild renders this span via Slot, so the Button's
@@ -354,7 +364,7 @@ export function OwnerPhotosClient({
                 <div
                   key={url}
                   className="relative group"
-                  draggable={!isUploading && !isReordering}
+                  draggable={!isUploading && !isDeleting && !isReordering}
                   onDragStart={() => handleDragStart(i)}
                   onDragEnd={handleDragEnd}
                   onDragOver={(e) => e.preventDefault()}
@@ -388,7 +398,7 @@ export function OwnerPhotosClient({
                         size="icon"
                         className="size-7"
                         onClick={() => void setAsHero(url)}
-                        disabled={isUploading || isReordering}
+                        disabled={isUploading || isDeleting || isReordering}
                         aria-label={`Set photo ${i + 1} as hero`}
                       >
                         <Crown size={12} />
@@ -400,7 +410,7 @@ export function OwnerPhotosClient({
                       size="icon"
                       className="size-7 text-destructive"
                       onClick={() => setDeleteConfirm(i)}
-                      disabled={isUploading || isReordering}
+                      disabled={isUploading || isDeleting || isReordering}
                       aria-label={`Delete photo ${i + 1}`}
                     >
                       <Trash size={12} />
@@ -413,7 +423,7 @@ export function OwnerPhotosClient({
                       size="icon"
                       className="size-7"
                       onClick={() => void movePhoto(i, -1)}
-                      disabled={i === 0 || isUploading || isReordering}
+                      disabled={i === 0 || isUploading || isDeleting || isReordering}
                       aria-label={`Move photo ${i + 1} left`}
                     >
                       <CaretLeft size={14} />
@@ -424,7 +434,7 @@ export function OwnerPhotosClient({
                       size="icon"
                       className="size-7"
                       onClick={() => void movePhoto(i, 1)}
-                      disabled={i === allPhotos.length - 1 || isUploading || isReordering}
+                      disabled={i === allPhotos.length - 1 || isUploading || isDeleting || isReordering}
                       aria-label={`Move photo ${i + 1} right`}
                     >
                       <CaretRight size={14} />
@@ -437,7 +447,7 @@ export function OwnerPhotosClient({
                         size="sm"
                         className="text-xs h-7"
                         onClick={() => void setAsHero(url)}
-                        disabled={isUploading || isReordering}
+                        disabled={isUploading || isDeleting || isReordering}
                       >
                         <Crown size={12} />
                         Set hero
@@ -448,7 +458,7 @@ export function OwnerPhotosClient({
                       size="sm"
                       className="text-xs h-7 text-destructive hover:text-destructive"
                       onClick={() => setDeleteConfirm(i)}
-                      disabled={isUploading || isReordering}
+                      disabled={isUploading || isDeleting || isReordering}
                     >
                       <Trash size={12} />
                       Delete
@@ -462,7 +472,7 @@ export function OwnerPhotosClient({
                   <Button
                     variant="outline"
                     className="aspect-square h-full w-full border-dashed flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors rounded-lg"
-                    disabled={isUploading}
+                    disabled={isUploading || isDeleting}
                     asChild
                   >
                     {/* asChild again — spinner inlined rather than via the

@@ -124,8 +124,9 @@ export function OwnerTagsClient({
     try {
       const result = await updateTagsAction(selectedTags, featuredTags)
       if (!result.ok) {
+        // The AlertDialog below already surfaces this with full context; a
+        // toast on top of it would double-report the same failure.
         setSaveError(result.error)
-        toast.error(result.error)
         return
       }
       setIsDirty(false)
@@ -133,7 +134,6 @@ export function OwnerTagsClient({
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to save tags"
       setSaveError(message)
-      toast.error(message)
     } finally {
       setIsSaving(false)
     }

@@ -186,12 +186,20 @@ function ReviewReportForm({
     }
     setErrors({})
     setIsSubmitting(true)
+    // Evidence is compressed and uploaded one file at a time before the report
+    // is submitted, so this can run for a while on a slow connection.
+    const toastId = toast.loading(
+      evidenceFiles.length > 0 ? "Uploading evidence…" : "Submitting report…"
+    )
     let evidenceUrls: string[] = []
     try {
       evidenceUrls = await uploadEvidence(reviewId)
+      if (evidenceFiles.length > 0) {
+        toast.loading("Submitting report…", { id: toastId })
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Image upload failed."
-      toast.error(message)
+      toast.error(message, { id: toastId })
       setIsSubmitting(false)
       return
     }
@@ -208,7 +216,8 @@ function ReviewReportForm({
       if (result.success) {
         onSubmitted(result.reviewId)
         toast.success(
-          "Report submitted successfully. Our moderation team will review the report."
+          "Report submitted successfully. Our moderation team will review the report.",
+          { id: toastId }
         )
         onClose()
         return
@@ -216,16 +225,16 @@ function ReviewReportForm({
 
       if (result.error === "ALREADY_REPORTED") {
         onSubmitted(reviewId)
-        toast.success(getErrorMessage(result))
+        toast.success(getErrorMessage(result), { id: toastId })
         onClose()
         return
       }
 
-      toast.error(getErrorMessage(result))
+      toast.error(getErrorMessage(result), { id: toastId })
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Couldn't submit the report."
-      toast.error(message)
+      toast.error(message, { id: toastId })
     } finally {
       setIsSubmitting(false)
     }

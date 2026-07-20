@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: "No cafe linked" };
 
@@ -20,14 +21,22 @@ export default function NoCafePage() {
         recently claimed a cafe, it may still be under review. Otherwise, reach
         out and we&apos;ll get you set up.
       </p>
-      <a
-        href="https://instagram.com/nook_cafefinder"
-        target="_blank"
-        rel="noreferrer"
-        className="mt-6 inline-flex items-center justify-center rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-      >
-        Message the Nook team
-      </a>
+      <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row">
+        <Link
+          href="/claim/status"
+          className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+        >
+          Check your claim status
+        </Link>
+        <a
+          href="https://instagram.com/nook_cafefinder"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex min-h-11 items-center justify-center rounded-md border border-border px-5 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted"
+        >
+          Message the Nook team
+        </a>
+      </div>
     </div>
   );
 }

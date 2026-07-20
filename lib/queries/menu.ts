@@ -74,6 +74,22 @@ async function assertMenuItemBelongsToCafe(
   if (!data) throw new Error("Not authorized for this menu item")
 }
 
+// Accepts only images hosted on our own Spaces bucket. Historically rows were
+// written with both the CDN hostname and the bare origin hostname
+// (…sgp1.cdn.digitaloceanspaces.com and …sgp1.digitaloceanspaces.com), so both
+// are allowed; anything else is treated as untrusted.
+function isOwnedImageUrl(url: string): boolean {
+  const cdn = process.env.DO_SPACES_CDN_URL
+  if (!cdn) return false
+  try {
+    const host = new URL(url).host
+    const cdnHost = new URL(cdn).host
+    return host === cdnHost || host === cdnHost.replace(".cdn.", ".")
+  } catch {
+    return false
+  }
+}
+
 export async function upsertMenuItem(item: {
   id?: string
   cafe_id: string
@@ -115,9 +131,36 @@ export async function upsertMenuItem(item: {
     }
   }
 
+  // Build the payload explicitly rather than spreading the caller's object.
+  // `upsert(item)` wrote through every key it was handed, so a non-UI caller
+  // could set any writable column on the row.
+  const payload: Record<string, unknown> = {
+    cafe_id:      item.cafe_id,
+    name:         item.name.trim(),
+    description:  item.description ?? null,
+    price:        item.price,
+    category_id:  item.category_id,
+    is_highlight: item.is_highlight,
+  }
+  if (item.id) payload.id = item.id
+
+  // image_url is only ever produced by uploadMenuItemImageAction. Accepting it
+  // verbatim let an arbitrary external image be attached to a public listing,
+  // so restrict it to our own Spaces bucket. Note both the CDN host and the
+  // origin host are in use on existing rows, so accept either.
+  if (item.image_url !== undefined) {
+    if (item.image_url === null) {
+      payload.image_url = null
+    } else if (isOwnedImageUrl(item.image_url)) {
+      payload.image_url = item.image_url
+    } else {
+      throw new Error("Invalid menu item image")
+    }
+  }
+
   const { data, error } = await supabase
     .from("menu_items")
-    .upsert(item)
+    .upsert(payload)
     .select()
     .single()
 

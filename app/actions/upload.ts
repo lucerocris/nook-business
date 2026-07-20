@@ -65,7 +65,13 @@ export async function uploadCafeHeroAction(
 
   const buffer = Buffer.from(await file.arrayBuffer())
   const ext    = file.type.split("/")[1]
-  const key    = `nook/cafes/${targetCafeId}/hero.${ext}`
+  // Timestamped like the gallery path. A fixed `hero.{ext}` key meant every
+  // replacement wrote the same object and produced the same URL, so the CDN
+  // (and the browser) kept serving the previous image — replacing a hero
+  // looked like it silently did nothing.
+  const key    = `nook/cafes/${targetCafeId}/hero-${Date.now()}.${ext}`
+
+  const previousHero = cafe?.featured_image_url as string | null
 
   const url = await uploadFile({ key, buffer, contentType: file.type })
 
@@ -75,6 +81,16 @@ export async function uploadCafeHeroAction(
     .eq("id", targetCafeId)
 
   if (error) throw error
+
+  // Best-effort cleanup of the object we just replaced, after the row points
+  // at the new URL. A failure here only leaves an orphan, never a broken card.
+  if (previousHero && previousHero !== url) {
+    try {
+      await deleteFile(getKeyFromUrl(previousHero))
+    } catch {
+      // ignore — orphaned object, not worth failing the upload over
+    }
+  }
 
   revalidatePath(`/admin/cafes/${targetCafeId}/edit`)
   revalidatePath("/owner/photos")
@@ -218,10 +234,31 @@ export async function reorderCafePhotosAction(
   }
 
   const deduped = Array.from(new Set(orderedPhotoUrls.filter(Boolean)))
+
+  const supabase = createAdminClient()
+
+  // Reordering may only permute URLs this cafe already owns. Without this the
+  // client could write any URL into the listing — and, because
+  // deleteCafePhotoAction validates against whatever is currently stored, a
+  // planted URL would then pass that check and let an owner delete another
+  // cafe's object from the shared bucket.
+  const { data: current } = await supabase
+    .from("cafes")
+    .select("featured_image_url, photo_urls")
+    .eq("id", targetCafeId)
+    .single()
+
+  const ownedUrls = new Set<string>([
+    ...(current?.featured_image_url ? [current.featured_image_url] : []),
+    ...(((current?.photo_urls as string[]) ?? [])),
+  ])
+
+  const unknown = deduped.find((url) => !ownedUrls.has(url))
+  if (unknown) throw new Error("Photo does not belong to this cafe")
+
   const hero = deduped[0] ?? null
   const gallery = deduped.slice(1)
 
-  const supabase = createAdminClient()
   const { error } = await supabase
     .from("cafes")
     .update({

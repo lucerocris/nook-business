@@ -145,17 +145,29 @@ export async function verifySignupOtp(
 }
 
 // Re-sends the signup confirmation code.
-export async function resendSignupOtp(email: string): Promise<AuthResult> {
+export async function resendSignupOtp(
+  email: string,
+  redirectTo?: string
+): Promise<AuthResult> {
   const cleanEmail = email.trim().toLowerCase();
   if (!cleanEmail) return { error: "Missing email address." };
 
   const supabase = await createClient();
 
+  // Rebuild the same destination signUp threads through. Without this, an owner
+  // who registers mid-claim and then hits "Resend" loses the /claim/{cafeId}
+  // destination and lands on the homepage after confirming.
+  const safeRedirect = getSafeRedirect(redirectTo);
+  const confirmUrl = new URL("/auth/confirm", await getBaseUrl());
+  if (safeRedirect !== "/") {
+    confirmUrl.searchParams.set("next", safeRedirect);
+  }
+
   const { error } = await supabase.auth.resend({
     type: "signup",
     email: cleanEmail,
     options: {
-      emailRedirectTo: new URL("/auth/confirm", await getBaseUrl()).toString(),
+      emailRedirectTo: confirmUrl.toString(),
     },
   });
 

@@ -50,6 +50,14 @@ export async function deleteFile(key: string): Promise<void> {
   )
 }
 
+// Only URLs that actually live on our CDN map to a bucket key. `replace` used
+// to pass any other string straight through, so a foreign URL became a literal
+// "key" — S3 answers 204 for a key that doesn't exist, and the caller would
+// report a successful delete for an object it never touched.
 export function getKeyFromUrl(url: string): string {
-  return url.replace(`${requireCdn()}/`, "")
+  const prefix = `${requireCdn()}/`
+  if (!url.startsWith(prefix)) {
+    throw new Error("URL is not a Nook CDN object")
+  }
+  return url.slice(prefix.length)
 }

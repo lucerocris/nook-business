@@ -38,6 +38,33 @@ export async function acceptInviteAction(
     }
   }
 
+  // Validate the invite BEFORE setting the password. This used to run after,
+  // as an unchecked update — so a revoked or expired invite still had its
+  // password set and the user was sent to the dashboard (the cafe_owner_cafe
+  // row already exists by then), making revocation in nook-admin a no-op.
+  const { data: invite } = await supabase
+    .from("owner_invites")
+    .select("id, status, expires_at")
+    .eq("invited_profile_id", user.id)
+    .in("status", ["sent", "opened"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ id: string; status: string; expires_at: string | null }>()
+
+  if (!invite) {
+    return {
+      ok: false,
+      error: "This invite is no longer valid. Ask the Nook team for a new one.",
+    }
+  }
+
+  if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+    return {
+      ok: false,
+      error: "This invite has expired. Ask the Nook team for a new one.",
+    }
+  }
+
   const { error: passwordError } = await supabase.auth.updateUser({ password })
   if (passwordError) {
     return { ok: false, error: passwordError.message }
@@ -48,8 +75,7 @@ export async function acceptInviteAction(
   await supabase
     .from("owner_invites")
     .update({ status: "accepted", used_at: new Date().toISOString() })
-    .eq("invited_profile_id", user.id)
-    .in("status", ["sent", "opened"])
+    .eq("id", invite.id)
 
   // The account is active from here; it was created as "invited" by invite-owner.
   await supabase

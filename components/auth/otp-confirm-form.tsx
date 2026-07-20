@@ -38,7 +38,7 @@ export function OtpConfirmForm({ email, redirectTo }: OtpConfirmFormProps) {
     setInfo(null);
     setIsResending(true);
     try {
-      const result = await resendSignupOtp(email);
+      const result = await resendSignupOtp(email, redirectTo);
       if (result?.error) {
         setError(result.error);
       } else {

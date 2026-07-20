@@ -202,8 +202,11 @@ export function OwnerReviewsClient({
                     />
                   ))}
                 </div>
+                {/* Counts the reviews actually shown. cafe.review_count
+                    includes ones hidden by moderation, so it disagreed with
+                    both this list and the average rating computed above it. */}
                 <span className="text-sm text-muted-foreground">
-                  {cafe.review_count} reviews
+                  {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
                 </span>
               </div>
 
@@ -279,14 +282,26 @@ export function OwnerReviewsClient({
           <CardHeader>
             <div className="flex flex-row items-center justify-between">
               <CardTitle>All reviews</CardTitle>
-              <Badge variant="secondary">{cafe.review_count} total</Badge>
+              <Badge variant="secondary">{reviews.length} total</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-0 p-0">
             {filtered.length === 0 ? (
-              <p className="text-sm text-muted-foreground px-6 py-8 text-center">
-                No reviews match your filters.
-              </p>
+              // A brand-new cafe has no reviews and no filters applied — telling
+              // that owner their filters matched nothing is just confusing.
+              reviews.length === 0 ? (
+                <div className="px-6 py-8 text-center space-y-1">
+                  <p className="text-sm font-medium">No reviews yet</p>
+                  <p className="text-sm text-muted-foreground">
+                    Reviews from Nook visitors will appear here once people start
+                    visiting your cafe.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground px-6 py-8 text-center">
+                  No reviews match your filters.
+                </p>
+              )
             ) : (
               filtered.map((review) => {
                 const isReported = reportedIds.has(review.id)

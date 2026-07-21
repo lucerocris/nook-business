@@ -234,7 +234,7 @@ export async function submitCorrectionRequestAction(
 
   const apiKey = process.env.RESEND_API_KEY
   const to = process.env.CORRECTION_REQUEST_TO
-  const from = process.env.CORRECTION_REQUEST_FROM ?? "Nook <onboarding@resend.dev>"
+  const from = process.env.CORRECTION_REQUEST_FROM ?? "Nook <noreply@nookph.app>"
   if (!apiKey || !to) {
     return {
       ok: false,

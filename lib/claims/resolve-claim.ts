@@ -6,15 +6,22 @@ export type ResolvedClaim = {
   status: string;
 };
 
+// `created` distinguishes a brand-new claim from re-opening the caller's
+// existing one, so callers can act on genuinely new claims only.
 export type ResolveClaimResult =
-  | { claim: ResolvedClaim }
+  | { claim: ResolvedClaim; created: boolean }
   | { error: string };
 
 const CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
+// 6 chars, which the varchar(8) column holds comfortably. Length also sets the
+// collision odds against the unique `idx_active_cafe_verification_code` index
+// over pending claims: 36^6 instead of 36^4.
+const CODE_LENGTH = 6;
+
 function generateCode(): string {
   let code = "";
-  for (let i = 0; i < 4; i += 1) {
+  for (let i = 0; i < CODE_LENGTH; i += 1) {
     code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
   }
   return code;
@@ -49,7 +56,7 @@ export async function resolveClaim(
     .single();
 
   if (!error && claim) {
-    return { claim: claim as ResolvedClaim };
+    return { claim: claim as ResolvedClaim, created: true };
   }
 
   if (
@@ -70,6 +77,7 @@ export async function resolveClaim(
           verification_code: existing.verification_code,
           status: existing.status,
         },
+        created: false,
       };
     }
 

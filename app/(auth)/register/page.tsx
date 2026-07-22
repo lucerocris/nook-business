@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { RegisterForm } from "@/components/auth/register-form";
+import { GoogleAuthButton } from "@/components/auth/google-auth-button";
 import { FunnelShell } from "@/app/components/funnel-shell";
 import { getSafeRedirect } from "@/lib/safe-redirect";
 
@@ -47,6 +48,8 @@ export default async function RegisterPage({
         <p className="mx-auto mt-3 max-w-lg text-center text-sm text-[#3b3b3b] sm:text-base">
           Manage your cafe and stay connected with customers on Nook.
         </p>
+
+        <GoogleAuthButton redirectTo={redirectTo} label="Sign up with Google" />
 
         <RegisterForm redirectTo={redirectTo} />
       </div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "@/components/auth/login-form";
+import { GoogleAuthButton } from "@/components/auth/google-auth-button";
 import { FunnelShell } from "@/app/components/funnel-shell";
 import { getSafeRedirect } from "@/lib/safe-redirect";
 
@@ -19,6 +20,8 @@ type LoginPageProps = {
 const ERROR_MESSAGES: Record<string, string> = {
   confirmation_failed:
     "That confirmation link has expired or was already used. Log in below and we'll send you a new one.",
+  oauth_failed:
+    "Google sign-in didn't complete. Please try again.",
 };
 
 export const metadata: Metadata = { title: "Log in" }
@@ -76,6 +79,8 @@ export default async function LoginPage({
             {errorMessage}
           </p>
         ) : null}
+
+        <GoogleAuthButton redirectTo={redirectTo} label="Log in with Google" />
 
         <LoginForm redirectTo={redirectTo} />
       </div>

@@ -197,3 +197,39 @@ export async function resendSignupOtp(
 
   return null;
 }
+
+// Starts Google OAuth. Owners who found Nook through the mobile app sign up
+// with Google there, which leaves them with no password at all — signInWithPassword
+// then fails with "Invalid email or password", which is both wrong and a dead
+// end because this app has no password-reset flow. The provider is already
+// enabled on the shared Supabase project for mobile, so this only needs the
+// callback URL allow-listed.
+//
+// Returns only on failure: the success path redirects to Google.
+export async function signInWithGoogle(
+  redirectTo?: string
+): Promise<AuthResult> {
+  const supabase = await createClient();
+
+  // Thread the post-login destination through the callback the same way signUp
+  // threads it through the confirmation email, so an owner who starts a claim,
+  // signs in with Google, and comes back lands on /claim/{cafeId}.
+  const safeRedirect = getSafeRedirect(redirectTo);
+  const callbackUrl = new URL("/auth/callback", await getBaseUrl());
+  if (safeRedirect !== "/") {
+    callbackUrl.searchParams.set("next", safeRedirect);
+  }
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: callbackUrl.toString() },
+  });
+
+  if (error || !data?.url) {
+    return { error: "Couldn't start Google sign-in. Please try again." };
+  }
+
+  // signInWithOAuth only builds the URL and stores the PKCE verifier in a
+  // cookie; the browser still has to be sent to Google.
+  redirect(data.url);
+}

@@ -34,7 +34,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import {
   uploadCafeHeroAction,
   uploadCafePhotoAction,
@@ -84,7 +83,6 @@ export function OwnerPhotosClient({
     ...currentPhotoUrls.filter((u) => u !== currentHeroUrl),
   ]
   const usedSlots = allPhotos.length
-  const usedPct = Math.round((usedSlots / TOTAL_SLOTS) * 100)
 
   function applyOrderedPhotos(ordered: string[]) {
     setCurrentHeroUrl(ordered[0] ?? null)
@@ -356,24 +354,13 @@ export function OwnerPhotosClient({
                   Add up to 5 photos total, including your hero photo.
                 </CardDescription>
               </div>
-              <Badge variant="outline">{usedSlots} / {TOTAL_SLOTS} used</Badge>
+              <span className="shrink-0 text-sm text-muted-foreground tabular-nums">{usedSlots} of {TOTAL_SLOTS}</span>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
 
-            {/* Progress bar */}
-            <div className="space-y-1.5">
-              <div className="flex flex-row justify-between">
-                <span className="text-xs text-muted-foreground">
-                  Photo slots used
-                </span>
-                <span className="text-xs font-medium">{usedSlots} of {TOTAL_SLOTS}</span>
-              </div>
-              <Progress value={usedPct} className="h-1.5" />
-            </div>
-
             {/* Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {allPhotos.map((url, i) => (
                 <div
                   key={url}

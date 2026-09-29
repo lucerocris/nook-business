@@ -3,9 +3,9 @@
 import * as React from "react"
 import {
   CheckCircle,
+  Copy,
   EnvelopeSimple,
   FacebookLogo,
-  FloppyDisk,
   Globe,
   InstagramLogo,
   TiktokLogo,
@@ -13,8 +13,10 @@ import {
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { SaveBar } from "@/components/owner/save-bar"
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -126,12 +128,55 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
   // isn't flagged while the owner is still entering it.
   const [showHourErrors, setShowHourErrors] = React.useState(false)
 
+  const [touchedDays, setTouchedDays] = React.useState<Set<DayKey>>(() => new Set())
+
   function updateHours(day: DayKey, field: keyof DayHours, value: string | boolean) {
     setHours((prev) => ({
       ...prev,
       [day]: { ...prev[day], [field]: value },
     }))
+    setTouchedDays((prev) => new Set(prev).add(day))
     setIsDirty(true)
+  }
+
+  // Opening a closed day with no stored times used to land straight on an
+  // error. Borrow the nearest open day's hours instead; the owner adjusts.
+  function setDayOpen(day: DayKey, open: boolean) {
+    const current = hours[day]
+    if (open && (!current.open || !current.close)) {
+      const idx = DAYS.findIndex((d) => d.key === day)
+      const ordered = [...DAYS.slice(0, idx).reverse(), ...DAYS.slice(idx + 1)]
+      const donor = ordered
+        .map(({ key }) => hours[key])
+        .find((h) => !h.closed && h.open && h.close)
+      setHours((prev) => ({
+        ...prev,
+        [day]: {
+          open: current.open || donor?.open || "08:00",
+          close: current.close || donor?.close || "22:00",
+          closed: false,
+        },
+      }))
+      setTouchedDays((prev) => new Set(prev).add(day))
+      setIsDirty(true)
+      return
+    }
+    updateHours(day, "closed", !open)
+  }
+
+  // 14 time pickers is the slowest part of onboarding; most cafes keep the
+  // same hours daily. Copies Monday (open/close and open-or-closed) to all.
+  function copyFirstDayToAll() {
+    const first = hours[DAYS[0].key]
+    setHours(
+      Object.fromEntries(DAYS.map(({ key }) => [key, { ...first }])) as Record<
+        DayKey,
+        DayHours
+      >
+    )
+    setTouchedDays(new Set(DAYS.map(({ key }) => key)))
+    setIsDirty(true)
+    toast.success(`Copied ${DAYS[0].label}'s hours to every day`)
   }
 
   // Warn before leaving (refresh / close / browser back) with unsaved edits.
@@ -201,7 +246,7 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
 
   return (
     <>
-      <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6">
+      <div className="w-full max-w-3xl mx-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6">
 
         {/* Page Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
@@ -264,77 +309,83 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
         </Card>
 
         {/* Card 3 — Operating Hours */}
-        <Card>
+        <Card id="hours" className="scroll-mt-20">
           <CardHeader>
-            <CardTitle>Operating hours</CardTitle>
+            <CardTitle>Opening hours</CardTitle>
             <CardDescription>
-              Keep your hours accurate so customers know when you are open.
+              Turn a day off if you&apos;re closed. Closing after midnight is fine.
             </CardDescription>
+            <CardAction>
+              <Button variant="outline" size="sm" onClick={copyFirstDayToAll}>
+                <Copy className="size-4" />
+                <span className="hidden sm:inline">Same hours every day</span>
+                <span className="sm:hidden">Copy to all</span>
+              </Button>
+            </CardAction>
           </CardHeader>
           <CardContent>
-            {DAYS.map(({ key, label }) => (
-              <div
-                key={key}
-                className="flex flex-col gap-2 py-3 border-b last:border-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1"
-              >
-                <span className="text-sm font-medium sm:w-28 sm:shrink-0">{label}</span>
+            <ul className="divide-y">
+              {DAYS.map(({ key, label }) => {
+                const day = hours[key]
+                const isOpen = !day.closed
+                // Flag a row as soon as the owner has touched it, not only on
+                // Save; untouched rows wait for a save attempt.
+                const problem =
+                  showHourErrors || touchedDays.has(key) ? dayHoursError(day) : null
+                return (
+                  <li
+                    key={key}
+                    className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 py-3 sm:grid-cols-[7rem_auto_1fr]"
+                  >
+                    <span className="text-sm font-medium">{label}</span>
 
-                <div className="flex min-w-0 flex-1 flex-row items-center gap-2">
-                  <Input
-                    type="time"
-                    className="min-w-0 flex-1 sm:w-32 sm:flex-none"
-                    value={hours[key].open}
-                    disabled={hours[key].closed}
-                    onChange={(e) => updateHours(key, "open", e.target.value)}
-                  />
-                  <span className="shrink-0 text-xs text-muted-foreground">to</span>
-                  <Input
-                    type="time"
-                    className="min-w-0 flex-1 sm:w-32 sm:flex-none"
-                    value={hours[key].close}
-                    disabled={hours[key].closed}
-                    onChange={(e) => updateHours(key, "close", e.target.value)}
-                  />
-                </div>
+                    <label className="flex items-center gap-2 justify-self-end sm:justify-self-start">
+                      <Switch
+                        checked={isOpen}
+                        onCheckedChange={(open) => setDayOpen(key, open)}
+                        aria-label={`${label}: open`}
+                      />
+                      <span className="w-12 text-sm text-muted-foreground">
+                        {isOpen ? "Open" : "Closed"}
+                      </span>
+                    </label>
 
-                {(() => {
-                  const problem = showHourErrors ? dayHoursError(hours[key]) : null
-                  if (problem) {
-                    return (
-                      <p role="alert" className="text-xs text-destructive sm:order-last sm:basis-full">
-                        {problem}
-                      </p>
-                    )
-                  }
-                  if (closesNextDay(hours[key])) {
-                    return (
-                      <p className="text-xs text-muted-foreground sm:order-last sm:basis-full">
-                        {hours[key].close === "00:00" ? "Closes at midnight" : "Closes after midnight, the next day"}
-                      </p>
-                    )
-                  }
-                  return null
-                })()}
-
-                {/* Mobile: own row — inside the time row it stole ~80px and
-                    clipped the time values on every day. */}
-                <div className="flex items-center gap-2 sm:hidden">
-                  <Switch
-                    checked={hours[key].closed}
-                    onCheckedChange={(v) => updateHours(key, "closed", v)}
-                  />
-                  <Label className="text-xs text-muted-foreground">Closed</Label>
-                </div>
-
-                <div className="hidden sm:flex items-center gap-2 ml-auto">
-                  <Switch
-                    checked={hours[key].closed}
-                    onCheckedChange={(v) => updateHours(key, "closed", v)}
-                  />
-                  <Label className="text-xs text-muted-foreground">Closed</Label>
-                </div>
-              </div>
-            ))}
+                    {isOpen ? (
+                      <div className="col-span-2 flex flex-wrap items-center gap-x-2 gap-y-1 sm:col-span-1">
+                        <Input
+                          type="time"
+                          aria-label={`${label} opening time`}
+                          aria-invalid={problem ? true : undefined}
+                          className="w-[8.5rem]"
+                          value={day.open}
+                          onChange={(e) => updateHours(key, "open", e.target.value)}
+                        />
+                        <span className="text-sm text-muted-foreground">to</span>
+                        <Input
+                          type="time"
+                          aria-label={`${label} closing time`}
+                          aria-invalid={problem ? true : undefined}
+                          className="w-[8.5rem]"
+                          value={day.close}
+                          onChange={(e) => updateHours(key, "close", e.target.value)}
+                        />
+                        {problem ? (
+                          <p role="alert" className="basis-full text-sm text-destructive">
+                            {problem}
+                          </p>
+                        ) : closesNextDay(day) ? (
+                          <p className="basis-full text-sm text-muted-foreground">
+                            {day.close === "00:00"
+                              ? "Closes at midnight"
+                              : "Closes after midnight, the next day"}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </li>
+                )
+              })}
+            </ul>
           </CardContent>
         </Card>
 
@@ -490,44 +541,25 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
           </CardContent>
         </Card>
 
-        {isDirty && <div className="h-28 sm:h-20" />}
       </div>
 
-      {/* Sticky Save Bar */}
-      {isDirty && (
-        <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-4 sm:pb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between z-50">
-          <p className="text-sm text-muted-foreground">
-            You have unsaved changes
-          </p>
-          <div className="flex flex-row gap-2">
-            <Button
-              variant="outline"
-              className="flex-1 sm:flex-none"
-              onClick={() => {
-                setName(cafe.name)
-                setDescription(cafe.description ?? "")
-                setInstagram(cafe.social_links?.instagram ?? "")
-                setFacebook(cafe.social_links?.facebook ?? "")
-                setTiktok(cafe.social_links?.tiktok ?? "")
-                setWebsite(cafe.social_links?.website ?? "")
-                setHours(initialHours)
-                setIsDirty(false)
-              }}
-            >
-              Discard
-            </Button>
-            <Button
-              variant="default"
-              className="flex-1 sm:flex-none"
-              onClick={handleSave}
-              loading={isSaving}
-            >
-              <FloppyDisk className="size-4" />
-              Save Changes
-            </Button>
-          </div>
-        </div>
-      )}
+      <SaveBar
+        visible={isDirty}
+        saving={isSaving}
+        onSave={handleSave}
+        onDiscard={() => {
+          setName(cafe.name)
+          setDescription(cafe.description ?? "")
+          setInstagram(cafe.social_links?.instagram ?? "")
+          setFacebook(cafe.social_links?.facebook ?? "")
+          setTiktok(cafe.social_links?.tiktok ?? "")
+          setWebsite(cafe.social_links?.website ?? "")
+          setHours(initialHours)
+          setShowHourErrors(false)
+          setTouchedDays(new Set())
+          setIsDirty(false)
+        }}
+      />
     </>
   )
 }

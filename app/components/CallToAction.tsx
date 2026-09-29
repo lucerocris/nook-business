@@ -1,31 +1,51 @@
-import React from 'react'
-import Link from 'next/link'
+import Link from "next/link";
+import { SELF_SERVE_CLAIM_ENABLED } from "@/lib/features";
+import { ListingCard } from "./landing/drawn-ui";
 
 export default function CallToAction() {
   return (
-    <section className="bg-[#3A5A40] py-20 lg:py-28 relative overflow-hidden">
-      {/* Optional subtle background pattern or gradient overlay could go here */}
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
-      
-      <div className="relative max-w-4xl mx-auto px-6 text-center z-10">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 tracking-tight">
-          Ready to put your cafe on the map?
-        </h2>
-        
-        <p className="text-green-50 text-lg md:text-xl mb-10 max-w-2xl mx-auto font-light">
-          Join Cebu&apos;s finest independent cafes. Claim your free profile and take control of your digital storefront today.
-        </p>
-        
-        {/* Link this href to the ID of your hero search section */}
-        <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <a
-            href="#hero"
-            className="inline-flex items-center justify-center px-8 py-4 text-base md:text-lg font-bold text-[#3A5A40] bg-white rounded-md shadow-lg hover:bg-gray-50 hover:scale-105 transition-all duration-200"
-          >
-            Search for your cafe
-          </a>
+    <section className="bg-white pb-20 sm:pb-28">
+      <div className="nk-container">
+        <div className="nk-panel grid items-center gap-10 overflow-hidden rounded-xl px-6 pt-12 sm:px-12 sm:pt-16 lg:grid-cols-[1.3fr_1fr] lg:gap-16 lg:px-16 lg:py-20">
+          <div className="text-white">
+            <p className="nk-meta text-white/70">
+              You&apos;ve reached the end, so now…
+            </p>
+            <h2 className="nk-h2 mt-4 !text-white">
+              Find your cafe.
+              <br />
+              <span className="text-[var(--nk-timberwolf)]">
+                Make the listing yours.
+              </span>
+            </h2>
+            <p className="nk-lead mt-5 max-w-xl !text-white/85">
+              Search for your cafe, get your verification code, and send it
+              from your cafe&apos;s Instagram. That&apos;s the whole process.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-2">
+              {SELF_SERVE_CLAIM_ENABLED ? (
+                <Link
+                  href="/claim"
+                  className="nk-btn bg-white text-[var(--nk-green)] hover:bg-[var(--nk-tint)]"
+                >
+                  Claim my cafe
+                </Link>
+              ) : null}
+              <Link
+                href="/login"
+                className="nk-btn border border-white/35 text-white hover:bg-white/10"
+              >
+                Owner log in
+              </Link>
+            </div>
+          </div>
+
+          {/* Echoes the hero: the listing card, bleeding off the bottom. */}
+          <div aria-hidden="true" className="mx-auto w-full max-w-sm self-end lg:-mb-20">
+            <ListingCard className="rounded-b-none border-b-0" />
+          </div>
         </div>
       </div>
     </section>
-  )
+  );
 }

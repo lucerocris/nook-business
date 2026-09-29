@@ -1,56 +1,77 @@
-import React from 'react'
+import {
+  ApprovedStepVisual,
+  CodeStepVisual,
+  SearchStepVisual,
+} from "./landing/drawn-ui";
+
+// Mirrors the real claim flow in app/claim/[cafeId] and claim-form.tsx:
+// search → sign in → DM a code from the cafe's official Instagram → a
+// superadmin approves in nook-admin. The code expires after 7 days.
+const steps = [
+  {
+    title: "Find your cafe",
+    copy: "Search for your cafe by name and pick it from the list. Sign in with Google or your email to start the claim.",
+    visual: <SearchStepVisual />,
+  },
+  {
+    title: "Send us your code",
+    copy: "You'll get a verification code. Send it to @nook_cafefinder from your cafe's official Instagram account. We don't accept personal accounts.",
+    visual: <CodeStepVisual />,
+  },
+  {
+    title: "Get approved",
+    copy: "Our team checks the message and approves your claim, and your owner portal opens. Your code stays valid for 7 days.",
+    visual: <ApprovedStepVisual />,
+  },
+];
 
 export default function HowItWorks() {
   return (
-    <section className="relative isolate bg-white py-20 lg:py-28">
-      <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-16 lg:mb-20">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40]">
-            Simple onboarding
-          </p>
-          <h2 className="mt-4 text-3xl font-semibold text-gray-900 sm:text-4xl">
-            Claim your cafe in three calm steps.
+    <section
+      id="how-it-works"
+      className="scroll-mt-20 border-t border-[var(--nk-line)] bg-[var(--nk-bg-2)] py-20 sm:py-28 lg:py-36"
+    >
+      <div className="nk-container">
+        <div className="max-w-3xl sm:mx-auto sm:text-center">
+          <p className="nk-eyebrow">How claiming works</p>
+          <h2 className="nk-h2 mt-4">
+            From search
+            <br className="hidden sm:block" /> to verified owner.
           </h2>
+          <p className="nk-lead mt-4">
+            We confirm ownership through your cafe&apos;s official Instagram,
+            so only the real owner can change your listing.
+          </p>
         </div>
 
-        <div className="relative grid gap-8 lg:grid-cols-3">
-          {[
-            {
-              step: '01',
-              title: 'Search',
-              copy: 'Find your unverified listing using the search bar above.',
-            },
-            {
-              step: '02',
-              title: 'Verify',
-              copy: 'Create an account and submit a quick proof of ownership.',
-            },
-            {
-              step: '03',
-              title: 'Manage',
-              copy: 'Instant access to update hours, menu, and the details locals look for.',
-            },
-          ].map((item) => (
-            <div
-              key={item.step}
-              className="relative overflow-hidden rounded-3xl border border-gray-100 bg-white p-8 shadow-[0_20px_50px_rgba(15,23,42,0.08)]"
-            >
-              <div className="absolute right-6 top-6 text-xs font-semibold tracking-[0.25em] text-gray-300">
-                {item.step}
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#3A5A40] text-sm font-semibold text-white shadow-[0_10px_25px_rgba(58,90,64,0.35)]">
-                {item.step}
-              </div>
-              <h4 className="mt-6 text-xl font-semibold text-gray-900">
-                {item.title}
-              </h4>
-              <p className="mt-3 text-sm text-gray-500 leading-relaxed">
-                {item.copy}
+        <ol className="relative mt-14 grid gap-10 sm:mt-20 lg:grid-cols-3 lg:gap-8">
+          {/* Timeline rail: runs through the step dots on desktop. */}
+          <span
+            aria-hidden="true"
+            className="absolute left-0 right-0 top-[5px] hidden border-t border-dashed border-[var(--nk-sage)] lg:block"
+          />
+          {steps.map((step, index) => (
+            <li key={step.title} className="relative">
+              <span
+                aria-hidden="true"
+                className="relative block h-[11px] w-[11px] rounded-full bg-[var(--nk-green)] ring-4 ring-[var(--nk-bg-2)]"
+              />
+              <p className="nk-meta mt-6 text-[var(--nk-muted)]">
+                Step {String(index + 1).padStart(2, "0")}
               </p>
-            </div>
+              <h3 className="mt-2 text-[20px] font-semibold leading-snug text-[var(--nk-ink)]">
+                {step.title}
+              </h3>
+              <p className="mt-2 max-w-[42ch] text-[15px] leading-relaxed text-[var(--nk-body)]">
+                {step.copy}
+              </p>
+              <div aria-hidden="true" className="mt-6 max-w-[320px]">
+                {step.visual}
+              </div>
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
-  )
+  );
 }

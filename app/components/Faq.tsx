@@ -1,0 +1,99 @@
+const INSTAGRAM_URL = "https://instagram.com/nook_cafefinder";
+const SUPPORT_URL = "https://privacy.nookph.app/support.html";
+
+// Answers must match what ships. Premium photo slots are mentioned in the
+// owner portal as a future option, which is why "free" is scoped to the
+// core listing and not promised forever.
+const faqs = [
+  {
+    q: "Does it cost anything?",
+    a: "No. Claiming your cafe and managing your listing is free. Some extras, like more photo slots, may come later as optional upgrades.",
+  },
+  {
+    q: "How do you check that I own the cafe?",
+    a: "After you start a claim, we give you a verification code. Send it to @nook_cafefinder from your cafe's official Instagram account. Our team matches the code to your claim and approves it. Messages from personal accounts aren't accepted.",
+  },
+  {
+    q: "How long does approval take?",
+    a: "A person on our team reviews every claim after your message arrives. You can check progress anytime on the claim status page. Your code stays valid for 7 days, so there's no rush to send it.",
+  },
+  {
+    q: "My cafe isn't on Nook. Can I add it?",
+    a: "Not from this site yet. Message us on Instagram with your cafe's name and location and we'll look into adding it. Once it's listed, you can claim it here.",
+  },
+  {
+    q: "What can I change once I'm approved?",
+    a: "Your cafe's name, description, daily hours, closed days and social links; your menu with prices; your photos; and your tags. For a wrong address or map pin, send a correction from the Edit Listing page and our team will fix it.",
+  },
+  {
+    q: "Can I remove a bad review?",
+    a: "No. Reviews belong to the people who wrote them. If a review breaks the rules, report it from your Reviews page and our team will look at it.",
+  },
+  {
+    q: "Where does my listing appear?",
+    a: "On the Nook website at nookph.app and in the Nook iPhone app, where people search, filter by tags and browse the map.",
+  },
+];
+
+export default function Faq() {
+  return (
+    <section id="faq" className="scroll-mt-20 bg-white py-20 sm:py-28 lg:py-36">
+      <div className="nk-container grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)] lg:gap-20">
+        <div className="lg:sticky lg:top-28 lg:self-start">
+          <p className="nk-eyebrow">Still got questions?</p>
+          <h2 className="nk-h2 mt-4">Read the FAQs</h2>
+
+          <div className="mt-8 rounded-xl bg-[var(--nk-bg-2)] p-6 sm:p-8">
+            <p className="text-[18px] font-semibold text-[var(--nk-ink)]">
+              Can&apos;t find your answer?
+            </p>
+            <p className="mt-2 text-[15px] leading-relaxed text-[var(--nk-body)]">
+              Message the Nook team on Instagram. It&apos;s the same account
+              you&apos;ll send your verification code to.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="nk-btn nk-btn-primary"
+              >
+                Message @nook_cafefinder
+              </a>
+              <a
+                href={SUPPORT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="nk-link"
+              >
+                Merchant support →
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {faqs.map((item) => (
+            <details
+              key={item.q}
+              className="nk-faq group rounded-xl bg-[var(--nk-bg-2)]"
+            >
+              <summary className="flex cursor-pointer items-center gap-4 rounded-xl px-5 py-4 text-[16px] font-semibold text-[var(--nk-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--nk-green)] sm:px-6 sm:py-5">
+                <span className="flex-1">{item.q}</span>
+                <span
+                  aria-hidden="true"
+                  className="nk-plus text-[24px] font-light leading-none text-[var(--nk-green)]"
+                >
+                  +
+                </span>
+              </summary>
+              <p className="max-w-[62ch] px-5 pb-5 text-[15px] leading-relaxed text-[var(--nk-body)] sm:px-6 sm:pb-6">
+                {item.a}
+              </p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}

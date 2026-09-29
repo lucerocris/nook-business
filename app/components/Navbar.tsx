@@ -6,6 +6,14 @@ import { User } from "@supabase/supabase-js";
 import { useSupabase } from "@/lib/supabase/context";
 import { SELF_SERVE_CLAIM_ENABLED } from "@/lib/features";
 
+// Absolute (/#…) so they also work from /login and /claim, where the navbar
+// is shown too.
+const SECTION_LINKS = [
+  { label: "Features", href: "/#features" },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "FAQ", href: "/#faq" },
+];
+
 type NavbarProps = {
   initialUser: User | null;
 };
@@ -84,8 +92,6 @@ export function Navbar({ initialUser }: NavbarProps) {
     setIsMobileMenuOpen(false);
   };
 
-  // KEEP THE REST OF YOUR JSX EXACTLY THE SAME
-
   return (
     <>
       <nav
@@ -99,10 +105,22 @@ export function Navbar({ initialUser }: NavbarProps) {
               <Link href="/" className="navbar-logo flex items-center shrink-0">
                 <img src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/logo.svg" alt="Nook for Business" className="w-20" />
               </Link>
+              <ul className="flex items-center gap-7">
+                {SECTION_LINKS.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="text-sm font-medium text-[var(--nk-body)] transition-colors hover:text-[var(--nk-green)]"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
 
             {/* Right side: Auth & CTA Buttons */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               {user ? (
                 <div className="relative">
                   <button
@@ -130,7 +148,7 @@ export function Navbar({ initialUser }: NavbarProps) {
                   </button>
 
                   <div
-                    className={`absolute right-0 mt-2 w-40 rounded-xl border border-gray-200 bg-white p-2 shadow-lg transition-opacity ${
+                    className={`absolute right-0 mt-2 w-40 rounded-xl border border-gray-200 bg-white p-2 transition-opacity ${
                       isUserMenuOpen
                         ? "pointer-events-auto opacity-100"
                         : "pointer-events-none opacity-0"
@@ -159,20 +177,14 @@ export function Navbar({ initialUser }: NavbarProps) {
                   </div>
                 </div>
               ) : (
-                <Link
-                  href="/login"
-                  className="inline-flex items-center justify-center px-6 py-2.5 border border-[#3A5A40] text-[#3A5A40] bg-transparent rounded-md text-sm font-medium hover:bg-[#3A5A40]/10 transition-colors"
-                >
+                <Link href="/login" className="nk-btn nk-btn-secondary">
                   Log in
                 </Link>
               )}
 
               {SELF_SERVE_CLAIM_ENABLED && (
-                <Link
-                  href="/claim"
-                  className="inline-flex items-center justify-center px-6 py-2.5 border border-[#3A5A40] bg-[#3A5A40] text-white rounded-md text-sm font-medium hover:bg-[#2b442f] transition-colors shadow-sm"
-                >
-                  Claim Your Cafe
+                <Link href="/claim" className="nk-btn nk-btn-primary">
+                  Claim your cafe
                 </Link>
               )}
             </div>
@@ -227,7 +239,7 @@ export function Navbar({ initialUser }: NavbarProps) {
 
             {user ? (
               <div
-                className={`absolute right-0 top-14 w-40 rounded-xl border border-gray-200 bg-white p-2 shadow-lg transition-opacity ${
+                className={`absolute right-0 top-14 w-40 rounded-xl border border-gray-200 bg-white p-2 transition-opacity ${
                   isUserMenuOpen
                     ? "pointer-events-auto opacity-100"
                     : "pointer-events-none opacity-0"
@@ -253,20 +265,33 @@ export function Navbar({ initialUser }: NavbarProps) {
         className={`mobile-menu-wrapper block md:hidden fixed inset-0 z-40 bg-white transform transition-transform duration-300 ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"}`}
       >
         <div className="flex flex-col gap-8 w-full p-6 pt-28 h-full">
-          <div className="flex flex-col gap-4">
+          <ul className="flex flex-col border-t border-[var(--nk-line)]">
+            {SECTION_LINKS.map((link) => (
+              <li key={link.href} className="border-b border-[var(--nk-line)]">
+                <Link
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block py-4 text-2xl font-semibold tracking-[-0.02em] text-[var(--nk-ink)]"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <div className="flex flex-col gap-3">
             {user ? (
               <>
                 <Link
                   href="/claim/status"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full inline-flex items-center justify-center px-6 py-3 border border-gray-200 text-gray-700 bg-white rounded-md text-lg font-medium"
+                  className="nk-btn nk-btn-secondary w-full"
                 >
                   Claim status
                 </Link>
                 <button
                   type="button"
                   onClick={handleSignOut}
-                  className="w-full inline-flex items-center justify-center px-6 py-3 border border-gray-200 text-gray-700 bg-white rounded-md text-lg font-medium"
+                  className="nk-btn nk-btn-secondary w-full"
                 >
                   Log out
                 </button>
@@ -275,7 +300,7 @@ export function Navbar({ initialUser }: NavbarProps) {
               <Link
                 href="/login"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="w-full inline-flex items-center justify-center px-6 py-3 border border-[#3A5A40] text-[#3A5A40] bg-transparent rounded-md text-lg font-medium"
+                className="nk-btn nk-btn-secondary w-full"
               >
                 Log in
               </Link>
@@ -285,9 +310,9 @@ export function Navbar({ initialUser }: NavbarProps) {
               <Link
                 href="/claim"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="w-full inline-flex items-center justify-center px-6 py-3 border border-[#3A5A40] bg-[#3A5A40] text-white rounded-md text-lg font-medium"
+                className="nk-btn nk-btn-primary w-full"
               >
-                Claim Your Cafe
+                Claim your cafe
               </Link>
             )}
           </div>

@@ -1,7 +1,9 @@
 import type { Metadata } from "next"
 import { Hero } from "./components/Hero";
+import ProofStrip from "./components/ProofStrip";
 import ValueProposition from "./components/ValueProposition";
 import HowItWorks from "./components/howItWorks";
+import Faq from "./components/Faq";
 import CallToAction from "./components/CallToAction";
 import Footer from "./components/Footer";
 
@@ -9,19 +11,21 @@ import Footer from "./components/Footer";
 // results. Falling through to the layout default gives "Nook for Business".
 export const metadata: Metadata = {
   description:
-    "Claim your cafe on Nook and manage your listing — photos, menu, hours, and reviews.",
+    "Claim your cafe on Nook for free. Keep your hours, menu, photos and tags accurate, read your reviews, and see how often people find you.",
 }
 
 export default function Home() {
   return (
     <>
-      {/* The root layout no longer wraps children in <main>, so the landing
+      {/* The root layout doesn't wrap children in <main>, so the landing
           page supplies its own. Footer stays outside it — it's a separate
           contentinfo landmark, not page content. */}
       <main>
         <Hero />
+        <ProofStrip />
         <ValueProposition />
         <HowItWorks />
+        <Faq />
         <CallToAction />
       </main>
       <Footer />

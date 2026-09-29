@@ -7,6 +7,213 @@
 :root {
   --font-display: var(--font-sans);
   --color-primary: #3a5a40;
+
+  /* Landing tokens. One hue (#3A5A40) plus its tint (#E3EBE4); neutrals
+     lean warm to match the earthy brand. Values follow the canonical rules
+     in nook-supabase/docs/DESIGN_SYSTEM.md. */
+  --nk-ink: #101514;
+  --nk-body: #3b3b3b;
+  --nk-muted: #5c605d; /* 6.2:1 on white, 5.8:1 on --nk-bg-2 */
+  --nk-green: #3a5a40;
+  --nk-green-hover: #2f4833;
+  --nk-green-deep: #344e41;
+  --nk-fern: #588157;
+  --nk-sage: #a3b18a;
+  --nk-timberwolf: #dad7cd;
+  --nk-tint: #e3ebe4;
+  --nk-bg-2: #f7f6f2;
+  --nk-line: rgba(16, 21, 20, 0.1);
+  --nk-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------- Landing primitives ---------- */
+
+.nk-container {
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+
+@media (min-width: 640px) {
+  .nk-container {
+    padding-inline: 24px;
+  }
+}
+
+/* Section stack: eyebrow → 2-line headline → lead. */
+.nk-eyebrow {
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--nk-green);
+}
+
+.nk-h1,
+.nk-h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--nk-ink);
+  text-wrap: balance;
+}
+
+.nk-h1 {
+  font-size: clamp(2.25rem, 1.4rem + 3.6vw, 4.25rem);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+}
+
+.nk-h2 {
+  font-size: clamp(1.875rem, 1.3rem + 2.4vw, 3.25rem);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.nk-lead {
+  font-size: 17px;
+  line-height: 1.55;
+  font-weight: 500;
+  color: var(--nk-body);
+  text-wrap: pretty;
+}
+
+@media (min-width: 640px) {
+  .nk-lead {
+    font-size: 18px;
+  }
+}
+
+.nk-meta {
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* Buttons: brand pills (DESIGN_SYSTEM.md §8), colour-only transitions. */
+.nk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
+}
+
+.nk-btn:focus-visible,
+.nk-link:focus-visible {
+  outline: 2px solid var(--nk-green);
+  outline-offset: 3px;
+}
+
+.nk-btn-primary {
+  background: var(--nk-green);
+  color: #fff;
+}
+
+.nk-btn-primary:hover {
+  background: var(--nk-green-hover);
+}
+
+.nk-btn-secondary {
+  background: #fff;
+  color: var(--nk-ink);
+  border: 1px solid var(--nk-line);
+}
+
+.nk-btn-secondary:hover {
+  background: var(--nk-bg-2);
+}
+
+/* Text link CTA: first person, underlined, trailing arrow. */
+.nk-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--nk-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--nk-sage);
+  transition: text-decoration-color 150ms ease;
+}
+
+.nk-link:hover {
+  text-decoration-color: currentColor;
+}
+
+/* Deep-green brand field with a lighter dot lattice, used behind the drawn
+   product UI. */
+.nk-panel {
+  background-color: var(--nk-green-deep);
+  background-image: radial-gradient(
+    circle,
+    rgba(218, 215, 205, 0.16) 1px,
+    transparent 1.6px
+  );
+  background-size: 22px 22px;
+}
+
+/* Skeleton text bars inside drawn UI. */
+.nk-bar {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: #ecebe6;
+}
+
+/* Accordion body: animate height with the grid-rows trick, no JS measuring. */
+.nk-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 300ms var(--nk-ease);
+}
+
+.nk-collapse[data-open='true'] {
+  grid-template-rows: 1fr;
+}
+
+.nk-collapse > div {
+  overflow: hidden;
+}
+
+.nk-plus {
+  transition: transform 300ms var(--nk-ease);
+}
+
+[aria-expanded='true'] .nk-plus,
+details[open] .nk-plus {
+  transform: rotate(45deg);
+}
+
+details.nk-faq > summary {
+  list-style: none;
+}
+
+details.nk-faq > summary::-webkit-details-marker {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nk-collapse,
+  .nk-plus,
+  .nk-btn,
+  .nk-link {
+    transition: none;
+  }
 }
 
 /* Matches nook-webapp's globals.css: white page with a faint green dot lattice.
@@ -74,17 +281,16 @@ body {
   border-bottom: 1px solid rgb(229, 231, 235);
 }
 
+/* No shadow on scroll: depth comes from the hairline alone. */
 .navbar.is-scrolled {
   background-color: #ffffff;
-  border-bottom: 1px solid rgb(229, 231, 235);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid var(--nk-line);
 }
 
 @media (min-width: 768px) {
-  
   .navbar {
-    height: 78px;
-    padding: 14px 0;
+    height: 72px;
+    padding: 12px 0;
   }
 }
 
@@ -94,9 +300,15 @@ body {
   width: 100%;
   height: 100%;
   align-items: center;
-  max-width: 1280px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 16px;
+}
+
+@media (min-width: 640px) {
+  .navbar-content {
+    padding: 0 24px;
+  }
 }
 
 .navbar-links {

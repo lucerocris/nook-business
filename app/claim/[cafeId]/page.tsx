@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ClaimForm } from "@/app/components/claim/claim-form";
 import { FunnelShell } from "@/app/components/funnel-shell";
@@ -52,13 +52,57 @@ export default async function ClaimPage({
     .eq("id", cafeId)
     .maybeSingle<CafeRecord>();
 
-  if (error || !cafe || cafe.is_claimed) {
+  if (error || !cafe) {
     notFound();
   }
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Claimed cafes used to 404 here, including for the owner who had just been
+  // approved and came back to this page as the claim form tells them to.
+  if (cafe.is_claimed) {
+    if (user) {
+      const { data: link } = await supabase
+        .from("cafe_owner_cafe")
+        .select("cafe_id")
+        .eq("owner_id", user.id)
+        .eq("cafe_id", cafe.id)
+        .maybeSingle();
+      if (link) redirect("/owner/dashboard");
+    }
+
+    return (
+      <FunnelShell contentClassName="max-w-4xl">
+        <div className="mx-auto w-full max-w-2xl rounded-2xl bg-white p-6 text-center ring-1 ring-zinc-200/70 sm:p-8">
+          <h1 className="text-2xl font-semibold tracking-[-0.02em] text-[#101514]">
+            {cafe.name} already has an owner on Nook
+          </h1>
+          <p className="mx-auto mt-3 max-w-md text-sm text-[#3b3b3b]">
+            If you run this cafe and didn&apos;t claim it, message us on
+            Instagram and we&apos;ll sort it out.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <a
+              href="https://instagram.com/nook_cafefinder"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full bg-[#3A5A40] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#2f4833]"
+            >
+              Message @nook_cafefinder
+            </a>
+            <Link
+              href="/claim"
+              className="rounded-full border border-zinc-300 px-5 py-2.5 text-sm font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50"
+            >
+              Search again
+            </Link>
+          </div>
+        </div>
+      </FunnelShell>
+    );
+  }
 
   const redirectPath = encodeURIComponent(`/claim/${cafeId}`);
 

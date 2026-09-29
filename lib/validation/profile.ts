@@ -32,7 +32,6 @@ export type ProfileValidation =
 
 const NAME_MAX = 100
 const DESC_MAX = 1000
-const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
 
 const DAY_KEYS = [
   "monday",
@@ -54,6 +53,50 @@ const SOCIAL_LABELS: Record<(typeof SOCIAL_KEYS)[number], string> = {
 
 function cap(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+// Stored hours come from hand entry and imports, so they aren't uniform:
+// "7:30" (no leading zero), "24:00" for midnight, and a few corrupted values
+// like "21:0020:00". `<input type="time">` renders anything but HH:MM as
+// blank, and the old strict check rejected the whole save, so 31 of 55
+// cafes couldn't save any edit. Normalize instead: pad the hour, map 24:00
+// to 00:00, and turn anything unparseable into "" for the owner to re-enter.
+// Mirrors parseHHMM in nook-webapp/lib/utils/hours.ts.
+export function normalizeTime(raw: unknown): string | null {
+  if (typeof raw !== "string") return null
+  const match = /^(\d{1,2}):(\d{2})$/.exec(raw.trim())
+  if (!match) return null
+  const hours = Number(match[1])
+  const minutes = Number(match[2])
+  if (hours > 24 || minutes > 59) return null
+  if (hours === 24) return minutes === 0 ? "00:00" : null
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+}
+
+export function normalizeDayHours(raw: unknown): DayHours {
+  const obj = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>
+  return {
+    open: normalizeTime(obj.open) ?? "",
+    close: normalizeTime(obj.close) ?? "",
+    closed: obj.closed === true,
+  }
+}
+
+/** Closing at or before opening means the cafe closes after midnight. */
+export function closesNextDay(h: DayHours): boolean {
+  return !h.closed && !!h.open && !!h.close && h.open !== h.close && h.close < h.open
+}
+
+/** Per-day problem, or null when the day is fine. Shared by form and server. */
+export function dayHoursError(h: DayHours): string | null {
+  if (h.closed) return null
+  if (!normalizeTime(h.open) || !normalizeTime(h.close)) {
+    return "Add opening and closing times, or mark this day closed"
+  }
+  if (normalizeTime(h.open) === normalizeTime(h.close)) {
+    return "Opening and closing times can't match. Open all day? Use 12:00 AM to 11:59 PM"
+  }
+  return null
 }
 
 // Accepts an absolute http(s) URL; empty → null. Returns a message on invalid.
@@ -83,26 +126,20 @@ export function validateAndNormalizeProfile(input: ProfileInput): ProfileValidat
     return { ok: false, error: `Description must be ${DESC_MAX} characters or fewer` }
   const description = descRaw ? descRaw : null
 
-  // Operating hours — validate each day; enforce open < close for open days.
-  // (Cross-midnight / split shifts aren't representable in this shape yet.)
+  // Operating hours. A close time at or before the open time is an overnight
+  // day (e.g. 18:00 to 02:00); the webapp and mobile "open now" logic both
+  // read it that way. Split shifts still aren't representable.
   const operating_hours: OperatingHours = {}
   for (const day of DAY_KEYS) {
     const h = input.operating_hours?.[day]
     if (!h) return { ok: false, error: `Missing hours for ${cap(day)}` }
-    if (h.closed) {
-      operating_hours[day] = { open: h.open, close: h.close, closed: true }
-      continue
+    const problem = dayHoursError(h)
+    if (problem) return { ok: false, error: `${cap(day)}: ${problem}` }
+    operating_hours[day] = {
+      open: normalizeTime(h.open) ?? "",
+      close: normalizeTime(h.close) ?? "",
+      closed: h.closed === true,
     }
-    if (!TIME_RE.test(h.open) || !TIME_RE.test(h.close)) {
-      return { ok: false, error: `${cap(day)}: enter valid open and close times` }
-    }
-    if (h.open >= h.close) {
-      return {
-        ok: false,
-        error: `${cap(day)}: closing time must be after opening time`,
-      }
-    }
-    operating_hours[day] = { open: h.open, close: h.close, closed: false }
   }
 
   // Social links — normalize empties to null, reject anything that isn't a URL.

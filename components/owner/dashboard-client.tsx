@@ -2,8 +2,6 @@
 
 import Link from "next/link"
 import {
-  CalendarBlank,
-  ChartBar,
   ChatCircle,
   CheckCircle,
   Clock,
@@ -15,7 +13,6 @@ import {
   NavigationArrow,
   PencilSimple,
   Star,
-  Tag,
   XCircle,
 } from "@phosphor-icons/react"
 
@@ -124,7 +121,17 @@ export function OwnerDashboardClient({
               Your listing is live on Nook
             </p>
             <p className="text-xs text-green-700 dark:text-green-300">
-              Users can find you on the map and in search.
+              People can find you on the map and in search.{" "}
+              {/* The portal's own Preview page is switched off, so this is the
+                  only way an owner sees what customers see. */}
+              <a
+                href={`https://www.nookph.app/cafes/${cafe.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium underline underline-offset-2"
+              >
+                View your listing on Nook →
+              </a>
             </p>
           </div>
         </div>
@@ -136,10 +143,19 @@ export function OwnerDashboardClient({
           />
           <div className="flex flex-col gap-0.5">
             <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-              Your listing is {cafe.status}
+              Your listing isn&apos;t public yet
             </p>
             <p className="text-xs text-amber-700 dark:text-amber-300">
-              Contact the Nook team to get your listing activated.
+              You can keep editing. To make it public, message us on Instagram at{" "}
+              <a
+                href="https://instagram.com/nook_cafefinder"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium underline underline-offset-2"
+              >
+                @nook_cafefinder
+              </a>
+              .
             </p>
           </div>
         </div>
@@ -456,28 +472,6 @@ export function OwnerDashboardClient({
                   Edit listing
                 </Link>
               </Button>
-            </CardContent>
-          </Card>
-
-          {/* Phase 3 Coming Soon Card */}
-          <Card className="border-dashed">
-            <CardHeader>
-              <CardTitle className="text-base">Coming Soon</CardTitle>
-              <CardDescription>More tools to grow your cafe</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground py-1">
-                <ChartBar size={16} className="shrink-0" />
-                Full analytics dashboard
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground py-1">
-                <Tag size={16} className="shrink-0" />
-                Vouchers &amp; deals
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground py-1">
-                <CalendarBlank size={16} className="shrink-0" />
-                Event promotion
-              </div>
             </CardContent>
           </Card>
         </div>

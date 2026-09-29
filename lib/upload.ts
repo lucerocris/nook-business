@@ -54,9 +54,17 @@ export async function deleteFile(key: string): Promise<void> {
 // to pass any other string straight through, so a foreign URL became a literal
 // "key" — S3 answers 204 for a key that doesn't exist, and the caller would
 // report a successful delete for an object it never touched.
+//
+// Older rows (40 URLs across 9 cafes as of 2026-09-29) point at the Space's
+// origin host rather than its CDN host, e.g.
+//   https://lucerocris.sgp1.digitaloceanspaces.com/nook/...
+//   https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook/...
+// Both address the same object, so both map to the same key.
 export function getKeyFromUrl(url: string): string {
-  const prefix = `${requireCdn()}/`
-  if (!url.startsWith(prefix)) {
+  const cdn = requireCdn().replace(/\/+$/, "")
+  const prefixes = [`${cdn}/`, `${cdn.replace(".cdn.digitaloceanspaces.com", ".digitaloceanspaces.com")}/`]
+  const prefix = prefixes.find((p) => url.startsWith(p))
+  if (!prefix) {
     throw new Error("URL is not a Nook CDN object")
   }
   return url.slice(prefix.length)

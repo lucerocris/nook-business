@@ -52,8 +52,19 @@ export function ClaimForm({ cafeId, cafeName, initialClaim }: ClaimFormProps) {
 
   const handleWithdraw = () => {
     if (!claim?.id) return;
-    startTransition(() => {
-      void withdrawClaim(claim.id);
+    setError(null);
+    startTransition(async () => {
+      // On success this redirects; a returned value means it didn't happen
+      // (e.g. the team already moved the claim to review, which RLS locks).
+      const result = await withdrawClaim(claim.id);
+      if (result && "error" in result) {
+        setConfirmingCancel(false);
+        setError(
+          claim.status === "pending"
+            ? result.error
+            : "This claim is already being reviewed, so it can't be cancelled here. Message us on Instagram at @nook_cafefinder."
+        );
+      }
     });
   };
 

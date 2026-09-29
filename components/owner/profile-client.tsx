@@ -29,7 +29,12 @@ import {
   updateProfileAction,
   submitCorrectionRequestAction,
 } from "@/app/owner/actions"
-import { validateAndNormalizeProfile } from "@/lib/validation/profile"
+import {
+  closesNextDay,
+  dayHoursError,
+  normalizeDayHours,
+  validateAndNormalizeProfile,
+} from "@/lib/validation/profile"
 
 type DayKey =
   | "monday"
@@ -104,11 +109,22 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
     cafe.social_links?.website ?? ""
   )
 
-  const initialHours: Record<DayKey, DayHours> = {
-    ...DEFAULT_HOURS,
-    ...(cafe.operating_hours as Record<DayKey, DayHours> | null ?? {}),
-  }
+  // Normalize stored hours on load ("7:30" → "07:30", "24:00" → "00:00").
+  // Anything unparseable becomes blank and gets an inline prompt below, so
+  // one bad day no longer blocks saving the rest of the form.
+  const initialHours = Object.fromEntries(
+    DAYS.map(({ key }) => [
+      key,
+      cafe.operating_hours?.[key]
+        ? normalizeDayHours(cafe.operating_hours[key])
+        : DEFAULT_HOURS[key],
+    ])
+  ) as Record<DayKey, DayHours>
   const [hours, setHours] = React.useState<Record<DayKey, DayHours>>(initialHours)
+
+  // Per-day problems show only after a save attempt, so a half-typed time
+  // isn't flagged while the owner is still entering it.
+  const [showHourErrors, setShowHourErrors] = React.useState(false)
 
   function updateHours(day: DayKey, field: keyof DayHours, value: string | boolean) {
     setHours((prev) => ({
@@ -141,6 +157,7 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
     // round-trip; the server re-validates the same way.
     const check = validateAndNormalizeProfile(input)
     if (!check.ok) {
+      setShowHourErrors(true)
       toast.error(check.error)
       return
     }
@@ -258,7 +275,7 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
             {DAYS.map(({ key, label }) => (
               <div
                 key={key}
-                className="flex flex-col gap-2 py-3 border-b last:border-0 sm:flex-row sm:items-center sm:gap-4"
+                className="flex flex-col gap-2 py-3 border-b last:border-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1"
               >
                 <span className="text-sm font-medium sm:w-28 sm:shrink-0">{label}</span>
 
@@ -279,6 +296,25 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
                     onChange={(e) => updateHours(key, "close", e.target.value)}
                   />
                 </div>
+
+                {(() => {
+                  const problem = showHourErrors ? dayHoursError(hours[key]) : null
+                  if (problem) {
+                    return (
+                      <p role="alert" className="text-xs text-destructive sm:order-last sm:basis-full">
+                        {problem}
+                      </p>
+                    )
+                  }
+                  if (closesNextDay(hours[key])) {
+                    return (
+                      <p className="text-xs text-muted-foreground sm:order-last sm:basis-full">
+                        {hours[key].close === "00:00" ? "Closes at midnight" : "Closes after midnight, the next day"}
+                      </p>
+                    )
+                  }
+                  return null
+                })()}
 
                 {/* Mobile: own row — inside the time row it stole ~80px and
                     clipped the time values on every day. */}

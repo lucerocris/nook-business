@@ -100,21 +100,47 @@ export async function updateTagsAction(
   return { ok: true }
 }
 
+// Menu item actions return errors as values: Next redacts the message of
+// anything thrown from a Server Action in production, so owners saw a generic
+// "Server Components render" error instead of e.g. the 5-highlight cap.
+type MenuResult<T> = ({ ok: true } & T) | { ok: false; error: string }
+
+async function runMenuAction<T>(
+  work: () => Promise<T>,
+  fallback: string
+): Promise<MenuResult<T>> {
+  try {
+    return { ok: true, ...(await work()) }
+  } catch (error) {
+    // Plain Errors from lib/queries/menu carry owner-facing messages; Postgres
+    // errors (which have a `code`) don't, and can leak schema details.
+    const ownerFacing =
+      error instanceof Error && !("code" in error) ? error.message : null
+    if (!ownerFacing) console.error("[menu]", error)
+    return { ok: false, error: ownerFacing ?? fallback }
+  }
+}
+
 export async function upsertMenuItemAction(
   item: Omit<Parameters<typeof upsertMenuItem>[0], "cafe_id">
 ) {
-  const cafeId = await getOwnerCafeId()
-  const data = await upsertMenuItem({ ...item, cafe_id: cafeId })
-  revalidatePath("/owner/menu")
-  return { id: data.id as string }
+  return runMenuAction(async () => {
+    const cafeId = await getOwnerCafeId()
+    const data = await upsertMenuItem({ ...item, cafe_id: cafeId })
+    revalidatePath("/owner/menu")
+    return { id: data.id as string }
+  }, "Couldn't save this item. Please try again.")
 }
 
 export async function deleteMenuItemAction(id: string) {
   // Had no authorization at all and reached a service-role delete scoped only
   // by the client-supplied id — any signed-in user could delete any cafe's menu.
-  const cafeId = await getOwnerCafeId()
-  await deleteMenuItem(id, cafeId)
-  revalidatePath("/owner/menu")
+  return runMenuAction(async () => {
+    const cafeId = await getOwnerCafeId()
+    await deleteMenuItem(id, cafeId)
+    revalidatePath("/owner/menu")
+    return {}
+  }, "Couldn't delete this item. Please try again.")
 }
 
 export async function upsertMenuItemVariantsAction(
@@ -122,10 +148,12 @@ export async function upsertMenuItemVariantsAction(
   variants: Parameters<typeof upsertMenuItemVariants>[1]
 ) {
   // Same shape of hole as deleteMenuItemAction above.
-  const cafeId = await getOwnerCafeId()
-  const data = await upsertMenuItemVariants(menuItemId, variants, cafeId)
-  revalidatePath("/owner/menu")
-  return data
+  return runMenuAction(async () => {
+    const cafeId = await getOwnerCafeId()
+    const data = await upsertMenuItemVariants(menuItemId, variants, cafeId)
+    revalidatePath("/owner/menu")
+    return { variants: data }
+  }, "Item saved, but its sizes/variants didn't. Tap save again to retry.")
 }
 
 // ── MENU CATEGORIES ───────────────────────────────────

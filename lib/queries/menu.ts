@@ -137,12 +137,15 @@ export async function upsertMenuItem(item: {
   const payload: Record<string, unknown> = {
     cafe_id:      item.cafe_id,
     name:         item.name.trim(),
-    description:  item.description ?? null,
     price:        item.price,
     category_id:  item.category_id,
     is_highlight: item.is_highlight,
   }
   if (item.id) payload.id = item.id
+  // Only when the caller sends it. The portal's item dialog has no
+  // description field, so writing `?? null` here erased admin-written
+  // descriptions every time an owner edited an item or toggled a highlight.
+  if (item.description !== undefined) payload.description = item.description
 
   // image_url is only ever produced by uploadMenuItemImageAction. Accepting it
   // verbatim let an arbitrary external image be attached to a public listing,

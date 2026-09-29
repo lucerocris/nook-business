@@ -9,14 +9,19 @@ const CAFE_PHOTO_LIMIT = 5
 const ALLOWED_TYPES    = ["image/jpeg", "image/png", "image/webp"]
 const MAX_SIZE_BYTES   = 10 * 1024 * 1024
 
+// Errors whose message is safe and useful to show an owner. Next redacts
+// thrown Server Action errors in production, so the photo actions below catch
+// these and return the message as a value instead of throwing.
+class OwnerFacingError extends Error {}
+
 // Verifies the calling user actually owns `cafeId` before any service-role
 // write. Never trust the client-supplied id on its own.
 async function requireOwnedCafeId(cafeId: string | undefined): Promise<string> {
-  if (!cafeId) throw new Error("cafeId is required")
+  if (!cafeId) throw new OwnerFacingError("cafeId is required")
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error("Not authenticated")
+  if (!user) throw new OwnerFacingError("Your session expired. Log in again to continue.")
 
   const { data } = await supabase
     .from("cafe_owner_cafe")
@@ -25,77 +30,116 @@ async function requireOwnedCafeId(cafeId: string | undefined): Promise<string> {
     .eq("cafe_id", cafeId)
     .maybeSingle()
 
-  if (!data) throw new Error("Not authorized for this cafe")
+  if (!data) throw new OwnerFacingError("You don't have access to this cafe")
   return data.cafe_id
 }
 
 function validateFile(file: File) {
   if (!ALLOWED_TYPES.includes(file.type))
-    throw new Error("Only JPG, PNG, and WEBP are allowed")
+    throw new OwnerFacingError("Only JPG, PNG, and WEBP photos are allowed")
   if (file.size > MAX_SIZE_BYTES)
-    throw new Error("File must be under 10MB")
+    throw new OwnerFacingError("Photo must be under 10MB")
+}
+
+export type CafePhotoState = { hero: string | null; gallery: string[] }
+export type CafePhotoResult =
+  | ({ ok: true } & CafePhotoState)
+  | { ok: false; error: string }
+
+// Every cafe-photo action returns the stored hero + gallery after the write.
+// The client replaces its state with this instead of guessing: the server
+// can promote an upload to hero or pick a new hero on delete, and a client
+// that guessed wrong would later delete or replace the wrong object.
+async function runPhotoAction(
+  work: () => Promise<CafePhotoState>
+): Promise<CafePhotoResult> {
+  try {
+    return { ok: true, ...(await work()) }
+  } catch (error) {
+    if (error instanceof OwnerFacingError) {
+      return { ok: false, error: error.message }
+    }
+    console.error("[cafe photos]", error)
+    return { ok: false, error: "Something went wrong saving your photos. Please try again." }
+  }
+}
+
+async function loadPhotos(
+  supabase: ReturnType<typeof createAdminClient>,
+  cafeId: string
+): Promise<CafePhotoState> {
+  const { data, error } = await supabase
+    .from("cafes")
+    .select("featured_image_url, photo_urls")
+    .eq("id", cafeId)
+    .single()
+  if (error) throw error
+  return {
+    hero: (data?.featured_image_url as string | null) ?? null,
+    gallery: (data?.photo_urls as string[] | null) ?? [],
+  }
+}
+
+async function deleteFileQuietly(url: string) {
+  try {
+    await deleteFile(getKeyFromUrl(url))
+  } catch (error) {
+    // An orphaned object costs a few KB; failing the owner's action over it
+    // (or leaving the row pointing at a deleted file) costs a broken listing.
+    console.error("[cafe photos] storage cleanup failed", url, error)
+  }
+}
+
+function revalidatePhotos(cafeId: string) {
+  revalidatePath(`/admin/cafes/${cafeId}/edit`)
+  revalidatePath("/owner/photos")
+  revalidatePath("/owner/dashboard")
+}
+
+function tooMany(): never {
+  throw new OwnerFacingError(
+    `You can have up to ${CAFE_PHOTO_LIMIT} photos. Delete one to add another.`
+  )
 }
 
 // ── CAFE HERO PHOTO ───────────────────────────────────
-// Key: nook/cafes/{cafeId}/hero.{ext}
+// Key: nook/cafes/{cafeId}/hero-{timestamp}.{ext}
 
 export async function uploadCafeHeroAction(
   formData: FormData,
   cafeId: string
-) {
-  const file = formData.get("file") as File
-  if (!file) throw new Error("No file provided")
-  validateFile(file)
+): Promise<CafePhotoResult> {
+  return runPhotoAction(async () => {
+    const file = formData.get("file") as File | null
+    if (!file) throw new OwnerFacingError("Choose a photo to upload")
+    validateFile(file)
 
-  const targetCafeId = await requireOwnedCafeId(cafeId)
-  const supabase     = createAdminClient()
+    const targetCafeId = await requireOwnedCafeId(cafeId)
+    const supabase     = createAdminClient()
+    const current      = await loadPhotos(supabase, targetCafeId)
 
-  // Adding a brand-new hero (none set yet) counts toward the total cap;
-  // replacing an existing hero doesn't change the count.
-  const { data: cafe } = await supabase
-    .from("cafes")
-    .select("featured_image_url, photo_urls")
-    .eq("id", targetCafeId)
-    .single()
+    // A brand-new hero counts toward the cap; replacing one doesn't.
+    if (!current.hero && current.gallery.length >= CAFE_PHOTO_LIMIT) tooMany()
 
-  const gallery = (cafe?.photo_urls as string[]) ?? []
-  if (!cafe?.featured_image_url && gallery.length >= CAFE_PHOTO_LIMIT) {
-    throw new Error(`Maximum ${CAFE_PHOTO_LIMIT} photos per cafe`)
-  }
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const ext    = file.type.split("/")[1]
+    // Timestamped: a fixed key produced the same URL on every replacement, so
+    // the CDN kept serving the old image.
+    const key    = `nook/cafes/${targetCafeId}/hero-${Date.now()}.${ext}`
+    const url    = await uploadFile({ key, buffer, contentType: file.type })
 
-  const buffer = Buffer.from(await file.arrayBuffer())
-  const ext    = file.type.split("/")[1]
-  // Timestamped like the gallery path. A fixed `hero.{ext}` key meant every
-  // replacement wrote the same object and produced the same URL, so the CDN
-  // (and the browser) kept serving the previous image — replacing a hero
-  // looked like it silently did nothing.
-  const key    = `nook/cafes/${targetCafeId}/hero-${Date.now()}.${ext}`
+    const { error } = await supabase
+      .from("cafes")
+      .update({ featured_image_url: url })
+      .eq("id", targetCafeId)
+    if (error) throw error
 
-  const previousHero = cafe?.featured_image_url as string | null
+    // Clean up the replaced object only after the row points at the new one.
+    if (current.hero && current.hero !== url) await deleteFileQuietly(current.hero)
 
-  const url = await uploadFile({ key, buffer, contentType: file.type })
-
-  const { error } = await supabase
-    .from("cafes")
-    .update({ featured_image_url: url })
-    .eq("id", targetCafeId)
-
-  if (error) throw error
-
-  // Best-effort cleanup of the object we just replaced, after the row points
-  // at the new URL. A failure here only leaves an orphan, never a broken card.
-  if (previousHero && previousHero !== url) {
-    try {
-      await deleteFile(getKeyFromUrl(previousHero))
-    } catch {
-      // ignore — orphaned object, not worth failing the upload over
-    }
-  }
-
-  revalidatePath(`/admin/cafes/${targetCafeId}/edit`)
-  revalidatePath("/owner/photos")
-
-  return { url }
+    revalidatePhotos(targetCafeId)
+    return { hero: url, gallery: current.gallery }
+  })
 }
 
 // ── CAFE GALLERY PHOTOS ───────────────────────────────
@@ -105,119 +149,79 @@ export async function uploadCafeHeroAction(
 export async function uploadCafePhotoAction(
   formData: FormData,
   cafeId: string
-) {
-  const file = formData.get("file") as File
-  if (!file) throw new Error("No file provided")
-  validateFile(file)
+): Promise<CafePhotoResult> {
+  return runPhotoAction(async () => {
+    const file = formData.get("file") as File | null
+    if (!file) throw new OwnerFacingError("Choose a photo to upload")
+    validateFile(file)
 
-  const targetCafeId = await requireOwnedCafeId(cafeId)
-  const supabase     = createAdminClient()
+    const targetCafeId = await requireOwnedCafeId(cafeId)
+    const supabase     = createAdminClient()
+    const current      = await loadPhotos(supabase, targetCafeId)
 
-  const { data: cafe } = await supabase
-    .from("cafes")
-    .select("featured_image_url, photo_urls")
-    .eq("id", targetCafeId)
-    .single()
+    if ((current.hero ? 1 : 0) + current.gallery.length >= CAFE_PHOTO_LIMIT) tooMany()
 
-  const existing   = (cafe?.photo_urls as string[]) ?? []
-  const heroCount  = cafe?.featured_image_url ? 1 : 0
-  const totalCount = heroCount + existing.length
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const ext    = file.type.split("/")[1]
+    const key    = `nook/cafes/${targetCafeId}/gallery-${Date.now()}.${ext}`
+    const url    = await uploadFile({ key, buffer, contentType: file.type })
 
-  if (totalCount >= CAFE_PHOTO_LIMIT)
-    throw new Error(`Maximum ${CAFE_PHOTO_LIMIT} photos per cafe`)
+    // No hero yet → this upload becomes the hero (cards, map pins and the
+    // detail header all key off featured_image_url).
+    const next: CafePhotoState = current.hero
+      ? { hero: current.hero, gallery: [...current.gallery, url] }
+      : { hero: url, gallery: current.gallery }
 
-  const buffer    = Buffer.from(await file.arrayBuffer())
-  const ext       = file.type.split("/")[1]
-  const timestamp = Date.now()
-  const key       = `nook/cafes/${targetCafeId}/gallery-${timestamp}.${ext}`
-
-  const url = await uploadFile({ key, buffer, contentType: file.type })
-
-  // No hero yet → promote this upload to hero instead of leaving the listing
-  // heroless (cards/map pins/detail header all key off featured_image_url).
-  if (!cafe?.featured_image_url) {
     const { error } = await supabase
       .from("cafes")
-      .update({ featured_image_url: url })
+      .update({ featured_image_url: next.hero, photo_urls: next.gallery })
       .eq("id", targetCafeId)
-
     if (error) throw error
 
-    revalidatePath(`/admin/cafes/${targetCafeId}/edit`)
-    revalidatePath("/owner/photos")
-
-    return { url, total: existing.length + 1 }
-  }
-
-  const updated = [...existing, url]
-  const { error } = await supabase
-    .from("cafes")
-    .update({ photo_urls: updated })
-    .eq("id", targetCafeId)
-
-  if (error) throw error
-
-  revalidatePath(`/admin/cafes/${targetCafeId}/edit`)
-  revalidatePath("/owner/photos")
-
-  return { url, total: heroCount + updated.length }
+    revalidatePhotos(targetCafeId)
+    return next
+  })
 }
 
 // ── DELETE CAFE PHOTO ─────────────────────────────────
 
 export async function deleteCafePhotoAction(
   photoUrl: string,
-  isHero: boolean,
   cafeId: string
-) {
-  const targetCafeId = await requireOwnedCafeId(cafeId)
-  const supabase     = createAdminClient()
+): Promise<CafePhotoResult> {
+  return runPhotoAction(async () => {
+    const targetCafeId = await requireOwnedCafeId(cafeId)
+    const supabase     = createAdminClient()
+    const current      = await loadPhotos(supabase, targetCafeId)
 
-  // Load this cafe's own images and confirm the URL belongs to it BEFORE
-  // touching storage. Without this, a client could pass any cafe's (public)
-  // image URL and delete that object from storage.
-  const { data: cafe } = await supabase
-    .from("cafes")
-    .select("featured_image_url, photo_urls")
-    .eq("id", targetCafeId)
-    .single()
+    // Only URLs stored on this cafe may be deleted. Without this, a client
+    // could pass any cafe's public image URL and delete it from storage.
+    const isHero = current.hero === photoUrl
+    if (!isHero && !current.gallery.includes(photoUrl)) {
+      throw new OwnerFacingError("That photo is no longer on your listing. Refresh the page.")
+    }
 
-  const gallery   = (cafe?.photo_urls as string[]) ?? []
-  const ownedUrls = new Set<string>([
-    ...(cafe?.featured_image_url ? [cafe.featured_image_url] : []),
-    ...gallery,
-  ])
+    // Hero-ness comes from the row, never from the client: a client that
+    // thought a promoted hero was a gallery photo used to leave
+    // featured_image_url pointing at a deleted object.
+    const gallery = current.gallery.filter((u) => u !== photoUrl)
+    const next: CafePhotoState = isHero
+      ? { hero: gallery[0] ?? null, gallery: gallery.slice(1) }
+      : { hero: current.hero, gallery }
 
-  if (!ownedUrls.has(photoUrl)) {
-    throw new Error("Photo does not belong to this cafe")
-  }
-
-  await deleteFile(getKeyFromUrl(photoUrl))
-
-  if (isHero) {
-    const newHero    = gallery[0] ?? null
-    const newGallery = gallery.slice(1)
-
+    // Row first, storage second: a failed DB write must not leave the
+    // listing pointing at an object that's already gone.
     const { error } = await supabase
       .from("cafes")
-      .update({ featured_image_url: newHero, photo_urls: newGallery })
+      .update({ featured_image_url: next.hero, photo_urls: next.gallery })
       .eq("id", targetCafeId)
-
     if (error) throw error
 
-  } else {
-    const updated = gallery.filter(u => u !== photoUrl)
+    await deleteFileQuietly(photoUrl)
 
-    const { error } = await supabase
-      .from("cafes")
-      .update({ photo_urls: updated })
-      .eq("id", targetCafeId)
-
-    if (error) throw error
-  }
-
-  revalidatePath(`/admin/cafes/${targetCafeId}/edit`)
-  revalidatePath("/owner/photos")
+    revalidatePhotos(targetCafeId)
+    return next
+  })
 }
 
 // ── REORDER CAFE PHOTOS ──────────────────────────────
@@ -226,87 +230,88 @@ export async function deleteCafePhotoAction(
 export async function reorderCafePhotosAction(
   orderedPhotoUrls: string[],
   cafeId: string
-) {
-  const targetCafeId = await requireOwnedCafeId(cafeId)
+): Promise<CafePhotoResult> {
+  return runPhotoAction(async () => {
+    const targetCafeId = await requireOwnedCafeId(cafeId)
+    if (orderedPhotoUrls.length > CAFE_PHOTO_LIMIT) tooMany()
 
-  if (orderedPhotoUrls.length > CAFE_PHOTO_LIMIT) {
-    throw new Error(`Maximum ${CAFE_PHOTO_LIMIT} photos per cafe`)
-  }
+    const deduped  = Array.from(new Set(orderedPhotoUrls.filter(Boolean)))
+    const supabase = createAdminClient()
+    const current  = await loadPhotos(supabase, targetCafeId)
 
-  const deduped = Array.from(new Set(orderedPhotoUrls.filter(Boolean)))
+    // Reordering may only permute URLs this cafe already owns, and all of
+    // them: planting a foreign URL would let a later delete remove another
+    // cafe's object, and dropping one would orphan it.
+    const owned = [...(current.hero ? [current.hero] : []), ...current.gallery]
+    const sameSet =
+      deduped.length === owned.length && deduped.every((u) => owned.includes(u))
+    if (!sameSet) {
+      throw new OwnerFacingError("Your photos changed in another tab. Refresh the page and try again.")
+    }
 
-  const supabase = createAdminClient()
+    const next: CafePhotoState = { hero: deduped[0] ?? null, gallery: deduped.slice(1) }
+    const { error } = await supabase
+      .from("cafes")
+      .update({ featured_image_url: next.hero, photo_urls: next.gallery })
+      .eq("id", targetCafeId)
+    if (error) throw error
 
-  // Reordering may only permute URLs this cafe already owns. Without this the
-  // client could write any URL into the listing — and, because
-  // deleteCafePhotoAction validates against whatever is currently stored, a
-  // planted URL would then pass that check and let an owner delete another
-  // cafe's object from the shared bucket.
-  const { data: current } = await supabase
-    .from("cafes")
-    .select("featured_image_url, photo_urls")
-    .eq("id", targetCafeId)
-    .single()
-
-  const ownedUrls = new Set<string>([
-    ...(current?.featured_image_url ? [current.featured_image_url] : []),
-    ...(((current?.photo_urls as string[]) ?? [])),
-  ])
-
-  const unknown = deduped.find((url) => !ownedUrls.has(url))
-  if (unknown) throw new Error("Photo does not belong to this cafe")
-
-  const hero = deduped[0] ?? null
-  const gallery = deduped.slice(1)
-
-  const { error } = await supabase
-    .from("cafes")
-    .update({
-      featured_image_url: hero,
-      photo_urls: gallery,
-    })
-    .eq("id", targetCafeId)
-
-  if (error) throw error
-
-  revalidatePath(`/admin/cafes/${targetCafeId}/edit`)
-  revalidatePath("/owner/photos")
-
-  return { hero, gallery }
+    revalidatePhotos(targetCafeId)
+    return next
+  })
 }
 
 // ── MENU ITEM IMAGE ───────────────────────────────────
-// Key: nook/cafes/{cafeId}/menu/{menuItemId}.{ext}
+// Key: nook/cafes/{cafeId}/menu/{menuItemId}-{timestamp}.{ext}
+// Returns errors as values for the same reason as the photo actions above.
+
+export type MenuImageResult =
+  | { ok: true; url: string | null }
+  | { ok: false; error: string }
+
+async function runMenuImageAction(
+  work: () => Promise<string | null>
+): Promise<MenuImageResult> {
+  try {
+    return { ok: true, url: await work() }
+  } catch (error) {
+    if (error instanceof OwnerFacingError) return { ok: false, error: error.message }
+    console.error("[menu image]", error)
+    return { ok: false, error: "Something went wrong with that image. Please try again." }
+  }
+}
 
 export async function uploadMenuItemImageAction(
   formData: FormData,
   menuItemId: string,
   cafeId: string
-) {
-  const file = formData.get("file") as File
-  if (!file) throw new Error("No file provided")
-  validateFile(file)
+): Promise<MenuImageResult> {
+  return runMenuImageAction(async () => {
+    const file = formData.get("file") as File | null
+    if (!file) throw new OwnerFacingError("Choose a photo to upload")
+    validateFile(file)
 
-  const targetCafeId = await requireOwnedCafeId(cafeId)
-  const buffer       = Buffer.from(await file.arrayBuffer())
-  const ext          = file.type.split("/")[1]
-  const key          = `nook/cafes/${targetCafeId}/menu/${menuItemId}.${ext}`
+    const targetCafeId = await requireOwnedCafeId(cafeId)
+    const buffer       = Buffer.from(await file.arrayBuffer())
+    const ext          = file.type.split("/")[1]
+    // Timestamped: compression always yields .webp, so a fixed per-item key
+    // gave a replacement the same URL and the CDN kept serving the old photo.
+    const key          = `nook/cafes/${targetCafeId}/menu/${menuItemId}-${Date.now()}.${ext}`
 
-  const url = await uploadFile({ key, buffer, contentType: file.type })
+    const url = await uploadFile({ key, buffer, contentType: file.type })
 
-  const supabase = createAdminClient()
-  const { error } = await supabase
-    .from("menu_items")
-    .update({ image_url: url })
-    .eq("id", menuItemId)
-    .eq("cafe_id", targetCafeId)
+    const supabase = createAdminClient()
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ image_url: url })
+      .eq("id", menuItemId)
+      .eq("cafe_id", targetCafeId)
+    if (error) throw error
 
-  if (error) throw error
-
-  revalidatePath(`/admin/cafes/${targetCafeId}/edit`)
-  revalidatePath("/owner/menu")
-
-  return { url }
+    revalidatePath(`/admin/cafes/${targetCafeId}/edit`)
+    revalidatePath("/owner/menu")
+    return url
+  })
 }
 
 // ── DELETE MENU ITEM IMAGE ────────────────────────────
@@ -315,35 +320,38 @@ export async function deleteMenuItemImageAction(
   menuItemId: string,
   imageUrl: string,
   cafeId: string
-) {
-  const targetCafeId = await requireOwnedCafeId(cafeId)
-  const supabase     = createAdminClient()
+): Promise<MenuImageResult> {
+  return runMenuImageAction(async () => {
+    const targetCafeId = await requireOwnedCafeId(cafeId)
+    const supabase     = createAdminClient()
 
-  // Confirm the menu item belongs to this cafe AND the URL matches the stored
-  // image before deleting from storage — never delete a client-supplied URL blindly.
-  const { data: item } = await supabase
-    .from("menu_items")
-    .select("id, image_url")
-    .eq("id", menuItemId)
-    .eq("cafe_id", targetCafeId)
-    .maybeSingle()
+    // Confirm the item belongs to this cafe AND the URL matches the stored
+    // image before touching storage; never delete a client-supplied URL blindly.
+    const { data: item } = await supabase
+      .from("menu_items")
+      .select("id, image_url")
+      .eq("id", menuItemId)
+      .eq("cafe_id", targetCafeId)
+      .maybeSingle()
 
-  if (!item || item.image_url !== imageUrl) {
-    throw new Error("Image does not belong to this cafe")
-  }
+    if (!item || item.image_url !== imageUrl) {
+      throw new OwnerFacingError("That image is no longer on this item. Refresh the page.")
+    }
 
-  await deleteFile(getKeyFromUrl(imageUrl))
+    // Row first, then storage, as with cafe photos.
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ image_url: null })
+      .eq("id", menuItemId)
+      .eq("cafe_id", targetCafeId)
+    if (error) throw error
 
-  const { error } = await supabase
-    .from("menu_items")
-    .update({ image_url: null })
-    .eq("id", menuItemId)
-    .eq("cafe_id", targetCafeId)
+    await deleteFileQuietly(imageUrl)
 
-  if (error) throw error
-
-  revalidatePath(`/admin/cafes/${targetCafeId}/edit`)
-  revalidatePath("/owner/menu")
+    revalidatePath(`/admin/cafes/${targetCafeId}/edit`)
+    revalidatePath("/owner/menu")
+    return null
+  })
 }
 
 // ── REVIEW REPORT EVIDENCE ────────────────────────────

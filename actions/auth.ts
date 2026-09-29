@@ -54,7 +54,7 @@ export async function signUp(
     confirmUrl.searchParams.set("next", safeRedirect);
   }
 
-  const { error } = await supabase.auth.signUp({
+  const { data: signUpData, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -70,8 +70,29 @@ export async function signUp(
   });
 
   if (error) {
+    // Supabase's raw messages ("email rate limit exceeded", …) read like a
+    // crash to an owner. Map the ones people actually hit.
+    const code = error.code ?? ""
+    if (code === "over_email_send_rate_limit" || error.status === 429) {
+      return { error: "Too many attempts. Wait a minute, then try again." };
+    }
+    if (code === "weak_password") {
+      return { error: "Choose a stronger password: at least 8 characters, not a common one." };
+    }
+    if (code === "email_address_invalid") {
+      return { error: "That email address doesn't look right. Check it and try again." };
+    }
+    return { error: "We couldn't create your account. Please try again." };
+  }
+
+  // With email confirmation on, signing up with an email that already has an
+  // account returns success with no identities and sends no email. Without
+  // this check the owner waited on the code screen for a code that never came.
+  // Common for owners who already use the Nook app, or signed up with Google.
+  if (signUpData.user && (signUpData.user.identities?.length ?? 0) === 0) {
     return {
-      error: error.message || "Unable to create account.",
+      error:
+        "You already have a Nook account with this email. Log in instead, or use Continue with Google if that's how you signed up.",
     };
   }
 
@@ -104,6 +125,25 @@ export async function signIn(
   });
 
   if (error) {
+    // Right password, unconfirmed email: this used to read as "Invalid email
+    // or password", a dead end for an owner who closed the code screen. Send a
+    // fresh code and put them back on it.
+    if (error.code === "email_not_confirmed") {
+      const safeRedirect = getSafeRedirect(redirectTo);
+      const confirmUrl = new URL("/auth/confirm", await getBaseUrl());
+      if (safeRedirect !== "/") confirmUrl.searchParams.set("next", safeRedirect);
+      await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: confirmUrl.toString() },
+      });
+      const params = new URLSearchParams({ email });
+      if (safeRedirect !== "/") params.set("redirect", safeRedirect);
+      redirect(`/register/confirm?${params.toString()}`);
+    }
+    if (error.status === 429) {
+      return { error: "Too many attempts. Wait a minute, then try again." };
+    }
     return {
       error: "Invalid email or password.",
     };

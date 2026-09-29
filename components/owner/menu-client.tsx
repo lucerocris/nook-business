@@ -490,8 +490,12 @@ export function OwnerMenuClient({
       prev.map((i) => (i.id === id ? { ...i, is_highlight: value } : i))
     )
 
+    const revert = () =>
+      setItems((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, is_highlight: !value } : i))
+      )
     try {
-      await upsertMenuItemAction({
+      const res = await upsertMenuItemAction({
         id: item.id,
         name: item.name,
         price: item.price,
@@ -499,12 +503,15 @@ export function OwnerMenuClient({
         is_highlight: value,
         image_url: item.image_url,
       })
+      if (!res.ok) {
+        revert()
+        toast.error(res.error)
+        return
+      }
       toast.success(value ? "Item highlighted" : "Item removed from highlights")
     } catch {
-      setItems((prev) =>
-        prev.map((i) => (i.id === id ? { ...i, is_highlight: !value } : i))
-      )
-      toast.error("Failed to update highlight")
+      revert()
+      toast.error("Failed to update highlight. Check your connection.")
     }
   }
 
@@ -515,7 +522,12 @@ export function OwnerMenuClient({
     const snapshot = items
     setItems((prev) => prev.filter((i) => i.id !== id))
     try {
-      await deleteMenuItemAction(id)
+      const res = await deleteMenuItemAction(id)
+      if (!res.ok) {
+        setItems(snapshot)
+        toast.error(res.error)
+        return
+      }
       toast.success("Menu item deleted")
     } catch {
       // Restore the optimistic removal. Without this the item stayed gone
@@ -601,7 +613,7 @@ export function OwnerMenuClient({
         basePrice = fallbackVariant.price_override ?? 0
       }
 
-      const { id: menuItemId } = await upsertMenuItemAction({
+      const saved = await upsertMenuItemAction({
         id: editingItemId ?? undefined,
         name: itemForm.name,
         price: basePrice,
@@ -609,6 +621,14 @@ export function OwnerMenuClient({
         is_highlight: itemForm.is_highlight && highlightAllowed,
         image_url: editingItem?.image_url ?? null,
       })
+      if (!saved.ok) {
+        toast.error(saved.error)
+        return
+      }
+      const menuItemId = saved.id
+      // From here the row exists. If a later step fails and the owner taps
+      // save again, update this row instead of inserting a duplicate.
+      if (!editingItemId) setEditingItemId(menuItemId)
 
       let imageUrl = editingItem?.image_url ?? null
       if (!isEditing && itemForm.is_highlight && pendingImageFile) {
@@ -616,12 +636,13 @@ export function OwnerMenuClient({
           const compressed = await compressImage(pendingImageFile)
           const formData = new FormData()
           formData.append("file", compressed)
-          const { url } = await uploadMenuItemImageAction(
+          const res = await uploadMenuItemImageAction(
             formData,
             menuItemId,
             cafeId
           )
-          imageUrl = url
+          if (res.ok) imageUrl = res.url
+          else toast.error(`Item saved, but the photo didn't upload: ${res.error}`)
         } catch {
           // Image upload failure is non-fatal — item is still saved
           toast.error("Item saved, but image upload failed")
@@ -639,10 +660,15 @@ export function OwnerMenuClient({
         }))
         : []
 
-      const savedVariants = await upsertMenuItemVariantsAction(
+      const variantsRes = await upsertMenuItemVariantsAction(
         menuItemId,
         variantsPayload
       )
+      if (!variantsRes.ok) {
+        toast.error(variantsRes.error)
+        return
+      }
+      const savedVariants = variantsRes.variants
 
       const category = categoryList.find((c) => c.id === itemForm.categoryId)
       const updatedItem: MenuItem = {
@@ -658,12 +684,11 @@ export function OwnerMenuClient({
         menu_item_variants: itemForm.hasVariants ? savedVariants : [],
       }
 
-      setItems((prev) => {
-        if (editingItemId) {
-          return prev.map((item) => (item.id === menuItemId ? updatedItem : item))
-        }
-        return [...prev, updatedItem]
-      })
+      setItems((prev) =>
+        prev.some((item) => item.id === menuItemId)
+          ? prev.map((item) => (item.id === menuItemId ? updatedItem : item))
+          : [...prev, updatedItem]
+      )
 
       resetItemForm()
       setItemDialogOpen(false)
@@ -690,9 +715,10 @@ export function OwnerMenuClient({
       const compressed = await compressImage(file)
       const formData = new FormData()
       formData.append("file", compressed)
-      const { url } = await uploadMenuItemImageAction(formData, id, cafeId)
+      const res = await uploadMenuItemImageAction(formData, id, cafeId)
+      if (!res.ok) throw new Error(res.error)
       setItems((prev) =>
-        prev.map((i) => (i.id === id ? { ...i, image_url: url } : i))
+        prev.map((i) => (i.id === id ? { ...i, image_url: res.url } : i))
       )
       toast.success("Item image uploaded", { id: toastId })
     } catch (err: unknown) {
@@ -709,7 +735,8 @@ export function OwnerMenuClient({
     setUploadingItemId(id)
     const toastId = toast.loading("Removing item image…")
     try {
-      await deleteMenuItemImageAction(id, imageUrl, cafeId)
+      const res = await deleteMenuItemImageAction(id, imageUrl, cafeId)
+      if (!res.ok) throw new Error(res.error)
       setItems((prev) =>
         prev.map((i) => (i.id === id ? { ...i, image_url: null } : i))
       )
@@ -1004,6 +1031,7 @@ export function OwnerMenuClient({
                   <Input
                     id="item-price"
                     type="number"
+                    inputMode="decimal"
                     min="0"
                     step="0.01"
                     placeholder="0.00"
@@ -1119,6 +1147,7 @@ export function OwnerMenuClient({
                       </Label>
                       <Input
                         type="number"
+                        inputMode="decimal"
                         min="0"
                         step="0.01"
                         placeholder="0.00"

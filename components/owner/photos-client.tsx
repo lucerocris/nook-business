@@ -91,6 +91,19 @@ export function OwnerPhotosClient({
     setCurrentPhotoUrls(ordered.slice(1))
   }
 
+  // Every photo action returns what's stored after the write; mirror it
+  // exactly rather than predicting (the server may promote an upload to hero).
+  function applyServerPhotos(state: { hero: string | null; gallery: string[] }) {
+    setCurrentHeroUrl(state.hero)
+    setCurrentPhotoUrls(state.gallery)
+  }
+
+  function showPhotoError(msg: string, toastId?: string | number) {
+    setUploadError(msg)
+    toast.error(msg, toastId === undefined ? undefined : { id: toastId })
+    setTimeout(() => setUploadError(""), 4000)
+  }
+
   async function persistPhotoOrder(ordered: string[]) {
     const previous = allPhotos
     applyOrderedPhotos(ordered)
@@ -98,14 +111,17 @@ export function OwnerPhotosClient({
     setUploadError("")
 
     try {
-      await reorderCafePhotosAction(ordered, cafeId)
+      const res = await reorderCafePhotosAction(ordered, cafeId)
+      if (!res.ok) {
+        applyOrderedPhotos(previous)
+        showPhotoError(res.error)
+        return false
+      }
+      applyServerPhotos(res)
       return true
-    } catch (err: unknown) {
+    } catch {
       applyOrderedPhotos(previous)
-      const msg = err instanceof Error ? err.message : "Reorder failed"
-      setUploadError(msg)
-      toast.error(msg)
-      setTimeout(() => setUploadError(""), 4000)
+      showPhotoError("Couldn't save the new order. Check your connection and try again.")
       return false
     } finally {
       setIsReordering(false)
@@ -179,20 +195,22 @@ export function OwnerPhotosClient({
       const formData = new FormData()
       formData.append("file", compressed)
 
-      if (isHero) {
-        const { url } = await uploadCafeHeroAction(formData, cafeId)
-        setCurrentHeroUrl(url)
-        toast.success("Hero photo uploaded", { id: toastId })
-      } else {
-        const { url } = await uploadCafePhotoAction(formData, cafeId)
-        setCurrentPhotoUrls((prev) => [...prev, url])
-        toast.success("Photo uploaded", { id: toastId })
+      const res = isHero
+        ? await uploadCafeHeroAction(formData, cafeId)
+        : await uploadCafePhotoAction(formData, cafeId)
+      if (!res.ok) {
+        showPhotoError(res.error, toastId)
+        return
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Upload failed"
-      setUploadError(msg)
-      toast.error(msg, { id: toastId })
-      setTimeout(() => setUploadError(""), 4000)
+      const becameHero = !isHero && !currentHeroUrl && !!res.hero
+      applyServerPhotos(res)
+      toast.success(
+        isHero ? "Hero photo uploaded" : becameHero ? "Photo uploaded and set as your hero" : "Photo uploaded",
+        { id: toastId }
+      )
+    } catch {
+      // Network drop, or a body over the Server Action size limit.
+      showPhotoError("Upload failed. Check your connection and try again.", toastId)
     } finally {
       setIsUploading(false)
       e.target.value = ""
@@ -202,27 +220,21 @@ export function OwnerPhotosClient({
   async function handleDeleteConfirm() {
     if (deleteConfirm === null) return
     const photo  = allPhotos[deleteConfirm]
-    const isHero = photo === currentHeroUrl
     setDeleteConfirm(null)
     // Tracked separately from isUploading: sharing that flag made every delete
     // label its button "Uploading…".
     setIsDeleting(true)
     const toastId = toast.loading("Deleting photo…")
     try {
-      await deleteCafePhotoAction(photo, isHero, cafeId)
-      if (isHero) {
-        const gallery = currentPhotoUrls.filter((u) => u !== photo)
-        setCurrentHeroUrl(gallery[0] ?? null)
-        setCurrentPhotoUrls(gallery.slice(1))
-      } else {
-        setCurrentPhotoUrls((prev) => prev.filter((u) => u !== photo))
+      const res = await deleteCafePhotoAction(photo, cafeId)
+      if (!res.ok) {
+        showPhotoError(res.error, toastId)
+        return
       }
+      applyServerPhotos(res)
       toast.success("Photo deleted", { id: toastId })
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Delete failed"
-      setUploadError(msg)
-      toast.error(msg, { id: toastId })
-      setTimeout(() => setUploadError(""), 4000)
+    } catch {
+      showPhotoError("Couldn't delete the photo. Check your connection and try again.", toastId)
     } finally {
       setIsDeleting(false)
     }
@@ -291,12 +303,10 @@ export function OwnerPhotosClient({
                 </p>
 
                 <div className="space-y-1.5">
-                  <p className="text-xs text-muted-foreground">Requirements:</p>
+                  <p className="text-xs text-muted-foreground">Tips:</p>
                   <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
-                    <li>JPG, PNG, or WEBP format</li>
-                    <li>Maximum 10MB file size</li>
-                    <li>Landscape orientation recommended</li>
-                    <li>Minimum 800px wide</li>
+                    <li>JPG, PNG, or WEBP (iPhone photos convert automatically)</li>
+                    <li>Landscape works best: it leads your listing and map pin</li>
                   </ul>
                 </div>
 
@@ -317,13 +327,17 @@ export function OwnerPhotosClient({
                       ) : (
                         <UploadSimple size={16} />
                       )}
-                      {isUploading ? "Uploading…" : "Replace hero photo"}
+                      {isUploading ? "Uploading…" : currentHeroUrl ? "Replace hero photo" : "Upload hero photo"}
                     </span>
                   </Button>
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     className="hidden"
+                    // The Button above is asChild on a <span>, so its
+                    // `disabled` never reached anything tappable: a second
+                    // pick mid-upload raced the first past the photo cap.
+                    disabled={isUploading || isDeleting || isReordering}
                     onChange={(e) => handleFileUpload(e, true)}
                   />
                 </label>
@@ -396,19 +410,19 @@ export function OwnerPhotosClient({
                         type="button"
                         variant="secondary"
                         size="icon"
-                        className="size-7"
+                        className="size-10"
                         onClick={() => void setAsHero(url)}
                         disabled={isUploading || isDeleting || isReordering}
                         aria-label={`Set photo ${i + 1} as hero`}
                       >
-                        <Crown size={12} />
+                        <Crown size={16} />
                       </Button>
                     )}
                     <Button
                       type="button"
                       variant="secondary"
                       size="icon"
-                      className="size-7 text-destructive"
+                      className="size-10 text-destructive"
                       onClick={() => setDeleteConfirm(i)}
                       disabled={isUploading || isDeleting || isReordering}
                       aria-label={`Delete photo ${i + 1}`}
@@ -421,7 +435,7 @@ export function OwnerPhotosClient({
                       type="button"
                       variant="secondary"
                       size="icon"
-                      className="size-7"
+                      className="size-10 sm:size-7"
                       onClick={() => void movePhoto(i, -1)}
                       disabled={i === 0 || isUploading || isDeleting || isReordering}
                       aria-label={`Move photo ${i + 1} left`}
@@ -432,7 +446,7 @@ export function OwnerPhotosClient({
                       type="button"
                       variant="secondary"
                       size="icon"
-                      className="size-7"
+                      className="size-10 sm:size-7"
                       onClick={() => void movePhoto(i, 1)}
                       disabled={i === allPhotos.length - 1 || isUploading || isDeleting || isReordering}
                       aria-label={`Move photo ${i + 1} right`}
@@ -488,6 +502,10 @@ export function OwnerPhotosClient({
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     className="hidden"
+                    // The Button above is asChild on a <span>, so its
+                    // `disabled` never reached anything tappable: a second
+                    // pick mid-upload raced the first past the photo cap.
+                    disabled={isUploading || isDeleting || isReordering}
                     onChange={(e) => handleFileUpload(e, false)}
                   />
                 </label>
@@ -531,16 +549,6 @@ export function OwnerPhotosClient({
           </CardContent>
         </Card>
 
-        {/* Phase 3 Upgrade Callout */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-lg border px-4 py-3">
-          <div className="flex flex-col gap-0.5">
-            <p className="text-sm font-medium">Want more photos?</p>
-            <p className="text-xs text-muted-foreground">
-              Unlimited photos available in Phase 3 with a Premium listing.
-            </p>
-          </div>
-          <Badge variant="outline" className="self-start sm:self-auto">Phase 3</Badge>
-        </div>
       </div>
 
       {/* Delete Confirm Dialog */}

@@ -169,7 +169,7 @@ export function OwnerReviewsClient({
         <div>
           <h1 className="text-2xl font-semibold">Reviews</h1>
           <p className="text-sm text-muted-foreground">
-            All reviews for your cafe — read-only in Phase 1
+            Reviews from Nook visitors. Report any that break the rules.
           </p>
         </div>
 

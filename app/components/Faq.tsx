@@ -37,7 +37,7 @@ const faqs = [
 
 export default function Faq() {
   return (
-    <section id="faq" className="scroll-mt-20 bg-white py-20 sm:py-28 lg:py-36">
+    <section id="faq" className="scroll-mt-20 bg-nk-bg py-20 sm:py-28 lg:py-36">
       <div className="nk-container grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)] lg:gap-20">
         <div className="lg:sticky lg:top-28 lg:self-start">
           <p className="nk-eyebrow">Still got questions?</p>

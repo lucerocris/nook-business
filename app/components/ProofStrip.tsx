@@ -22,7 +22,7 @@ export default function ProofStrip() {
   return (
     <section
       aria-label="Nook in numbers"
-      className="mt-0 border-y border-[var(--nk-line)] bg-white"
+      className="mt-0 border-y border-[var(--nk-line)] bg-nk-bg"
     >
       <div className="nk-container grid grid-cols-1 divide-y divide-[var(--nk-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         {STATS.map((stat) => (

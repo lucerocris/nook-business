@@ -236,7 +236,7 @@ function ItemRow({
           {item.is_highlight && (
             <Badge
               variant="outline"
-              className="text-xs text-green-700 border-green-300 bg-green-50 dark:bg-green-950 shrink-0"
+              className="text-xs text-green-700 border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-950 dark:text-green-400 shrink-0"
             >
               Highlight
             </Badge>

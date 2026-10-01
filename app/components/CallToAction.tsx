@@ -4,7 +4,7 @@ import { ListingCard } from "./landing/drawn-ui";
 
 export default function CallToAction() {
   return (
-    <section className="bg-white pb-20 sm:pb-28">
+    <section className="bg-nk-bg pb-20 sm:pb-28">
       <div className="nk-container">
         <div className="nk-panel grid items-center gap-10 overflow-hidden rounded-xl px-6 pt-12 sm:px-12 sm:pt-16 lg:grid-cols-[1.3fr_1fr] lg:gap-16 lg:px-16 lg:py-20">
           <div className="text-white">
@@ -26,7 +26,7 @@ export default function CallToAction() {
               {SELF_SERVE_CLAIM_ENABLED ? (
                 <Link
                   href="/claim"
-                  className="nk-btn bg-white text-[var(--nk-green)] hover:bg-[var(--nk-tint)]"
+                  className="nk-btn bg-white text-nk-green-fill hover:bg-[#e3ebe4]"
                 >
                   Claim my cafe
                 </Link>

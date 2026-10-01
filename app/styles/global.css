@@ -1,7 +1,29 @@
 @import 'tailwindcss';
 
+/* Class-driven (next-themes), same selector as app/globals.css. Without it
+   this sheet's dark: utilities follow the OS setting and ignore the toggle. */
+@custom-variant dark (&:is(.dark *));
+
 @theme {
   --color-gray-900: #3b3b3b;
+}
+
+/* Utility names for the --nk-* tokens (text-nk-ink, bg-nk-surface, …) so
+   markup stops hardcoding hex values that can't follow the theme. */
+@theme inline {
+  --color-nk-ink: var(--nk-ink);
+  --color-nk-body: var(--nk-body);
+  --color-nk-muted: var(--nk-muted);
+  --color-nk-green: var(--nk-green);
+  --color-nk-green-strong: var(--nk-green-strong);
+  --color-nk-green-fill: var(--nk-green-fill);
+  --color-nk-green-hover: var(--nk-green-hover);
+  --color-nk-tint: var(--nk-tint);
+  --color-nk-bg: var(--nk-bg);
+  --color-nk-bg-2: var(--nk-bg-2);
+  --color-nk-surface: var(--nk-surface);
+  --color-nk-line: var(--nk-line);
+  --color-nk-danger: var(--nk-danger);
 }
 
 :root {
@@ -14,16 +36,51 @@
   --nk-ink: #101514;
   --nk-body: #3b3b3b;
   --nk-muted: #5c605d; /* 6.2:1 on white, 5.8:1 on --nk-bg-2 */
+  /* --nk-green is the accent (text, dots, outlines) and lightens in dark.
+     --nk-green-fill sits under white text, so it stays the brand hue. */
   --nk-green: #3a5a40;
+  --nk-green-strong: #2b442f;
+  --nk-green-fill: #3a5a40;
   --nk-green-hover: #2f4833;
   --nk-green-deep: #344e41;
   --nk-fern: #588157;
   --nk-sage: #a3b18a;
   --nk-timberwolf: #dad7cd;
   --nk-tint: #e3ebe4;
+  --nk-bg: #ffffff;
   --nk-bg-2: #f7f6f2;
+  --nk-surface: #ffffff;
   --nk-line: rgba(16, 21, 20, 0.1);
+  --nk-danger: #b94a48;
+  --nk-placeholder: var(--nk-timberwolf);
+  --nk-bar: #ecebe6;
+  --nk-dot-rgb: 58, 90, 64;
+  --nk-glow: rgba(58, 90, 64, 0.22);
+  --nk-glow-wash: rgba(227, 235, 228, 0.62);
   --nk-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Dark values. --nk-green-deep, --nk-fern, --nk-sage and --nk-timberwolf are
+   left alone: they are only used on the deep-green panels, which keep their
+   colour in both themes. */
+.dark {
+  --nk-ink: #f1f4f1;
+  --nk-body: #c8cdc8;
+  --nk-muted: #9aa19b;
+  --nk-green: #9cc5a3;
+  --nk-green-strong: #bcdcc1;
+  --nk-green-hover: #46694d;
+  --nk-tint: #213027;
+  --nk-bg: #0e1210;
+  --nk-bg-2: #151a17;
+  --nk-surface: #1a201c;
+  --nk-line: rgba(255, 255, 255, 0.12);
+  --nk-danger: #ea918e;
+  --nk-placeholder: #2b322d;
+  --nk-bar: #2a302c;
+  --nk-dot-rgb: 163, 177, 138;
+  --nk-glow: rgba(88, 129, 87, 0.2);
+  --nk-glow-wash: rgba(33, 48, 39, 0.5);
 }
 
 /* ---------- Landing primitives ---------- */
@@ -118,7 +175,7 @@
 }
 
 .nk-btn-primary {
-  background: var(--nk-green);
+  background: var(--nk-green-fill);
   color: #fff;
 }
 
@@ -127,7 +184,7 @@
 }
 
 .nk-btn-secondary {
-  background: #fff;
+  background: var(--nk-surface);
   color: var(--nk-ink);
   border: 1px solid var(--nk-line);
 }
@@ -172,7 +229,7 @@
   display: block;
   height: 8px;
   border-radius: 999px;
-  background: #ecebe6;
+  background: var(--nk-bar);
 }
 
 /* Accordion body: animate height with the grid-rows trick, no JS measuring. */
@@ -226,22 +283,22 @@ details.nk-faq > summary::-webkit-details-marker {
    crowds a phone's narrower column — where the gaps the dots show through are
    most of the screen. Opacity and spacing both ease off at the bottom. */
 body {
-  background-color: #ffffff;
+  background-color: var(--nk-bg);
   background-image: radial-gradient(
     circle,
-    rgba(58, 90, 64, 0.06) 1px,
+    rgba(var(--nk-dot-rgb), 0.06) 1px,
     transparent 1.6px
   );
   background-size: 26px 26px;
   background-attachment: fixed;
-  color: #3b3b3b;
+  color: var(--nk-body);
 }
 
 @media (min-width: 640px) {
   body {
     background-image: radial-gradient(
       circle,
-      rgba(58, 90, 64, 0.1) 1px,
+      rgba(var(--nk-dot-rgb), 0.1) 1px,
       transparent 1.6px
     );
     background-size: 24px 24px;
@@ -255,10 +312,10 @@ body {
   background:
     radial-gradient(
       62% 52% at 50% 0%,
-      rgba(58, 90, 64, 0.22),
+      var(--nk-glow),
       transparent 70%
     ),
-    linear-gradient(to bottom, rgba(227, 235, 228, 0.62), transparent 42%);
+    linear-gradient(to bottom, var(--nk-glow-wash), transparent 42%);
 }
 
 .font-display {
@@ -274,16 +331,16 @@ body {
   z-index: 1001;
   background-color: transparent;
   border-bottom: 1px solid transparent;
-  --link-color: #3b3b3b;
+  --link-color: var(--nk-body);
 }
 
 .navbar-bordered .navbar {
-  border-bottom: 1px solid rgb(229, 231, 235);
+  border-bottom: 1px solid var(--nk-line);
 }
 
 /* No shadow on scroll: depth comes from the hairline alone. */
 .navbar.is-scrolled {
-  background-color: #ffffff;
+  background-color: var(--nk-bg);
   border-bottom: 1px solid var(--nk-line);
 }
 
@@ -328,7 +385,7 @@ body {
 }
 
 .navbar-links a {
-  color: var(--color-primary);
+  color: var(--nk-green);
   text-decoration: none;
   display: flex;
   align-items: center;

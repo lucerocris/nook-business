@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { useSupabase } from "@/lib/supabase/context";
 import { SELF_SERVE_CLAIM_ENABLED } from "@/lib/features";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 // Absolute (/#…) so they also work from /login and /claim, where the navbar
 // is shown too.
@@ -95,7 +96,7 @@ export function Navbar({ initialUser }: NavbarProps) {
   return (
     <>
       <nav
-        className={`navbar${isMobileMenuOpen ? " bg-white" : ""}${isScrolled ? " is-scrolled" : ""} py-4 transition-colors`}
+        className={`navbar${isMobileMenuOpen ? " bg-nk-bg" : ""}${isScrolled ? " is-scrolled" : ""} py-4 transition-colors`}
       >
         <div className="navbar-content flex justify-between items-center max-w-7xl mx-auto w-full">
           {/* Desktop Navigation */}
@@ -103,7 +104,7 @@ export function Navbar({ initialUser }: NavbarProps) {
             {/* Left side: Logo & Navigation Links */}
             <div className="flex items-center gap-10">
               <Link href="/" className="navbar-logo flex items-center shrink-0">
-                <img src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/logo.svg" alt="Nook for Business" className="w-20" />
+                <img src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/logo.svg" alt="Nook for Business" className="w-20 dark:brightness-0 dark:invert" />
               </Link>
               <ul className="flex items-center gap-7">
                 {SECTION_LINKS.map((link) => (
@@ -121,11 +122,12 @@ export function Navbar({ initialUser }: NavbarProps) {
 
             {/* Right side: Auth & CTA Buttons */}
             <div className="flex items-center gap-2">
+              <ThemeToggle className="h-11 w-11 rounded-full text-nk-body hover:bg-nk-bg-2" />
               {user ? (
                 <div className="relative">
                   <button
                     type="button"
-                    className="flex items-center gap-2 rounded-full border border-gray-200 px-2 py-1.5 transition-colors hover:bg-gray-50"
+                    className="flex items-center gap-2 rounded-full border border-nk-line px-2 py-1.5 transition-colors hover:bg-nk-bg-2"
                     onClick={() => setIsUserMenuOpen((open) => !open)}
                     aria-haspopup="menu"
                     aria-expanded={isUserMenuOpen}
@@ -138,17 +140,17 @@ export function Navbar({ initialUser }: NavbarProps) {
                         className="h-9 w-9 rounded-full object-cover"
                       />
                     ) : (
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#3A5A40]/10 text-sm font-semibold text-[#3A5A40]">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-nk-green/10 text-sm font-semibold text-nk-green">
                         {initials}
                       </span>
                     )}
-                    <span className="hidden text-sm font-medium text-gray-700 sm:inline">
+                    <span className="hidden text-sm font-medium text-nk-body sm:inline">
                       {displayName}
                     </span>
                   </button>
 
                   <div
-                    className={`absolute right-0 mt-2 w-40 rounded-xl border border-gray-200 bg-white p-2 transition-opacity ${
+                    className={`absolute right-0 mt-2 w-40 rounded-xl border border-nk-line bg-nk-surface p-2 transition-opacity ${
                       isUserMenuOpen
                         ? "pointer-events-auto opacity-100"
                         : "pointer-events-none opacity-0"
@@ -160,7 +162,7 @@ export function Navbar({ initialUser }: NavbarProps) {
                         there was no way back to their claim. */}
                     <Link
                       href="/claim/status"
-                      className="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                      className="block w-full rounded-lg px-3 py-2 text-left text-sm text-nk-body hover:bg-nk-bg-2"
                       onClick={() => setIsUserMenuOpen(false)}
                       role="menuitem"
                     >
@@ -168,7 +170,7 @@ export function Navbar({ initialUser }: NavbarProps) {
                     </Link>
                     <button
                       type="button"
-                      className="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                      className="w-full rounded-lg px-3 py-2 text-left text-sm text-nk-body hover:bg-nk-bg-2"
                       onClick={handleSignOut}
                       role="menuitem"
                     >
@@ -193,13 +195,14 @@ export function Navbar({ initialUser }: NavbarProps) {
           {/* Mobile Navigation Header */}
           <div className="flex md:hidden w-full h-full items-center justify-between relative">
             <Link href="/" className="navbar-logo flex items-center">
-              <img src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/logo.svg" alt="Nook for Business" className="w-24" />
+              <img src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/logo.svg" alt="Nook for Business" className="w-24 dark:brightness-0 dark:invert" />
             </Link>
             <div className="flex items-center gap-3">
+              <ThemeToggle className="h-10 w-10 rounded-full text-nk-body" />
               {user ? (
                 <button
                   type="button"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-nk-line"
                   onClick={() => setIsUserMenuOpen((open) => !open)}
                   aria-label="Account menu"
                   aria-haspopup="menu"
@@ -212,7 +215,7 @@ export function Navbar({ initialUser }: NavbarProps) {
                       className="h-9 w-9 rounded-full object-cover"
                     />
                   ) : (
-                    <span className="text-sm font-semibold text-[#3A5A40]">
+                    <span className="text-sm font-semibold text-nk-green">
                       {initials}
                     </span>
                   )}
@@ -226,20 +229,20 @@ export function Navbar({ initialUser }: NavbarProps) {
               >
                 {/* Simple CSS Hamburger lines if you aren't using an icon library */}
                 <span
-                  className={`block w-6 h-0.5 bg-gray-800 transition-transform ${isMobileMenuOpen ? "rotate-45 translate-y-2" : ""}`}
+                  className={`block w-6 h-0.5 bg-nk-ink transition-transform ${isMobileMenuOpen ? "rotate-45 translate-y-2" : ""}`}
                 />
                 <span
-                  className={`block w-6 h-0.5 bg-gray-800 transition-opacity ${isMobileMenuOpen ? "opacity-0" : ""}`}
+                  className={`block w-6 h-0.5 bg-nk-ink transition-opacity ${isMobileMenuOpen ? "opacity-0" : ""}`}
                 />
                 <span
-                  className={`block w-6 h-0.5 bg-gray-800 transition-transform ${isMobileMenuOpen ? "-rotate-45 -translate-y-2" : ""}`}
+                  className={`block w-6 h-0.5 bg-nk-ink transition-transform ${isMobileMenuOpen ? "-rotate-45 -translate-y-2" : ""}`}
                 />
               </button>
             </div>
 
             {user ? (
               <div
-                className={`absolute right-0 top-14 w-40 rounded-xl border border-gray-200 bg-white p-2 transition-opacity ${
+                className={`absolute right-0 top-14 w-40 rounded-xl border border-nk-line bg-nk-surface p-2 transition-opacity ${
                   isUserMenuOpen
                     ? "pointer-events-auto opacity-100"
                     : "pointer-events-none opacity-0"
@@ -248,7 +251,7 @@ export function Navbar({ initialUser }: NavbarProps) {
               >
                 <button
                   type="button"
-                  className="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm text-nk-body hover:bg-nk-bg-2"
                   onClick={handleSignOut}
                   role="menuitem"
                 >
@@ -262,7 +265,7 @@ export function Navbar({ initialUser }: NavbarProps) {
 
       {/* Mobile Menu Drawer */}
       <div
-        className={`mobile-menu-wrapper block md:hidden fixed inset-0 z-40 bg-white transform transition-transform duration-300 ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"}`}
+        className={`mobile-menu-wrapper block md:hidden fixed inset-0 z-40 bg-nk-bg transform transition-transform duration-300 ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"}`}
       >
         <div className="flex flex-col gap-8 w-full p-6 pt-28 h-full">
           <ul className="flex flex-col border-t border-[var(--nk-line)]">

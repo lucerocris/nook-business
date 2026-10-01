@@ -46,34 +46,34 @@ export default async function AcceptInvitePage({ searchParams }: PageProps) {
 
   return (
     <FunnelShell contentClassName="max-w-4xl">
-      <div className="mx-auto w-full max-w-2xl rounded-2xl bg-white p-6 shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70 sm:p-8">
+      <div className="mx-auto w-full max-w-2xl rounded-2xl bg-nk-surface p-6 shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-nk-line sm:p-8">
         <div className="flex justify-center">
           <img
             src="https://lucerocris.sgp1.cdn.digitaloceanspaces.com/nook-sites/logo.svg"
             alt="Nook"
-            className="h-9 w-auto"
+            className="h-9 w-auto dark:brightness-0 dark:invert"
           />
         </div>
 
         {!user ? (
           <div className="mt-8 space-y-4 text-center">
-            <h1 className="text-xl font-semibold text-slate-900">
+            <h1 className="text-xl font-semibold text-nk-ink">
               This invite link isn&apos;t valid
             </h1>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-nk-muted">
               {linkError ?? "Invite links can only be used once, and expire after 24 hours."}
             </p>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-nk-muted">
               Ask the Nook team to send you a new one.
             </p>
           </div>
         ) : (
           <>
             <div className="mt-8 space-y-2 text-center">
-              <h1 className="text-xl font-semibold text-slate-900">
+              <h1 className="text-xl font-semibold text-nk-ink">
                 Set your password
               </h1>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-nk-muted">
                 {cafeName
                   ? `You've been invited to manage ${cafeName} on Nook.`
                   : "You've been invited to manage your cafe on Nook."}

@@ -43,13 +43,13 @@ export function AcceptInviteForm() {
   return (
     <form className="mt-6 space-y-4 sm:mt-7" onSubmit={handleSubmit}>
       {formError ? (
-        <p role="alert" className="rounded-lg border border-[#b94a48]/25 bg-[#b94a48]/5 px-4 py-3 text-sm text-[#b94a48]">
+        <p role="alert" className="rounded-lg border border-nk-danger/25 bg-nk-danger/5 px-4 py-3 text-sm text-nk-danger">
           {formError}
         </p>
       ) : null}
 
       <div className="space-y-2">
-        <label htmlFor="password" className="text-sm font-medium text-slate-800">
+        <label htmlFor="password" className="text-sm font-medium text-nk-ink">
           Password
         </label>
         <input
@@ -59,13 +59,13 @@ export function AcceptInviteForm() {
           autoComplete="new-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base sm:text-sm text-slate-900 shadow-sm outline-none transition focus:border-slate-400"
+          className="w-full rounded-xl border border-nk-line bg-nk-surface px-4 py-3 text-base sm:text-sm text-nk-ink shadow-sm outline-none transition focus:border-nk-muted"
           placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
         />
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="confirmPassword" className="text-sm font-medium text-slate-800">
+        <label htmlFor="confirmPassword" className="text-sm font-medium text-nk-ink">
           Confirm password
         </label>
         <input
@@ -75,14 +75,14 @@ export function AcceptInviteForm() {
           autoComplete="new-password"
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base sm:text-sm text-slate-900 shadow-sm outline-none transition focus:border-slate-400"
+          className="w-full rounded-xl border border-nk-line bg-nk-surface px-4 py-3 text-base sm:text-sm text-nk-ink shadow-sm outline-none transition focus:border-nk-muted"
         />
       </div>
 
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-60"
+        className="w-full rounded-xl bg-nk-ink px-4 py-3 text-sm font-medium text-nk-bg shadow-sm transition hover:bg-nk-ink/90 disabled:opacity-60"
       >
         {isSubmitting ? "Setting password…" : "Set password and continue"}
       </button>

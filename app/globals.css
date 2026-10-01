@@ -90,8 +90,10 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.434 0.054 150);
-  --primary-foreground: oklch(0.985 0 0);
+  /* Lighter than the light theme's 0.434: that is 2.6:1 as text-primary on
+     the dark background. The foreground flips dark to stay readable on it. */
+  --primary: oklch(0.72 0.09 150);
+  --primary-foreground: oklch(0.2 0.02 150);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);

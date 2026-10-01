@@ -26,7 +26,7 @@ function Card({
 }) {
   return (
     <div
-      className={`rounded-xl border border-[var(--nk-line)] bg-white ${className}`}
+      className={`rounded-xl border border-[var(--nk-line)] bg-nk-surface ${className}`}
     >
       {children}
     </div>
@@ -57,9 +57,9 @@ function Chip({
 export function ListingCard({ className = "" }: { className?: string }) {
   return (
     <Card className={`overflow-hidden ${className}`}>
-      <div className="relative flex aspect-[16/9] items-center justify-center bg-[var(--nk-timberwolf)]">
+      <div className="relative flex aspect-[16/9] items-center justify-center bg-[var(--nk-placeholder)]">
         <Coffee size={44} weight="light" className="text-[var(--nk-fern)]" />
-        <span className="absolute left-3 top-3 rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-[var(--nk-green)]">
+        <span className="absolute left-3 top-3 rounded-full bg-nk-surface px-2 py-0.5 text-[10px] font-medium text-[var(--nk-green)]">
           Your photos
         </span>
       </div>
@@ -203,7 +203,7 @@ export function MenuCard({ className = "" }: { className?: string }) {
     <Card className={`p-4 ${className}`}>
       <div className="flex items-center justify-between">
         <p className="text-[13px] font-semibold text-[var(--nk-ink)]">Menu</p>
-        <span className="rounded-full bg-[var(--nk-green)] px-2.5 py-1 text-[11px] font-medium text-white">
+        <span className="rounded-full bg-nk-green-fill px-2.5 py-1 text-[11px] font-medium text-white">
           + Add item
         </span>
       </div>
@@ -219,7 +219,7 @@ export function MenuCard({ className = "" }: { className?: string }) {
           ["Sea Salt Latte", "₱175"],
         ].map(([name, price]) => (
           <div key={name} className="flex items-center gap-3">
-            <span className="h-8 w-8 shrink-0 rounded-md bg-[var(--nk-timberwolf)]" />
+            <span className="h-8 w-8 shrink-0 rounded-md bg-[var(--nk-placeholder)]" />
             <span className="flex-1 text-[var(--nk-body)]">{name}</span>
             <span className="font-medium tabular-nums text-[var(--nk-ink)]">
               {price}
@@ -236,9 +236,9 @@ export function PhotosCard({ className = "" }: { className?: string }) {
   return (
     <Card className={`p-4 ${className}`}>
       <p className="text-[13px] font-semibold text-[var(--nk-ink)]">Photos</p>
-      <div className="relative mt-3 flex aspect-[16/8] items-center justify-center rounded-lg bg-[var(--nk-timberwolf)]">
+      <div className="relative mt-3 flex aspect-[16/8] items-center justify-center rounded-lg bg-[var(--nk-placeholder)]">
         <ImageIcon size={28} weight="light" className="text-[var(--nk-fern)]" />
-        <span className="absolute left-2 top-2 rounded-full bg-[var(--nk-green)] px-2 py-0.5 text-[10px] font-medium text-white">
+        <span className="absolute left-2 top-2 rounded-full bg-nk-green-fill px-2 py-0.5 text-[10px] font-medium text-white">
           Hero
         </span>
       </div>
@@ -299,7 +299,7 @@ export function ReviewsCard({ className = "" }: { className?: string }) {
       <ul className="mt-3 space-y-3">
         {[0, 1].map((i) => (
           <li key={i} className="flex gap-3">
-            <span className="h-7 w-7 shrink-0 rounded-full bg-[var(--nk-timberwolf)]" />
+            <span className="h-7 w-7 shrink-0 rounded-full bg-[var(--nk-placeholder)]" />
             <span className="flex-1 space-y-1.5 pt-1">
               <span className="nk-bar w-1/3" />
               <span className="nk-bar w-full" />
@@ -345,7 +345,7 @@ export function CodeStepVisual() {
         @nook_cafefinder
       </div>
       <div className="mt-2 flex justify-end">
-        <span className="rounded-2xl rounded-br-md bg-[var(--nk-green)] px-3 py-2 font-mono text-[12px] tracking-[0.2em] text-white">
+        <span className="rounded-2xl rounded-br-md bg-nk-green-fill px-3 py-2 font-mono text-[12px] tracking-[0.2em] text-white">
           ••••••
         </span>
       </div>

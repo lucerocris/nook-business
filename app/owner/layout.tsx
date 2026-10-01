@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import "@/app/globals.css"
 import { OwnerSidebar } from "@/components/owner/sidebar"
 import { SessionRoleSync } from "@/components/owner/session-role-sync"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import {
   SidebarInset,
@@ -50,6 +51,7 @@ export default function OwnerLayout({
                 defaults to a 32px pointer-sized target. */}
             <SidebarTrigger className="-ml-1 size-11 md:size-8" />
             <span className="text-sm font-semibold md:hidden">Nook</span>
+            <ThemeToggle className="ml-auto size-11 rounded-md hover:bg-accent md:size-8 md:[&_svg]:size-4" />
           </header>
           {/* min-w-0 + overflow-x-hidden: without these, any over-wide
               descendant widens the document and scrolls the whole page

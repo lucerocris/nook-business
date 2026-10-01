@@ -88,7 +88,7 @@ export default function ValueProposition() {
   const baseId = useId();
 
   return (
-    <section id="features" className="scroll-mt-20 bg-white py-20 sm:py-28 lg:py-36">
+    <section id="features" className="scroll-mt-20 bg-nk-bg py-20 sm:py-28 lg:py-36">
       <div className="nk-container">
         <div className="max-w-3xl sm:mx-auto sm:text-center">
           <p className="nk-eyebrow">What you control</p>

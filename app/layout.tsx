@@ -4,6 +4,7 @@ import './styles/global.css'
 import { NavbarGate } from './components/NavbarGate'
 import { SupabaseProvider } from '@/lib/supabase/context'
 import { Toaster } from '@/components/ui/sonner'
+import { ThemeProvider } from '@/components/theme-provider'
 import { createClient } from '@/lib/supabase/server'
 
 import { Poppins } from 'next/font/google'
@@ -61,25 +62,36 @@ export default async function RootLayout({
   } = await supabase.auth.getUser()
 
   return (
+    // suppressHydrationWarning: next-themes sets the theme class and
+    // color-scheme on <html> before React hydrates, so they never match the
+    // server markup. It only covers this element's own attributes.
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn(
         'font-sans',
         poppins.variable
       )}
     >
       <body>
-        <SupabaseProvider>
-          <NavbarGate initialUser={user} />
-          {/* Not a <main>: the owner shell (SidebarInset) and the funnel pages
-              render their own, which nested landmarks and is invalid HTML.
-              Each route now supplies exactly one. */}
-          <div>{children}</div>
-          {/* Every toast.* call in the app was a no-op until this was mounted:
-              the Toaster component existed but was never rendered, so owners
-              got no confirmation or error feedback on any mutation. */}
-          <Toaster position="top-center" richColors closeButton />
-        </SupabaseProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <SupabaseProvider>
+            <NavbarGate initialUser={user} />
+            {/* Not a <main>: the owner shell (SidebarInset) and the funnel pages
+                render their own, which nested landmarks and is invalid HTML.
+                Each route now supplies exactly one. */}
+            <div>{children}</div>
+            {/* Every toast.* call in the app was a no-op until this was mounted:
+                the Toaster component existed but was never rendered, so owners
+                got no confirmation or error feedback on any mutation. */}
+            <Toaster position="top-center" richColors closeButton />
+          </SupabaseProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

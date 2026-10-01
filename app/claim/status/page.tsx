@@ -46,12 +46,12 @@ export default async function ClaimStatusPage() {
 
   return (
     <FunnelShell contentClassName="max-w-3xl">
-      <div className="mx-auto w-full max-w-2xl rounded-2xl bg-white px-5 py-8 shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70 sm:px-8 sm:py-10">
+      <div className="mx-auto w-full max-w-2xl rounded-2xl bg-nk-surface px-5 py-8 shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-nk-line sm:px-8 sm:py-10">
         <div className="text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40]">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-nk-green">
             Claim status
           </p>
-          <h1 className="mt-4 text-balance font-display text-3xl font-semibold tracking-tight text-[#101514] sm:text-4xl">
+          <h1 className="mt-4 text-balance font-display text-3xl font-semibold tracking-tight text-nk-ink sm:text-4xl">
             {activeClaims.length > 0
               ? "Your claim is in progress"
               : "You haven't claimed a cafe yet"}
@@ -60,13 +60,13 @@ export default async function ClaimStatusPage() {
 
         {activeClaims.length === 0 ? (
           <div className="mt-8 text-center">
-            <p className="mx-auto max-w-lg text-base text-[#3b3b3b]">
+            <p className="mx-auto max-w-lg text-base text-nk-body">
               Once you claim your cafe, you&apos;ll be able to track its progress
               here.
             </p>
             <Link
               href="/claim"
-              className="mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-[#3A5A40] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#2b442f]"
+              className="mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-nk-green-fill px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-nk-green-hover"
             >
               Find your cafe
             </Link>
@@ -80,27 +80,27 @@ export default async function ClaimStatusPage() {
               return (
                 <li
                   key={claim.id}
-                  className="rounded-2xl border border-zinc-200 bg-[#e3ebe4]/30 px-5 py-5"
+                  className="rounded-2xl border border-nk-line bg-nk-tint/30 px-5 py-5"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <h2 className="text-lg font-semibold text-[#101514]">
+                    <h2 className="text-lg font-semibold text-nk-ink">
                       {claim.cafes?.name ?? "Your cafe"}
                     </h2>
-                    <span className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-3 py-1 text-xs font-semibold text-[#3b3b3b]">
+                    <span className="inline-flex items-center rounded-full border border-nk-line bg-nk-surface px-3 py-1 text-xs font-semibold text-nk-body">
                       {formatStatus(claim.status)}
                     </span>
                   </div>
 
                   {isPending && claim.verification_code ? (
                     <div className="mt-4">
-                      <p className="text-sm text-[#3b3b3b]">
+                      <p className="text-sm text-nk-body">
                         Send this code to us from the cafe&apos;s official
                         Instagram account to finish verifying:
                       </p>
-                      <p className="mt-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-center font-mono text-2xl font-semibold tracking-[0.3em] text-[#101514]">
+                      <p className="mt-3 rounded-xl border border-nk-line bg-nk-surface px-4 py-3 text-center font-mono text-2xl font-semibold tracking-[0.3em] text-nk-ink">
                         {claim.verification_code}
                       </p>
-                      <p className="mt-3 text-sm text-[#6b6b6b]">
+                      <p className="mt-3 text-sm text-nk-muted">
                         We usually review claims within 1&ndash;2 business days
                         of receiving the code, and we&apos;ll email you once
                         it&apos;s approved.
@@ -109,7 +109,7 @@ export default async function ClaimStatusPage() {
                         href="https://instagram.com/nook_cafefinder"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md bg-[#3A5A40] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#2b442f]"
+                        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md bg-nk-green-fill px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-nk-green-hover"
                       >
                         Message @nook_cafefinder
                       </a>
@@ -117,7 +117,7 @@ export default async function ClaimStatusPage() {
                   ) : null}
 
                   {claim.status === "rejected" ? (
-                    <p className="mt-3 text-sm text-[#3b3b3b]">
+                    <p className="mt-3 text-sm text-nk-body">
                       This claim wasn&apos;t approved. If you think that&apos;s a
                       mistake, message us on Instagram and we&apos;ll take
                       another look.

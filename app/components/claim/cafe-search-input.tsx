@@ -103,10 +103,10 @@ export function CafeSearchInput() {
           magnifier inline, the action as a pill on the right, and the focus
           indicator on the wrapper via :focus-within (the input itself has no
           outline, so without this there'd be no visible focus state). */}
-      <div className="flex w-full items-center gap-2 rounded-full border border-zinc-200 bg-white p-2 transition-shadow focus-within:border-[#3A5A40] focus-within:ring-2 focus-within:ring-[#3A5A40]/40">
+      <div className="flex w-full items-center gap-2 rounded-full border border-nk-line bg-nk-surface p-2 transition-shadow focus-within:border-nk-green focus-within:ring-2 focus-within:ring-nk-green/40">
         <span
           aria-hidden="true"
-          className="flex h-5 w-5 shrink-0 items-center justify-center pl-2 text-[#3b3b3b] sm:pl-3"
+          className="flex h-5 w-5 shrink-0 items-center justify-center pl-2 text-nk-body sm:pl-3"
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <circle
@@ -133,14 +133,14 @@ export function CafeSearchInput() {
           onChange={handleChange}
           aria-label="Search for your cafe"
           placeholder="Search for your cafe..."
-          className="min-w-0 flex-1 bg-transparent text-sm text-[#101514] outline-none placeholder:text-zinc-400 focus:ring-0"
+          className="min-w-0 flex-1 bg-transparent text-sm text-nk-ink outline-none placeholder:text-zinc-400 focus:ring-0"
         />
         <button
           type="button"
           disabled={!selectedCafeId || isNavigating}
           onClick={handleVerifyClaim}
           aria-busy={isNavigating}
-          className="flex shrink-0 items-center gap-2 rounded-full bg-[#3A5A40] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2f4833] disabled:cursor-not-allowed disabled:opacity-40 sm:px-5"
+          className="flex shrink-0 items-center gap-2 rounded-full bg-nk-green-fill px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-nk-green-hover disabled:cursor-not-allowed disabled:opacity-40 sm:px-5"
         >
           {isNavigating ? (
             <>
@@ -159,17 +159,17 @@ export function CafeSearchInput() {
       {/* Dropdown chrome matches the webapp's SearchDropdown: rounded-2xl,
           hairline ring, the standard card shadow. */}
       {showDropdown && (
-        <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl bg-white shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70">
-          <ul className="max-h-80 overflow-auto py-2 text-left text-sm text-[#3b3b3b]">
+        <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl bg-nk-surface shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-nk-line">
+          <ul className="max-h-80 overflow-auto py-2 text-left text-sm text-nk-body">
             {loading ? (
-              <li className="px-4 py-3 text-sm text-zinc-500">Searching…</li>
+              <li className="px-4 py-3 text-sm text-nk-muted">Searching…</li>
             ) : error ? (
-              <li className="px-4 py-3 text-sm text-[#b94a48]">
+              <li className="px-4 py-3 text-sm text-nk-danger">
                 Couldn&apos;t load results — check your connection and try
                 again.
               </li>
             ) : cafes.length === 0 ? (
-              <li className="px-4 py-3 text-sm text-zinc-500">
+              <li className="px-4 py-3 text-sm text-nk-muted">
                 No cafes found. Try a different name.
               </li>
             ) : (
@@ -181,34 +181,34 @@ export function CafeSearchInput() {
                 return (
                   <li
                     key={cafeId}
-                    className={`px-2 ${isLast ? "" : "border-b border-zinc-100"}`}
+                    className={`px-2 ${isLast ? "" : "border-b border-nk-line"}`}
                   >
                     <button
                       type="button"
                       onClick={() => handleSelect(cafeId)}
                       disabled={isNavigating}
                       aria-busy={navigatingId === cafeId}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-[#e3ebe4]/50 disabled:cursor-default"
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-nk-tint/50 disabled:cursor-default"
                     >
                       <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
                         <span className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-[#101514]">
+                          <span className="font-semibold text-nk-ink">
                             {cafe.name?.trim() || "Unnamed cafe"}
                           </span>
                           {cafe.has_pending_claim && (
-                            <span className="inline-flex items-center rounded-full bg-[#e3ebe4] px-2 py-0.5 text-[11px] font-medium text-[#3A5A40]">
+                            <span className="inline-flex items-center rounded-full bg-nk-tint px-2 py-0.5 text-[11px] font-medium text-nk-green">
                               Claim pending
                             </span>
                           )}
                         </span>
-                        <span className="text-xs text-[#6b6b6b]">
+                        <span className="text-xs text-nk-muted">
                           {addressLine || "Address unavailable"}
                         </span>
                       </span>
                       {/* Spinner sits on the row the user actually tapped, so
                           the feedback is unambiguous when several are listed. */}
                       {navigatingId === cafeId ? (
-                        <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-[#3A5A40]">
+                        <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-nk-green">
                           <Spinner className="size-3.5" />
                           Opening…
                         </span>

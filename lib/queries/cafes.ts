@@ -33,6 +33,7 @@ export type OwnerCafeContext = {
   cafeId: string
   cafeName: string
   status: "draft" | "active" | "inactive"
+  featuredImageUrl: string | null
 }
 
 export type OwnerDashboardCafe = {
@@ -44,6 +45,10 @@ export type OwnerDashboardCafe = {
   featured_image_url: string | null
   neighborhood: string | null
   city: string
+  description: string | null
+  operating_hours: Cafe["operating_hours"]
+  highlight_count: number
+  tag_count: number
 }
 
 export type OwnerPhotosCafe = {
@@ -289,7 +294,7 @@ export async function getOwnerCafeContextByOwnerUserId(
 
   const { data, error } = await supabase
     .from("cafes")
-    .select("id, name, status")
+    .select("id, name, status, featured_image_url")
     .eq("id", link.cafe_id)
     .maybeSingle()
 
@@ -300,6 +305,7 @@ export async function getOwnerCafeContextByOwnerUserId(
     cafeId: data.id,
     cafeName: data.name,
     status: data.status,
+    featuredImageUrl: data.featured_image_url,
   }
 }
 
@@ -307,47 +313,110 @@ export async function getOwnerDashboardCafeById(
   cafeId: string
 ): Promise<OwnerDashboardCafe> {
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from("cafes")
-    .select(
-      "id, name, status, rating, review_count, featured_image_url, neighborhood, city"
-    )
-    .eq("id", cafeId)
-    .single()
+  // Highlights and tags are only counted: the dashboard's setup checklist needs
+  // to know whether each step is done, not what was picked.
+  const [cafeRes, highlightRes, tagRes] = await Promise.all([
+    supabase
+      .from("cafes")
+      .select(
+        "id, name, status, rating, review_count, featured_image_url, neighborhood, city, description, operating_hours"
+      )
+      .eq("id", cafeId)
+      .single(),
+    supabase
+      .from("menu_items")
+      .select("id", { count: "exact", head: true })
+      .eq("cafe_id", cafeId)
+      .eq("is_highlight", true),
+    supabase
+      .from("cafe_tags")
+      .select("tag_id", { count: "exact", head: true })
+      .eq("cafe_id", cafeId),
+  ])
 
-  if (error) throw error
-  return data as OwnerDashboardCafe
+  if (cafeRes.error) throw cafeRes.error
+  if (highlightRes.error) throw highlightRes.error
+  if (tagRes.error) throw tagRes.error
+
+  return {
+    ...(cafeRes.data as Omit<OwnerDashboardCafe, "highlight_count" | "tag_count">),
+    highlight_count: highlightRes.count ?? 0,
+    tag_count: tagRes.count ?? 0,
+  }
 }
 
+export type AnalyticsTotals = {
+  views: number
+  hours: number
+  directions: number
+  favorites: number
+}
+
+export type AnalyticsDay = AnalyticsTotals & { date: string }
+
+const ZERO_TOTALS: AnalyticsTotals = { views: 0, hours: 0, directions: 0, favorites: 0 }
+
+function isoDay(date: Date) {
+  return date.toISOString().split("T")[0]
+}
+
+// Reads two back-to-back windows of `daysBack` days so the dashboard can show
+// each metric against the period before it. Days with no summary row are
+// filled with zeros so both series have the same length and line up.
 export async function getOwnerAnalyticsSummaries(cafeId: string, daysBack: number) {
   const supabase = createAdminClient()
-  
-  const dateBoundary = new Date()
-  dateBoundary.setDate(dateBoundary.getDate() - daysBack)
-  const targetDate = dateBoundary.toISOString().split('T')[0]
+
+  const today = new Date()
+  const start = new Date(today)
+  start.setDate(start.getDate() - (daysBack * 2 - 1))
 
   const { data, error } = await supabase
     .from("cafe_analytics_summaries")
     .select("summary_date, views_count, hours_checked_count, directions_tapped_count, favorites_count")
     .eq("cafe_id", cafeId)
-    .gte("summary_date", targetDate)
-    .order("summary_date", { ascending: false })
+    .gte("summary_date", isoDay(start))
+    .order("summary_date", { ascending: true })
 
   if (error) throw error
 
-  const totals = data.reduce(
-    (acc, row) => ({
-      views: acc.views + (row.views_count || 0),
-      hours: acc.hours + (row.hours_checked_count || 0),
-      directions: acc.directions + (row.directions_tapped_count || 0),
-      favorites: acc.favorites + (row.favorites_count || 0),
-    }),
-    { views: 0, hours: 0, directions: 0, favorites: 0 }
+  const byDate = new Map(
+    data.map((row) => [
+      row.summary_date as string,
+      {
+        views: row.views_count || 0,
+        hours: row.hours_checked_count || 0,
+        directions: row.directions_tapped_count || 0,
+        favorites: row.favorites_count || 0,
+      },
+    ])
   )
 
+  const days: AnalyticsDay[] = []
+  for (let i = 0; i < daysBack * 2; i++) {
+    const d = new Date(start)
+    d.setDate(start.getDate() + i)
+    const date = isoDay(d)
+    days.push({ date, ...(byDate.get(date) ?? ZERO_TOTALS) })
+  }
+
+  const previousDays = days.slice(0, daysBack)
+  const currentDays = days.slice(daysBack)
+  const sum = (rows: AnalyticsDay[]) =>
+    rows.reduce<AnalyticsTotals>(
+      (acc, r) => ({
+        views: acc.views + r.views,
+        hours: acc.hours + r.hours,
+        directions: acc.directions + r.directions,
+        favorites: acc.favorites + r.favorites,
+      }),
+      ZERO_TOTALS
+    )
+
   return {
-    totals,
-    dailyData: data 
+    totals: sum(currentDays),
+    previousTotals: sum(previousDays),
+    currentDays,
+    previousDays,
   }
 }
 

@@ -1,18 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { Spinner } from "@/components/ui/spinner"
-import {
-  ForkKnife,
-  ImageSquare,
-  PencilSimple,
-  Plus,
-  Star,
-  Trash,
-  UploadSimple,
-  Warning,
-} from "@phosphor-icons/react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { Plus } from "@phosphor-icons/react"
 import { toast } from "sonner"
+import imageCompression from "browser-image-compression"
 
 import {
   AlertDialog,
@@ -24,9 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -37,15 +27,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Spinner } from "@/components/ui/spinner"
 import {
   upsertMenuItemAction,
   deleteMenuItemAction,
@@ -58,51 +40,21 @@ import {
   uploadMenuItemImageAction,
   deleteMenuItemImageAction,
 } from "@/app/actions/upload"
-import imageCompression from "browser-image-compression"
-
-type Category = {
-  id: string
-  name: string
-  is_global: boolean
-  created_by: string | null
-}
-
-type MenuItem = {
-  id: string
-  name: string
-  price: number
-  is_highlight: boolean
-  image_url: string | null
-  category_id: string
-  menu_categories: { id: string; name: string; is_global: boolean } | null
-  menu_item_variants?: MenuItemVariant[] | null
-}
-
-type MenuItemVariant = {
-  id: string
-  label: string
-  price_override: number | null
-  price_modifier: number
-  is_default: boolean
-  sort_order: number
-}
-
-type VariantDraft = {
-  id?: string
-  label: string
-  priceOverride: string
-  isDefault: boolean
-}
-
-type MenuItemFormState = {
-  id?: string
-  name: string
-  price: string
-  categoryId: string
-  is_highlight: boolean
-  hasVariants: boolean
-  variants: VariantDraft[]
-}
+import { CategoryList } from "@/components/owner/menu/category-list"
+import {
+  EditItemPanel,
+  EMPTY_ITEM_FORM,
+  type ItemFormState,
+} from "@/components/owner/menu/edit-item-panel"
+import { EmptyMenu } from "@/components/owner/menu/empty-menu"
+import { HighlightsStrip } from "@/components/owner/menu/highlights-strip"
+import { MenuItemRows, type MenuSection } from "@/components/owner/menu/menu-item-rows"
+import {
+  HIGHLIGHT_LIMIT,
+  sortedVariants,
+  type Category,
+  type MenuItem,
+} from "@/components/owner/menu/types"
 
 async function compressImage(file: File): Promise<File> {
   return imageCompression(file, {
@@ -111,196 +63,6 @@ async function compressImage(file: File): Promise<File> {
     useWebWorker: true,
     fileType: "image/webp",
   })
-}
-
-function formatPrice(value: number) {
-  return `₱${value.toFixed(2)}`
-}
-
-function getVariantEffectivePrice(variant: MenuItemVariant, basePrice: number) {
-  return variant.price_override ?? basePrice + variant.price_modifier
-}
-
-function getItemPriceDisplay(item: MenuItem) {
-  const variants = item.menu_item_variants ?? []
-  if (variants.length === 0) return formatPrice(item.price)
-  const prices = variants.map((variant) =>
-    getVariantEffectivePrice(variant, item.price)
-  )
-  const minPrice = Math.min(...prices)
-  const maxPrice = Math.max(...prices)
-
-  if (!Number.isFinite(minPrice) || !Number.isFinite(maxPrice)) {
-    return formatPrice(item.price)
-  }
-
-  if (minPrice === maxPrice) return formatPrice(minPrice)
-  return `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`
-}
-
-function createVariantDraft(overrides?: Partial<VariantDraft>): VariantDraft {
-  return {
-    label: "",
-    priceOverride: "",
-    isDefault: false,
-    ...overrides,
-  }
-}
-
-function ItemRow({
-  item,
-  highlightCount,
-  onToggleHighlight,
-  onEdit,
-  onDelete,
-  onImageUpload,
-  onImageDelete,
-  isUploadingImage,
-  showMissingImageWarning,
-}: {
-  item: MenuItem
-  highlightCount: number
-  onToggleHighlight: (id: string, value: boolean) => void
-  onEdit: (item: MenuItem) => void
-  onDelete: (id: string) => void
-  onImageUpload: (id: string, file: File) => void
-  onImageDelete: (id: string, imageUrl: string) => void
-  isUploadingImage?: boolean
-  showMissingImageWarning?: boolean
-}) {
-  const inputRef = React.useRef<HTMLInputElement>(null)
-  const highlightCapReached = !item.is_highlight && highlightCount >= 5
-  const categoryName = item.menu_categories?.name ?? "Uncategorized"
-
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    onImageUpload(item.id, file)
-    e.target.value = ""
-  }
-
-  return (
-    <div className="flex items-center gap-3 py-3 border-b last:border-0">
-
-      {item.is_highlight ? (
-        item.image_url ? (
-          <div className="relative size-10 rounded-md bg-muted shrink-0 flex items-center justify-center border overflow-hidden group/img">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
-            {/* Visible on touch (no hover), hover-revealed from sm: up. Opens a
-                confirm rather than deleting outright, since on mobile the whole
-                thumbnail is the tap target. */}
-            <button
-              type="button"
-              className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-100 transition-opacity sm:opacity-0 sm:group-hover/img:opacity-100"
-              onClick={() => onImageDelete(item.id, item.image_url!)}
-              disabled={isUploadingImage}
-              title="Remove image"
-              aria-label={`Remove photo from ${item.name}`}
-            >
-              <Trash size={12} className="text-white" />
-            </button>
-          </div>
-        ) : (
-          <>
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={handleFileSelect}
-            />
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-10 shrink-0 border-dashed"
-              disabled={isUploadingImage}
-              onClick={() => inputRef.current?.click()}
-              title="Upload image"
-            >
-              {isUploadingImage
-                ? <ImageSquare size={16} className="text-muted-foreground animate-pulse" />
-                : <Plus size={16} className="text-muted-foreground" />
-              }
-            </Button>
-          </>
-        )
-      ) : (
-        // Pure alignment spacer — reclaim its 40px for content on phones.
-        <div className="hidden size-10 shrink-0 sm:block" />
-      )}
-
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-row items-center gap-2 min-w-0">
-          <span className="text-sm font-medium truncate">{item.name}</span>
-          {item.is_highlight && (
-            <Badge
-              variant="outline"
-              className="text-xs text-green-700 border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-950 dark:text-green-400 shrink-0"
-            >
-              Highlight
-            </Badge>
-          )}
-        </div>
-        {/* Wraps instead of overflowing: on a phone the category + price would
-            otherwise spill out of this column and overlap the toggle. */}
-        <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <Badge variant="secondary" className="max-w-full truncate text-xs">
-            {categoryName}
-          </Badge>
-          <span className="text-xs text-muted-foreground">·</span>
-          <span className="text-xs whitespace-nowrap text-muted-foreground">
-            {getItemPriceDisplay(item)}
-          </span>
-        </div>
-        {showMissingImageWarning && item.is_highlight && !item.image_url && (
-          <div className="mt-0.5 flex min-w-0 flex-row items-start gap-1">
-            <Warning size={12} className="mt-0.5 text-amber-500 shrink-0" />
-            <span className="min-w-0 text-xs text-amber-600 dark:text-amber-400">
-              Add a photo to show this highlight in the app
-            </span>
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-col items-center gap-0.5 shrink-0">
-        <Switch
-          checked={item.is_highlight}
-          disabled={highlightCapReached}
-          onCheckedChange={(v) => onToggleHighlight(item.id, v)}
-          aria-label={`Highlight ${item.name}`}
-          className={highlightCapReached ? "opacity-50" : ""}
-        />
-        {/* Label costs ~50px — drop it on phones; the toggle + the green
-            "Highlight" badge above already carry the meaning. */}
-        <span className="hidden text-xs text-muted-foreground sm:block">
-          Highlight
-        </span>
-      </div>
-
-      {/* gap-1 so the destructive Delete isn't flush against Edit — they're
-          adjacent tap targets and a mis-tap here is unrecoverable. */}
-      <div className="flex items-center gap-1 shrink-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onEdit(item)}
-          aria-label={`Edit ${item.name}`}
-        >
-          <PencilSimple size={14} className="text-muted-foreground" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="hover:text-destructive"
-          onClick={() => onDelete(item.id)}
-          aria-label={`Delete ${item.name}`}
-        >
-          <Trash size={14} className="text-muted-foreground" />
-        </Button>
-      </div>
-    </div>
-  )
 }
 
 export function OwnerMenuClient({
@@ -312,48 +74,95 @@ export function OwnerMenuClient({
   categories: Category[]
   cafeId: string
 }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
   const [items, setItems] = React.useState<MenuItem[]>(initialItems)
-  const [itemDialogOpen, setItemDialogOpen] = React.useState(false)
+  const [panelOpen, setPanelOpen] = React.useState(false)
   const [editingItemId, setEditingItemId] = React.useState<string | null>(null)
-  const [addCategoryOpen, setAddCategoryOpen] = React.useState(false)
-  const [deleteItem, setDeleteItem] = React.useState<string | null>(null)
-  const [isSaving, setIsSaving] = React.useState(false)
-  const [uploadingItemId, setUploadingItemId] = React.useState<string | null>(null)
-  const [uploadError, setUploadError] = React.useState("")
+  const [itemForm, setItemForm] = React.useState<ItemFormState>(EMPTY_ITEM_FORM)
   const [pendingImageFile, setPendingImageFile] = React.useState<File | null>(null)
-  const dialogInputRef = React.useRef<HTMLInputElement>(null)
-  const [itemForm, setItemForm] = React.useState<MenuItemFormState>({
-    name: "",
-    price: "",
-    categoryId: "",
-    is_highlight: false,
-    hasVariants: false,
-    variants: [createVariantDraft({ isDefault: true })],
-  })
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [deleteItem, setDeleteItem] = React.useState<string | null>(null)
+  const [uploadingItemId, setUploadingItemId] = React.useState<string | null>(null)
+  const [imageDeleteTarget, setImageDeleteTarget] = React.useState<
+    { id: string; url: string } | null
+  >(null)
 
   const [categoryList, setCategoryList] = React.useState<Category[]>(categories)
+  const [addCategoryOpen, setAddCategoryOpen] = React.useState(false)
   const [categoryName, setCategoryName] = React.useState("")
   const [categorySaving, setCategorySaving] = React.useState(false)
   const [categoryDeleting, setCategoryDeleting] = React.useState(false)
   const [editingCategory, setEditingCategory] =
     React.useState<{ id: string; name: string } | null>(null)
   const [deleteCategoryId, setDeleteCategoryId] = React.useState<string | null>(null)
-  const [imageDeleteTarget, setImageDeleteTarget] = React.useState<
-    { id: string; url: string } | null
-  >(null)
+  // Set when the category dialog was opened from the item panel, so the new
+  // category is picked for the item being edited.
+  const [categoryForItem, setCategoryForItem] = React.useState(false)
 
-  const globalCategories = categoryList.filter((c) => c.is_global)
-  const customCategories = categoryList.filter((c) => !c.is_global)
+  // The chosen category lives in the URL so a reload or a shared link keeps it.
+  // An id that no longer matches a category (deleted, or a stale link) falls
+  // back to all items instead of an empty list with nothing selected.
+  const requestedCategoryId = searchParams.get("category")
+  const selectedCategoryId =
+    requestedCategoryId && categoryList.some((c) => c.id === requestedCategoryId)
+      ? requestedCategoryId
+      : null
+  function selectCategory(id: string | null) {
+    const params = new URLSearchParams(searchParams.toString())
+    if (id) params.set("category", id)
+    else params.delete("category")
+    const qs = params.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+  }
 
-  function openAddCategory() {
+  const highlightItems = items.filter((i) => i.is_highlight)
+  const highlightCount = highlightItems.length
+  const editingItem = items.find((item) => item.id === editingItemId) ?? null
+
+  const counts = React.useMemo(() => {
+    const map = new Map<string, number>()
+    for (const item of items) map.set(item.category_id, (map.get(item.category_id) ?? 0) + 1)
+    return map
+  }, [items])
+
+  // Sections follow the category list's order: Nook's first, then the
+  // owner's own. Items keep their created order inside a section.
+  const sections: MenuSection[] = React.useMemo(() => {
+    const ordered = [
+      ...categoryList.filter((c) => c.is_global),
+      ...categoryList.filter((c) => !c.is_global),
+    ]
+    const known = new Set(ordered.map((c) => c.id))
+    const result: MenuSection[] = ordered
+      .filter((c) => !selectedCategoryId || c.id === selectedCategoryId)
+      .map((c) => ({ id: c.id, name: c.name, items: items.filter((i) => i.category_id === c.id) }))
+      .filter((s) => s.items.length > 0 || s.id === selectedCategoryId)
+    const orphans = items.filter((i) => !known.has(i.category_id))
+    if (!selectedCategoryId && orphans.length > 0) {
+      result.push({ id: "uncategorized", name: "Uncategorized", items: orphans })
+    }
+    // A selected category with nothing in it shows the list's own empty state.
+    return result.filter((s) => s.items.length > 0)
+  }, [categoryList, items, selectedCategoryId])
+
+  const usedCategoryCount = new Set(items.map((i) => i.category_id)).size
+
+  // ---- Categories ----------------------------------------------------------
+
+  function openAddCategory(forItem = false) {
     setEditingCategory(null)
     setCategoryName("")
+    setCategoryForItem(forItem)
     setAddCategoryOpen(true)
   }
 
   function openEditCategory(cat: Category) {
     setEditingCategory({ id: cat.id, name: cat.name })
     setCategoryName(cat.name)
+    setCategoryForItem(false)
     setAddCategoryOpen(true)
   }
 
@@ -361,6 +170,7 @@ export function OwnerMenuClient({
     setAddCategoryOpen(false)
     setEditingCategory(null)
     setCategoryName("")
+    setCategoryForItem(false)
   }
 
   async function handleSaveCategory() {
@@ -374,11 +184,16 @@ export function OwnerMenuClient({
           return
         }
         setCategoryList((prev) =>
-          prev.map((c) =>
-            c.id === res.category.id ? { ...c, name: res.category.name } : c
+          prev.map((c) => (c.id === res.category.id ? { ...c, name: res.category.name } : c))
+        )
+        setItems((prev) =>
+          prev.map((i) =>
+            i.category_id === res.category.id && i.menu_categories
+              ? { ...i, menu_categories: { ...i.menu_categories, name: res.category.name } }
+              : i
           )
         )
-        toast.success("Category updated")
+        toast.success("Category renamed")
       } else {
         const res = await createCategoryAction(categoryName)
         if (!res.ok) {
@@ -389,6 +204,7 @@ export function OwnerMenuClient({
           ...prev,
           { id: res.category.id, name: res.category.name, is_global: false, created_by: cafeId },
         ])
+        if (categoryForItem) setItemForm((f) => ({ ...f, categoryId: res.category.id }))
         toast.success("Category added")
       }
       closeCategoryDialog()
@@ -410,6 +226,7 @@ export function OwnerMenuClient({
         return
       }
       setCategoryList((prev) => prev.filter((c) => c.id !== deleteCategoryId))
+      if (selectedCategoryId === deleteCategoryId) selectCategory(null)
       toast.success("Category deleted")
       setDeleteCategoryId(null)
     } finally {
@@ -417,83 +234,52 @@ export function OwnerMenuClient({
     }
   }
 
-  const highlightCount = items.filter((i) => i.is_highlight).length
-  const isEditing = editingItemId !== null
-  const editingItem = items.find((item) => item.id === editingItemId) ?? null
+  // ---- Items ---------------------------------------------------------------
 
   function resetItemForm() {
-    setItemForm({
-      name: "",
-      price: "",
-      categoryId: "",
-      is_highlight: false,
-      hasVariants: false,
-      variants: [createVariantDraft({ isDefault: true })],
-    })
+    setItemForm(EMPTY_ITEM_FORM)
     setEditingItemId(null)
     setPendingImageFile(null)
   }
 
-  function openAddDialog() {
+  function openAddPanel() {
     resetItemForm()
-    setItemDialogOpen(true)
+    // Adding while a category is picked files the item under it.
+    const preset = selectedCategoryId && categoryList.some((c) => c.id === selectedCategoryId)
+    setItemForm({ ...EMPTY_ITEM_FORM, categoryId: preset ? selectedCategoryId! : "" })
+    setPanelOpen(true)
   }
 
-  function openEditDialog(item: MenuItem) {
-    const sortedVariants = [...(item.menu_item_variants ?? [])].sort(
-      (a, b) => a.sort_order - b.sort_order
-    )
-    const hasVariants = sortedVariants.length > 0
-
+  function openEditPanel(item: MenuItem) {
+    const variants = sortedVariants(item)
     setItemForm({
-      id: item.id,
       name: item.name,
       price: item.price.toString(),
       categoryId: item.category_id,
       is_highlight: item.is_highlight,
-      hasVariants,
-      variants: hasVariants
-        ? sortedVariants.map((variant) =>
-          createVariantDraft({
-            id: variant.id,
-            label: variant.label,
-            priceOverride:
-              (variant.price_override ?? item.price + variant.price_modifier).toString(),
-            isDefault: variant.is_default,
-          })
-        )
-        : [createVariantDraft({ isDefault: true })],
+      sizes: variants.map((v) => ({
+        id: v.id,
+        label: v.label,
+        price: (v.price_override ?? item.price + v.price_modifier).toString(),
+        isDefault: v.is_default,
+      })),
     })
     setEditingItemId(item.id)
     setPendingImageFile(null)
-    setItemDialogOpen(true)
-  }
-
-  function ensureDefaultVariant(variants: VariantDraft[]) {
-    if (variants.some((variant) => variant.isDefault)) return variants
-    if (variants.length === 0) return variants
-    return variants.map((variant, index) => ({
-      ...variant,
-      isDefault: index === 0,
-    }))
+    setPanelOpen(true)
   }
 
   async function toggleHighlight(id: string, value: boolean) {
-    if (value && highlightCount >= 5) {
-      toast.error("You can only highlight up to 5 items")
+    if (value && highlightCount >= HIGHLIGHT_LIMIT) {
+      toast.error(`You can highlight up to ${HIGHLIGHT_LIMIT} items`)
       return
     }
     const item = items.find((i) => i.id === id)
     if (!item) return
 
-    setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, is_highlight: value } : i))
-    )
-
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, is_highlight: value } : i)))
     const revert = () =>
-      setItems((prev) =>
-        prev.map((i) => (i.id === id ? { ...i, is_highlight: !value } : i))
-      )
+      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, is_highlight: !value } : i)))
     try {
       const res = await upsertMenuItemAction({
         id: item.id,
@@ -508,10 +294,10 @@ export function OwnerMenuClient({
         toast.error(res.error)
         return
       }
-      toast.success(value ? "Item highlighted" : "Item removed from highlights")
+      toast.success(value ? `${item.name} is now a highlight` : `${item.name} removed from highlights`)
     } catch {
       revert()
-      toast.error("Failed to update highlight. Check your connection.")
+      toast.error("Couldn’t update the highlight. Check your connection and try again.")
     }
   }
 
@@ -528,90 +314,78 @@ export function OwnerMenuClient({
         toast.error(res.error)
         return
       }
-      toast.success("Menu item deleted")
+      toast.success("Item deleted")
     } catch {
       // Restore the optimistic removal. Without this the item stayed gone
       // locally while still live in the DB and on the public listing, so a
       // failed delete looked like a successful one.
       setItems(snapshot)
-      toast.error("Failed to delete menu item")
+      toast.error("Couldn’t delete the item. Check your connection and try again.")
     }
   }
 
   async function handleSaveItem() {
-    if (!itemForm.name.trim() || !itemForm.categoryId) return
-
-    if (itemForm.hasVariants && itemForm.variants.length === 0) {
-      toast.error("Add at least one variant")
+    if (isSaving) return
+    // Enter in a field submits the form even while the button is disabled,
+    // so say what's missing instead of doing nothing.
+    if (!itemForm.name.trim()) {
+      toast.error("Give the item a name")
+      return
+    }
+    if (!itemForm.categoryId) {
+      toast.error("Choose a category for the item")
       return
     }
 
-    const normalizedVariants = itemForm.hasVariants
-      ? itemForm.variants.map((variant, index) => ({
-        id: variant.id,
-        label: variant.label.trim(),
-        price_override: variant.priceOverride
-          ? Number.parseFloat(variant.priceOverride)
-          : null,
-        price_modifier: 0,
-        is_default: variant.isDefault,
-        sort_order: index,
-      }))
-      : []
+    // Rows left completely blank are dropped rather than rejected.
+    const sizes = itemForm.sizes.filter((s) => s.label.trim() || s.price.trim())
+    const normalizedVariants = sizes.map((s, index) => ({
+      id: s.id,
+      label: s.label.trim(),
+      price_override: s.price ? Number.parseFloat(s.price) : null,
+      price_modifier: 0,
+      is_default: s.isDefault,
+      sort_order: index,
+    }))
+    const hasSizes = normalizedVariants.length > 0
 
-    if (itemForm.hasVariants) {
-      const missingLabel = normalizedVariants.some((variant) => !variant.label)
-      if (missingLabel) {
-        toast.error("Variant label is required")
+    if (hasSizes) {
+      if (normalizedVariants.some((v) => !v.label)) {
+        toast.error("Give every size a name, like 12 oz or Iced")
         return
       }
-
-      const invalidPrice = normalizedVariants.some(
-        (variant) =>
-          variant.price_override === null ||
-          !Number.isFinite(variant.price_override) ||
-          (variant.price_override as number) <= 0
-      )
-      if (invalidPrice) {
-        toast.error("Each variant needs a price greater than 0")
+      if (
+        normalizedVariants.some(
+          (v) => v.price_override === null || !Number.isFinite(v.price_override) || v.price_override <= 0
+        )
+      ) {
+        toast.error("Each size needs a price above ₱0")
         return
       }
-
-      if (!normalizedVariants.some((variant) => variant.is_default)) {
-        normalizedVariants[0].is_default = true
-      }
-    }
-
-    // Items without variants need a real base price — blank/NaN/≤0 is rejected
-    // here rather than silently saved as ₱0.00 (or a negative).
-    if (!itemForm.hasVariants) {
+      if (!normalizedVariants.some((v) => v.is_default)) normalizedVariants[0].is_default = true
+    } else {
+      // Items without sizes need a real base price — blank/NaN/≤0 is rejected
+      // here rather than silently saved as ₱0.00 (or a negative).
       const parsed = Number.parseFloat(itemForm.price)
       if (!Number.isFinite(parsed) || parsed <= 0) {
-        toast.error("Enter a price greater than 0")
+        toast.error("Enter a base price above ₱0")
         return
       }
     }
 
-    const highlightCapReached = highlightCount >= 5
     const highlightAllowed =
-      !highlightCapReached || Boolean(editingItem?.is_highlight)
+      highlightCount < HIGHLIGHT_LIMIT || Boolean(editingItem?.is_highlight)
     if (itemForm.is_highlight && !highlightAllowed) {
-      toast.error("You can only highlight up to 5 items")
+      toast.error(`You can highlight up to ${HIGHLIGHT_LIMIT} items`)
       return
     }
 
+    const wasNew = !editingItem
     setIsSaving(true)
     try {
-      let basePrice = Number.parseFloat(itemForm.price) || 0
-      if (itemForm.hasVariants) {
-        const defaultVariant = normalizedVariants.find((variant) => variant.is_default)
-        const fallbackVariant = defaultVariant ?? normalizedVariants[0]
-        if (!fallbackVariant) {
-          toast.error("Add at least one variant")
-          return
-        }
-        basePrice = fallbackVariant.price_override ?? 0
-      }
+      const basePrice = hasSizes
+        ? (normalizedVariants.find((v) => v.is_default) ?? normalizedVariants[0]).price_override ?? 0
+        : Number.parseFloat(itemForm.price)
 
       const saved = await upsertMenuItemAction({
         id: editingItemId ?? undefined,
@@ -626,78 +400,70 @@ export function OwnerMenuClient({
         return
       }
       const menuItemId = saved.id
-      // From here the row exists. If a later step fails and the owner taps
-      // save again, update this row instead of inserting a duplicate.
-      if (!editingItemId) setEditingItemId(menuItemId)
-
-      let imageUrl = editingItem?.image_url ?? null
-      if (!isEditing && itemForm.is_highlight && pendingImageFile) {
-        try {
-          const compressed = await compressImage(pendingImageFile)
-          const formData = new FormData()
-          formData.append("file", compressed)
-          const res = await uploadMenuItemImageAction(
-            formData,
-            menuItemId,
-            cafeId
-          )
-          if (res.ok) imageUrl = res.url
-          else toast.error(`Item saved, but the photo didn't upload: ${res.error}`)
-        } catch {
-          // Image upload failure is non-fatal — item is still saved
-          toast.error("Item saved, but image upload failed")
-        }
-      }
-
-      const variantsPayload = itemForm.hasVariants
-        ? normalizedVariants.map((variant, index) => ({
-          id: variant.id,
-          label: variant.label.trim(),
-          price_override: variant.price_override,
-          price_modifier: 0,
-          is_default: variant.is_default,
-          sort_order: index,
-        }))
-        : []
-
-      const variantsRes = await upsertMenuItemVariantsAction(
-        menuItemId,
-        variantsPayload
-      )
-      if (!variantsRes.ok) {
-        toast.error(variantsRes.error)
-        return
-      }
-      const savedVariants = variantsRes.variants
-
       const category = categoryList.find((c) => c.id === itemForm.categoryId)
-      const updatedItem: MenuItem = {
+      const baseItem: MenuItem = {
         id: menuItemId,
         name: itemForm.name,
         price: basePrice,
         is_highlight: itemForm.is_highlight && highlightAllowed,
-        image_url: imageUrl,
+        image_url: editingItem?.image_url ?? null,
         category_id: itemForm.categoryId,
         menu_categories: category
           ? { id: category.id, name: category.name, is_global: category.is_global }
           : null,
-        menu_item_variants: itemForm.hasVariants ? savedVariants : [],
+        menu_item_variants: editingItem?.menu_item_variants ?? [],
       }
-
+      // From here the row exists. Put it in the list now, so a later failure
+      // (photo, sizes) can't leave a saved item invisible until a reload, and
+      // a second tap on save updates this row instead of inserting another.
       setItems((prev) =>
         prev.some((item) => item.id === menuItemId)
-          ? prev.map((item) => (item.id === menuItemId ? updatedItem : item))
-          : [...prev, updatedItem]
+          ? prev.map((item) => (item.id === menuItemId ? baseItem : item))
+          : [...prev, baseItem]
       )
+      if (!editingItemId) setEditingItemId(menuItemId)
+
+      let imageUrl = baseItem.image_url
+      if (itemForm.is_highlight && pendingImageFile && !imageUrl) {
+        try {
+          const compressed = await compressImage(pendingImageFile)
+          const formData = new FormData()
+          formData.append("file", compressed)
+          const res = await uploadMenuItemImageAction(formData, menuItemId, cafeId)
+          if (res.ok) {
+            imageUrl = res.url
+            setPendingImageFile(null)
+          } else toast.error(`Item saved, but the photo didn’t upload: ${res.error}`)
+        } catch {
+          // Image upload failure is non-fatal — item is still saved
+          toast.error("Item saved, but the photo didn’t upload")
+        }
+      }
+
+      if (imageUrl !== baseItem.image_url) {
+        setItems((prev) =>
+          prev.map((item) => (item.id === menuItemId ? { ...item, image_url: imageUrl } : item))
+        )
+      }
+
+      const variantsRes = await upsertMenuItemVariantsAction(menuItemId, normalizedVariants)
+      if (!variantsRes.ok) {
+        toast.error(variantsRes.error)
+        return
+      }
+
+      const updatedItem: MenuItem = {
+        ...baseItem,
+        image_url: imageUrl,
+        menu_item_variants: hasSizes ? variantsRes.variants : [],
+      }
+      setItems((prev) => prev.map((item) => (item.id === menuItemId ? updatedItem : item)))
 
       resetItemForm()
-      setItemDialogOpen(false)
-      toast.success(isEditing ? "Menu item updated" : "Menu item added")
+      setPanelOpen(false)
+      toast.success(wasNew ? "Item added" : "Changes saved")
     } catch (error) {
-      const message = error instanceof Error
-        ? error.message
-        : "Failed to save menu item"
-      toast.error(message)
+      toast.error(error instanceof Error ? error.message : "Couldn’t save the item")
     } finally {
       setIsSaving(false)
     }
@@ -705,9 +471,8 @@ export function OwnerMenuClient({
 
   async function handleItemImageUpload(id: string, file: File) {
     setUploadingItemId(id)
-    setUploadError("")
     // Compression runs before the request, so this covers the whole wait.
-    const toastId = toast.loading("Uploading item image…")
+    const toastId = toast.loading("Uploading photo…")
     try {
       // compressImage must stay inside the try: it rejects on HEIC, corrupt,
       // and zero-byte files, and outside the try that surfaced as an unhandled
@@ -717,15 +482,10 @@ export function OwnerMenuClient({
       formData.append("file", compressed)
       const res = await uploadMenuItemImageAction(formData, id, cafeId)
       if (!res.ok) throw new Error(res.error)
-      setItems((prev) =>
-        prev.map((i) => (i.id === id ? { ...i, image_url: res.url } : i))
-      )
-      toast.success("Item image uploaded", { id: toastId })
+      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, image_url: res.url } : i)))
+      toast.success("Photo added", { id: toastId })
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Upload failed"
-      setUploadError(msg)
-      toast.error(msg, { id: toastId })
-      setTimeout(() => setUploadError(""), 4000)
+      toast.error(err instanceof Error ? err.message : "Upload failed", { id: toastId })
     } finally {
       setUploadingItemId(null)
     }
@@ -733,556 +493,104 @@ export function OwnerMenuClient({
 
   async function handleItemImageDelete(id: string, imageUrl: string) {
     setUploadingItemId(id)
-    const toastId = toast.loading("Removing item image…")
+    const toastId = toast.loading("Removing photo…")
     try {
       const res = await deleteMenuItemImageAction(id, imageUrl, cafeId)
       if (!res.ok) throw new Error(res.error)
-      setItems((prev) =>
-        prev.map((i) => (i.id === id ? { ...i, image_url: null } : i))
-      )
-      toast.success("Item image removed", { id: toastId })
+      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, image_url: null } : i)))
+      toast.success("Photo removed", { id: toastId })
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Delete failed"
-      setUploadError(msg)
-      toast.error(msg, { id: toastId })
-      setTimeout(() => setUploadError(""), 4000)
+      toast.error(err instanceof Error ? err.message : "Couldn’t remove the photo", { id: toastId })
     } finally {
       setUploadingItemId(null)
     }
   }
 
-  const highlightItems = items.filter((i) => i.is_highlight)
+  // ---- Render --------------------------------------------------------------
+
+  const summary =
+    items.length === 0
+      ? "No items yet."
+      : `${items.length} ${items.length === 1 ? "item" : "items"} in ${usedCategoryCount} ${
+          usedCategoryCount === 1 ? "category" : "categories"
+        }. Prices and highlights show on your café page.`
 
   return (
     <>
-      <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6">
-
-        {/* Page Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-0.5">
-            <h1 className="text-2xl font-semibold">Menu</h1>
-            <p className="text-sm text-muted-foreground">
-              Manage your menu items and highlight up to 5 on your cafe detail
-              page
-            </p>
+      <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-tight">Menu</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{summary}</p>
           </div>
-          <Button variant="default" size="sm" className="w-full sm:w-auto" onClick={openAddDialog}>
-            <Plus className="size-4" />
-            Add Item
+          <Button onClick={openAddPanel} className="w-full sm:w-auto">
+            <Plus aria-hidden />
+            Add item
           </Button>
-        </div>
+        </header>
 
-        {/* Highlight Summary Card */}
-        <Card>
-          <CardContent className="pt-5 pb-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-col gap-0.5">
-                <p className="text-sm font-medium">Menu highlights</p>
-                <p className="text-xs text-muted-foreground">
-                  Highlighted items appear on your cafe detail page with a photo
-                </p>
-              </div>
-              <div className="flex flex-row items-center gap-3">
-                <div className="flex flex-row items-center gap-1.5">
-                  {Array.from({ length: 5 }).map((_, i) =>
-                    i < highlightCount ? (
-                      <div key={i} className="size-2 rounded-full bg-primary" />
-                    ) : (
-                      <div
-                        key={i}
-                        className="size-2 rounded-full border border-muted-foreground/30"
-                      />
-                    )
-                  )}
-                </div>
-                <span className="text-sm font-medium">{highlightCount} / 5</span>
-                <span className="text-xs text-muted-foreground">highlights</span>
-              </div>
+        {items.length === 0 ? (
+          <div className="mt-6">
+            <EmptyMenu onAdd={openAddPanel} />
+          </div>
+        ) : (
+          <div className="mt-6 flex flex-col gap-5">
+            <HighlightsStrip
+              items={highlightItems}
+              uploadingItemId={uploadingItemId}
+              onRemove={(id) => void toggleHighlight(id, false)}
+              onUpload={handleItemImageUpload}
+            />
+            <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[264px_minmax(0,1fr)]">
+              <CategoryList
+                categories={categoryList}
+                counts={counts}
+                total={items.length}
+                selectedId={selectedCategoryId}
+                onSelect={selectCategory}
+                onAdd={() => openAddCategory()}
+                onRename={openEditCategory}
+                onDelete={setDeleteCategoryId}
+              />
+              <MenuItemRows
+                sections={sections}
+                highlightCount={highlightCount}
+                uploadingItemId={uploadingItemId}
+                onToggleHighlight={toggleHighlight}
+                onEdit={openEditPanel}
+                onDelete={setDeleteItem}
+                onUpload={handleItemImageUpload}
+              />
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Tabs */}
-        <Tabs defaultValue="all">
-          <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="all">
-              All Items
-              <Badge
-                variant="secondary"
-                className="ml-1.5 hidden text-xs sm:inline-flex"
-              >
-                {items.length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="highlights">
-              Highlights
-              <Badge
-                variant="secondary"
-                className="ml-1.5 hidden text-xs sm:inline-flex"
-              >
-                {highlightCount}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="categories">Categories</TabsTrigger>
-          </TabsList>
-
-          {/* All Items */}
-          <TabsContent value="all">
-            <Card>
-              <CardContent className="pt-2 pb-0">
-                {items.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-6 text-center">
-                    No menu items yet. Add your first item!
-                  </p>
-                ) : (
-                  items.map((item) => (
-                    <ItemRow
-                      key={item.id}
-                      item={item}
-                      highlightCount={highlightCount}
-                      onToggleHighlight={toggleHighlight}
-                      onEdit={openEditDialog}
-                      onDelete={setDeleteItem}
-                      onImageUpload={handleItemImageUpload}
-                      onImageDelete={(id, url) => setImageDeleteTarget({ id, url })}
-                      isUploadingImage={uploadingItemId === item.id}
-                    />
-                  ))
-                )}
-                {highlightCount >= 5 && (
-                  <p className="text-xs text-destructive py-2">
-                    Maximum 5 highlights reached
-                  </p>
-                )}
-                {uploadError && (
-                  <p className="text-sm text-destructive py-2">{uploadError}</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Highlights */}
-          <TabsContent value="highlights">
-            <Card>
-              <CardContent className="pt-4 pb-0">
-                <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground mb-4">
-                  <Star size={14} className="text-yellow-500 shrink-0" />
-                  {highlightCount} of 5 highlight slots used — highlighted items
-                  appear on your cafe detail page with photos
-                </div>
-                {highlightItems.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">
-                    No highlights set yet. Toggle items in All Items.
-                  </p>
-                ) : (
-                  highlightItems.map((item) => (
-                    <ItemRow
-                      key={item.id}
-                      item={item}
-                      highlightCount={highlightCount}
-                      onToggleHighlight={toggleHighlight}
-                      onEdit={openEditDialog}
-                      onDelete={setDeleteItem}
-                      onImageUpload={handleItemImageUpload}
-                      onImageDelete={(id, url) => setImageDeleteTarget({ id, url })}
-                      isUploadingImage={uploadingItemId === item.id}
-                      showMissingImageWarning
-                    />
-                  ))
-                )}
-                {highlightCount >= 5 && (
-                  <p className="text-xs text-destructive py-2">
-                    Maximum 5 highlights reached
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Categories */}
-          <TabsContent value="categories">
-            <Card>
-              <CardContent className="pt-5 pb-4 space-y-6">
-
-                {/* Global categories */}
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                    Global categories
-                  </p>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Shared across all cafes — managed by the Nook team
-                  </p>
-                  <div>
-                    {globalCategories.map((cat) => (
-                      <div
-                        key={cat.id}
-                        className="flex items-center gap-3 py-2.5 border-b last:border-0"
-                      >
-                        <div className="size-7 rounded-md bg-muted flex items-center justify-center shrink-0">
-                          <ForkKnife size={14} className="text-muted-foreground" />
-                        </div>
-                        <span className="min-w-0 flex-1 truncate text-sm">
-                          {cat.name}
-                        </span>
-                        <Badge variant="secondary" className="text-xs">
-                          Global
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Custom categories */}
-                <div>
-                  <div className="flex flex-row items-center justify-between mb-3">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Your categories
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5"
-                      onClick={openAddCategory}
-                    >
-                      <Plus size={14} />
-                      Add Category
-                    </Button>
-                  </div>
-
-                  {customCategories.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-2">
-                      No custom categories yet.
-                    </p>
-                  ) : (
-                    customCategories.map((cat) => (
-                      <div
-                        key={cat.id}
-                        className="flex items-center gap-3 py-2.5 border-b last:border-0"
-                      >
-                        <div className="size-7 rounded-md bg-muted flex items-center justify-center shrink-0">
-                          <ForkKnife size={14} className="text-muted-foreground" />
-                        </div>
-                        <span className="min-w-0 flex-1 truncate text-sm">
-                          {cat.name}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8"
-                          onClick={() => openEditCategory(cat)}
-                          title="Rename category"
-                        >
-                          <PencilSimple size={14} className="text-muted-foreground" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8 hover:text-destructive"
-                          onClick={() => setDeleteCategoryId(cat.id)}
-                          title="Delete category"
-                        >
-                          <Trash size={14} className="text-muted-foreground" />
-                        </Button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
 
-      {/* Add Item Dialog */}
-      <Dialog
-        open={itemDialogOpen}
+      <EditItemPanel
+        open={panelOpen}
         onOpenChange={(open) => {
-          setItemDialogOpen(open)
+          setPanelOpen(open)
           if (!open) resetItemForm()
         }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{isEditing ? "Edit menu item" : "Add menu item"}</DialogTitle>
-            <DialogDescription>
-              {isEditing
-                ? "Update this item's details."
-                : "Add a new item to your menu."}
-            </DialogDescription>
-          </DialogHeader>
+        editingItem={editingItem}
+        form={itemForm}
+        setForm={setItemForm}
+        categories={categoryList}
+        highlightCount={highlightCount}
+        pendingImageFile={pendingImageFile}
+        setPendingImageFile={setPendingImageFile}
+        photoBusy={editingItem !== null && uploadingItemId === editingItem.id}
+        onUploadPhoto={(file) => editingItem && void handleItemImageUpload(editingItem.id, file)}
+        onRemovePhoto={() =>
+          editingItem?.image_url &&
+          setImageDeleteTarget({ id: editingItem.id, url: editingItem.image_url })
+        }
+        onNewCategory={() => openAddCategory(true)}
+        onSave={handleSaveItem}
+        isSaving={isSaving}
+      />
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="item-name">Item name</Label>
-              <Input
-                id="item-name"
-                placeholder="e.g. Iced Oat Latte"
-                value={itemForm.name}
-                onChange={(e) =>
-                  setItemForm((prev) => ({ ...prev, name: e.target.value }))
-                }
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {!itemForm.hasVariants && (
-                <div className="space-y-2">
-                  <Label htmlFor="item-price">Price (₱)</Label>
-                  <Input
-                    id="item-price"
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={itemForm.price}
-                    onChange={(e) =>
-                      setItemForm((prev) => ({ ...prev, price: e.target.value }))
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    In pesos, e.g. 180.00
-                  </p>
-                </div>
-              )}
-
-              <div className={itemForm.hasVariants ? "col-span-2 space-y-2" : "space-y-2"}>
-                <Label>Category</Label>
-                <Select
-                  value={itemForm.categoryId}
-                  onValueChange={(v) =>
-                    setItemForm((prev) => ({ ...prev, categoryId: v }))
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categoryList.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex flex-row items-center justify-between">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium">Variants</span>
-                <span className="text-xs text-muted-foreground">
-                  Offer size or add-ons with different prices
-                </span>
-              </div>
-              <Switch
-                checked={itemForm.hasVariants}
-                onCheckedChange={(value) =>
-                  setItemForm((prev) => ({
-                    ...prev,
-                    hasVariants: value,
-                    variants: value
-                      ? ensureDefaultVariant(
-                        prev.variants.length > 0
-                          ? prev.variants
-                          : [createVariantDraft({ isDefault: true })]
-                      )
-                      : prev.variants,
-                  }))
-                }
-              />
-            </div>
-
-            {itemForm.hasVariants && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Variant list</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={() =>
-                      setItemForm((prev) => ({
-                        ...prev,
-                        variants: [
-                          ...prev.variants,
-                          createVariantDraft({
-                            isDefault: prev.variants.length === 0,
-                          }),
-                        ],
-                      }))
-                    }
-                  >
-                    <Plus size={14} />
-                    Add Variant
-                  </Button>
-                </div>
-
-                {itemForm.variants.map((variant, index) => (
-                  <div
-                    key={`${variant.id ?? "new"}-${index}`}
-                    className="grid grid-cols-1 gap-3 rounded-lg border p-3 sm:grid-cols-[1.5fr_1fr_auto_auto] sm:items-end"
-                  >
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Label</Label>
-                      <Input
-                        placeholder="e.g. Small"
-                        value={variant.label}
-                        onChange={(e) =>
-                          setItemForm((prev) => ({
-                            ...prev,
-                            variants: prev.variants.map((entry, idx) =>
-                              idx === index
-                                ? { ...entry, label: e.target.value }
-                                : entry
-                            ),
-                          }))
-                        }
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">
-                        Price (₱)
-                      </Label>
-                      <Input
-                        type="number"
-                        inputMode="decimal"
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={variant.priceOverride}
-                        onChange={(e) =>
-                          setItemForm((prev) => ({
-                            ...prev,
-                            variants: prev.variants.map((entry, idx) =>
-                              idx === index
-                                ? { ...entry, priceOverride: e.target.value }
-                                : entry
-                            ),
-                          }))
-                        }
-                      />
-                    </div>
-
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <input
-                        type="radio"
-                        name="default-variant"
-                        checked={variant.isDefault}
-                        onChange={() =>
-                          setItemForm((prev) => ({
-                            ...prev,
-                            variants: prev.variants.map((entry, idx) => ({
-                              ...entry,
-                              isDefault: idx === index,
-                            })),
-                          }))
-                        }
-                      />
-                      Default
-                    </label>
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 hover:text-destructive"
-                      onClick={() =>
-                        setItemForm((prev) => {
-                          const next = prev.variants.filter((_, idx) => idx !== index)
-                          return {
-                            ...prev,
-                            variants: ensureDefaultVariant(next),
-                          }
-                        })
-                      }
-                      disabled={itemForm.variants.length <= 1}
-                    >
-                      <Trash size={14} className="text-muted-foreground" />
-                    </Button>
-                  </div>
-                ))}
-                <p className="text-xs text-muted-foreground">
-                  At least one variant is required.
-                </p>
-              </div>
-            )}
-
-            <div className="flex flex-row items-center justify-between">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium">Feature as highlight</span>
-                <span className="text-xs text-muted-foreground">
-                  Shows on your cafe detail page
-                </span>
-              </div>
-              <Switch
-                checked={itemForm.is_highlight}
-                disabled={!itemForm.is_highlight && highlightCount >= 5 && !editingItem?.is_highlight}
-                onCheckedChange={(v) =>
-                  setItemForm((prev) => ({ ...prev, is_highlight: v }))
-                }
-              />
-            </div>
-
-            {itemForm.is_highlight && highlightCount >= 5 && !editingItem?.is_highlight && (
-              <p className="text-xs text-destructive">
-                Maximum 5 highlights reached — toggle off another item first
-              </p>
-            )}
-
-            {!isEditing && itemForm.is_highlight && highlightCount < 5 && (
-              <div className="space-y-2">
-                <Label>Photo</Label>
-                <input
-                  ref={dialogInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={(e) => {
-                    setPendingImageFile(e.target.files?.[0] ?? null)
-                  }}
-                />
-                <div
-                  className="h-24 w-full rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:bg-muted text-muted-foreground transition-colors"
-                  onClick={() => dialogInputRef.current?.click()}
-                >
-                  {pendingImageFile ? (
-                    <>
-                      <ImageSquare size={20} className="text-primary" />
-                      <span className="text-sm font-medium truncate max-w-[180px]">
-                        {pendingImageFile.name}
-                      </span>
-                      <span className="text-xs">Click to change</span>
-                    </>
-                  ) : (
-                    <>
-                      <UploadSimple size={20} />
-                      <span className="text-sm">Click to upload</span>
-                      <span className="text-xs">JPG, PNG, WEBP · Max 10MB</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setItemDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="default"
-              onClick={handleSaveItem}
-              loading={isSaving}
-              disabled={!itemForm.name.trim() || !itemForm.categoryId}
-            >
-              {isEditing ? "Save Changes" : "Add Item"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Category Dialog */}
+      {/* Add / rename category */}
       <Dialog
         open={addCategoryOpen}
         onOpenChange={(open) => {
@@ -1292,56 +600,46 @@ export function OwnerMenuClient({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingCategory ? "Rename category" : "Add custom category"}
-            </DialogTitle>
+            <DialogTitle>{editingCategory ? "Rename category" : "New category"}</DialogTitle>
             <DialogDescription>
               {editingCategory
-                ? "Update the name of this category."
-                : "Create a category for grouping your menu items."}
+                ? "Items in this category keep it under the new name."
+                : "Your own category, for things like seasonal drinks. Only your café uses it."}
             </DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="cat-name">Category name</Label>
-              <Input
-                id="cat-name"
-                placeholder="e.g. Seasonal Specials"
-                value={categoryName}
-                maxLength={60}
-                onChange={(e) => setCategoryName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && categoryName.trim() && !categorySaving) {
-                    e.preventDefault()
-                    handleSaveCategory()
-                  }
-                }}
-                autoFocus
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="cat-name">Category name</Label>
+            <Input
+              id="cat-name"
+              placeholder="e.g. Seasonal specials"
+              value={categoryName}
+              maxLength={60}
+              onChange={(e) => setCategoryName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && categoryName.trim() && !categorySaving) {
+                  e.preventDefault()
+                  void handleSaveCategory()
+                }
+              }}
+              autoFocus
+            />
           </div>
-
           <DialogFooter>
             <Button variant="outline" onClick={closeCategoryDialog} disabled={categorySaving}>
               Cancel
             </Button>
             <Button
-              variant="default"
               onClick={handleSaveCategory}
-              disabled={categorySaving || !categoryName.trim()}
+              loading={categorySaving}
+              disabled={!categoryName.trim()}
             >
-              {categorySaving
-                ? "Saving…"
-                : editingCategory
-                  ? "Save changes"
-                  : "Add Category"}
+              {editingCategory ? "Save name" : "Add category"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Category Dialog */}
+      {/* Delete category */}
       <AlertDialog
         open={deleteCategoryId !== null}
         onOpenChange={() => {
@@ -1350,16 +648,15 @@ export function OwnerMenuClient({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete category?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this category?</AlertDialogTitle>
             <AlertDialogDescription>
-              This category will be removed. Items using it must be reassigned
-              first. This cannot be undone.
+              {(counts.get(deleteCategoryId ?? "") ?? 0) > 0
+                ? "Move its items to another category first — a category with items in it can’t be deleted."
+                : "It will be removed from your menu. This can’t be undone."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={categoryDeleting}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={categoryDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={(event) => {
                 // Keep the dialog mounted while the delete is in flight so the
@@ -1367,52 +664,45 @@ export function OwnerMenuClient({
                 event.preventDefault()
                 void handleDeleteCategory()
               }}
-              disabled={categoryDeleting}
-              className="bg-destructive text-white hover:bg-destructive/90"
+              // The server refuses while items still use it; don't offer a
+              // button that can only fail.
+              disabled={categoryDeleting || (counts.get(deleteCategoryId ?? "") ?? 0) > 0}
+              variant="destructive"
             >
               {categoryDeleting && <Spinner data-icon="inline-start" />}
-              {categoryDeleting ? "Deleting…" : "Delete"}
+              {categoryDeleting ? "Deleting…" : "Delete category"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Delete Item Dialog */}
-      <AlertDialog
-        open={deleteItem !== null}
-        onOpenChange={() => setDeleteItem(null)}
-      >
+      {/* Delete item */}
+      <AlertDialog open={deleteItem !== null} onOpenChange={() => setDeleteItem(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete item?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Delete {items.find((i) => i.id === deleteItem)?.name ?? "this item"}?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This item will be permanently removed from your menu. This cannot
-              be undone.
+              It will be removed from your menu and your café page. This can’t be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={handleDeleteConfirm}
-            >
-              Delete
+            <AlertDialogAction variant="destructive" onClick={handleDeleteConfirm}>
+              Delete item
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Remove Item Photo Dialog */}
-      <AlertDialog
-        open={imageDeleteTarget !== null}
-        onOpenChange={() => setImageDeleteTarget(null)}
-      >
+      {/* Remove item photo */}
+      <AlertDialog open={imageDeleteTarget !== null} onOpenChange={() => setImageDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove this photo?</AlertDialogTitle>
             <AlertDialogDescription>
-              The photo will be removed from this menu item. You can upload a new
-              one afterwards.
+              A highlight without a photo is hidden in the app until you add a new one.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1421,15 +711,12 @@ export function OwnerMenuClient({
               variant="destructive"
               onClick={() => {
                 if (imageDeleteTarget) {
-                  void handleItemImageDelete(
-                    imageDeleteTarget.id,
-                    imageDeleteTarget.url
-                  )
+                  void handleItemImageDelete(imageDeleteTarget.id, imageDeleteTarget.url)
                 }
                 setImageDeleteTarget(null)
               }}
             >
-              Remove
+              Remove photo
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

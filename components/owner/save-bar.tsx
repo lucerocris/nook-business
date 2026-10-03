@@ -1,6 +1,6 @@
 "use client"
 
-import { FloppyDisk } from "@phosphor-icons/react"
+import { WarningCircle } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
 import { useSidebar } from "@/components/ui/sidebar"
@@ -16,7 +16,10 @@ export function SaveBar({
   saving,
   onSave,
   onDiscard,
+  label,
 }: {
+  /** What is unsaved, lowercase: "tags" reads as "Unsaved changes — tags". */
+  label?: string
   visible: boolean
   saving: boolean
   onSave: () => void
@@ -33,22 +36,34 @@ export function SaveBar({
         role="region"
         aria-label="Unsaved changes"
         className={cn(
-          "fixed right-0 bottom-0 left-0 z-40 border-t bg-background/95 backdrop-blur",
+          "fixed right-0 bottom-0 left-0 z-40 bg-foreground text-background",
           state === "collapsed"
             ? "md:left-(--sidebar-width-icon)"
             : "md:left-(--sidebar-width)"
         )}
       >
-        <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
-          <p className="min-w-0 flex-1 text-sm text-muted-foreground">
-            Unsaved changes
+        <div className="mx-auto flex w-full max-w-6xl items-center gap-2 px-4 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:px-6">
+          <WarningCircle aria-hidden="true" className="size-4 shrink-0" />
+          <p aria-live="polite" className="min-w-0 flex-1 truncate text-sm font-medium">
+            {saving ? (
+              "Saving your changes…"
+            ) : (
+              <>
+                Unsaved changes
+                {label && <span className="hidden sm:inline"> — {label}</span>}
+              </>
+            )}
           </p>
-          <Button variant="ghost" onClick={onDiscard} disabled={saving}>
+          <Button
+            variant="outline"
+            className="border-background/30 bg-transparent text-background hover:bg-background/10 hover:text-background"
+            onClick={onDiscard}
+            disabled={saving}
+          >
             Discard
           </Button>
-          <Button onClick={onSave} loading={saving}>
-            {saving ? null : <FloppyDisk className="size-4" />}
-            Save changes
+          <Button onClick={onSave} loading={saving} loadingText="Saving…">
+            Save
           </Button>
         </div>
       </div>

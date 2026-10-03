@@ -1,20 +1,9 @@
 "use client"
 
 import * as React from "react"
-import {
-  CheckCircle,
-  Flag,
-  MagnifyingGlass,
-  Star,
-} from "@phosphor-icons/react"
+import { Flag, MagnifyingGlass, Star } from "@phosphor-icons/react"
 
-import { Badge } from "@/components/ui/badge"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -23,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 
 import { ReviewReportDialog } from "@/components/owner/review-report-dialog"
@@ -49,12 +37,16 @@ type Cafe = {
 
 function StarRow({ rating }: { rating: number }) {
   return (
-    <div className="flex flex-row gap-0.5 items-center">
+    <div
+      role="img"
+      aria-label={`${rating} out of 5 stars`}
+      className="flex shrink-0 flex-row items-center gap-0.5"
+    >
       {Array.from({ length: 5 }).map((_, i) =>
         i < rating ? (
-          <Star key={i} size={14} weight="fill" className="text-yellow-400" />
+          <Star key={i} size={13} weight="fill" aria-hidden="true" />
         ) : (
-          <Star key={i} size={14} className="text-muted-foreground" />
+          <Star key={i} size={13} aria-hidden="true" className="text-muted-foreground/60" />
         )
       )}
     </div>
@@ -161,11 +153,19 @@ export function OwnerReviewsClient({
     setReportReviewId(reviewId)
   }
 
+  const thisMonth = React.useMemo(() => {
+    const now = new Date()
+    return reviews.filter((r) => {
+      const d = new Date(r.created_at)
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+    }).length
+  }, [reviews])
+
+  const hasFilters = search.trim() !== "" || ratingFilter !== "all"
+
   return (
     <>
-      <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6">
-
-        {/* Page Header */}
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
         <div>
           <h1 className="text-2xl font-semibold">Reviews</h1>
           <p className="text-sm text-muted-foreground">
@@ -173,218 +173,206 @@ export function OwnerReviewsClient({
           </p>
         </div>
 
-
-        {/* Summary Card */}
-        <Card>
-          <CardContent className="pt-5 pb-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-
-              {/* Overall rating */}
-              <div className="flex flex-row items-center gap-4 sm:flex-col sm:items-center sm:gap-1 sm:shrink-0">
-                <span className="text-4xl font-bold">
-                  {avgRating != null ? avgRating.toFixed(1) : "—"}
-                </span>
-                <div className="flex flex-row gap-0.5">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      size={16}
-                      weight={
-                        avgRating != null && i < Math.round(avgRating)
-                          ? "fill"
-                          : "regular"
-                      }
-                      className={
-                        avgRating != null && i < Math.round(avgRating)
-                          ? "text-yellow-400"
-                          : "text-muted-foreground"
-                      }
-                    />
-                  ))}
-                </div>
-                {/* Counts the reviews actually shown. cafe.review_count
-                    includes ones hidden by moderation, so it disagreed with
-                    both this list and the average rating computed above it. */}
-                <span className="text-sm text-muted-foreground">
-                  {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
-                </span>
-              </div>
-
-              <Separator orientation="vertical" className="h-20 hidden sm:block" />
-
-              {/* Breakdown */}
-              <div className="flex-1 space-y-1.5">
-                {ratingBreakdown.map(({ stars, pct, count }) => (
-                  <div key={stars} className="flex items-center gap-3">
-                    <div className="flex flex-row items-center gap-0.5 w-16 shrink-0">
-                      <span className="text-xs text-muted-foreground">{stars}</span>
-                      <Star size={12} className="text-yellow-400" />
-                    </div>
-                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-yellow-400 rounded-full"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <span className="text-xs text-muted-foreground w-4 text-right shrink-0">
-                      {count}
+        {reviews.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center gap-1 px-5 py-12 text-center">
+              <Star size={26} aria-hidden="true" className="mb-1 text-muted-foreground" />
+              <p className="text-base font-semibold">No reviews yet</p>
+              <p className="max-w-sm text-sm text-muted-foreground">
+                When people rate or review your café in the Nook app, it shows
+                up here.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <Card>
+              <CardContent className="flex flex-col gap-5 px-5 sm:flex-row sm:items-center sm:gap-12">
+                <div className="shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Star size={26} weight="fill" aria-hidden="true" />
+                    <span className="text-4xl font-semibold tabular-nums">
+                      {avgRating != null ? avgRating.toFixed(1) : "—"}
                     </span>
                   </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Filters Bar */}
-        <div className="flex flex-row items-center gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-[200px]">
-            <MagnifyingGlass
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              placeholder="Search reviews..."
-              className="pl-8"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-
-          <Select value={ratingFilter} onValueChange={setRatingFilter}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="All ratings" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All ratings</SelectItem>
-              <SelectItem value="5">5 stars</SelectItem>
-              <SelectItem value="4">4 stars</SelectItem>
-              <SelectItem value="3">3 stars</SelectItem>
-              <SelectItem value="2">2 stars</SelectItem>
-              <SelectItem value="1">1 star</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={sort} onValueChange={setSort}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Most recent" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="recent">Most recent</SelectItem>
-              <SelectItem value="highest">Highest rated</SelectItem>
-              <SelectItem value="lowest">Lowest rated</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Reviews List Card */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-row items-center justify-between">
-              <CardTitle>All reviews</CardTitle>
-              <Badge variant="secondary">{reviews.length} total</Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-0 p-0">
-            {filtered.length === 0 ? (
-              // A brand-new cafe has no reviews and no filters applied — telling
-              // that owner their filters matched nothing is just confusing.
-              reviews.length === 0 ? (
-                <div className="px-6 py-8 text-center space-y-1">
-                  <p className="text-sm font-medium">No reviews yet</p>
-                  <p className="text-sm text-muted-foreground">
-                    Reviews from Nook visitors will appear here once people start
-                    visiting your cafe.
+                  {/* Counts the reviews actually shown. cafe.review_count
+                      includes ones hidden by moderation, so it disagreed with
+                      both this list and the average rating computed above it. */}
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
+                    {thisMonth > 0 ? ` · ${thisMonth} this month` : ""}
                   </p>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground px-6 py-8 text-center">
-                  No reviews match your filters.
-                </p>
-              )
-            ) : (
-              filtered.map((review) => {
-                const isReported = reportedIds.has(review.id)
-                return (
-                  <div
-                    key={review.id}
-                    className="flex flex-row items-start gap-4 px-6 py-4 border-b last:border-0"
-                  >
-                    {/* Avatar */}
-                    <div className="size-9 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0">
-                      {getInitials(
-                        review.profiles?.full_name ?? null,
-                        review.profiles?.username ?? null
-                      )}
-                    </div>
 
-                    {/* Content */}
-                    <div className="flex-1 space-y-2 min-w-0">
-                      <div className="flex flex-row items-center justify-between gap-2">
-                        <div className="flex flex-col gap-0.5 min-w-0">
-                          <span className="text-sm font-medium truncate">
-                            {review.profiles?.full_name ?? "Anonymous"}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {review.profiles?.username
-                              ? `@${review.profiles.username}`
-                              : ""}
-                          </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                          {formatRelativeDate(review.created_at)}
-                        </span>
-                      </div>
+                <ul className="w-full max-w-sm space-y-1.5">
+                  {ratingBreakdown.map(({ stars, pct, count }) => (
+                    <li key={stars} className="flex items-center gap-3 text-xs">
+                      <span className="flex w-7 shrink-0 items-center gap-0.5 tabular-nums">
+                        {stars}
+                        <Star size={11} weight="fill" aria-hidden="true" />
+                        <span className="sr-only">stars</span>
+                      </span>
+                      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                        <span
+                          className="block h-full rounded-full bg-foreground"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </span>
+                      <span className="w-6 shrink-0 text-right text-muted-foreground tabular-nums">
+                        {count}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
 
-                      <StarRow rating={review.rating} />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="relative sm:w-80">
+                <MagnifyingGlass
+                  size={16}
+                  aria-hidden="true"
+                  className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                  type="search"
+                  aria-label="Search reviews"
+                  placeholder="Search reviews"
+                  className="pl-9"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
 
-                      {review.content ? (
-                        // break-words: a pasted URL/long token has no break
-                        // opportunity and would be clipped by the layout's
-                        // overflow-x-hidden rather than wrapping.
-                        <p className="text-sm text-muted-foreground leading-relaxed break-words">
-                          {review.content}
-                        </p>
-                      ) : (
-                        <p className="text-sm italic text-muted-foreground/70">
-                          No written review — rating only.
-                        </p>
-                      )}
+              <div className="flex gap-2">
+                <Select value={ratingFilter} onValueChange={setRatingFilter}>
+                  <SelectTrigger aria-label="Filter by rating" className="flex-1 sm:w-36 sm:flex-none">
+                    <SelectValue placeholder="All ratings" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All ratings</SelectItem>
+                    <SelectItem value="5">5 stars</SelectItem>
+                    <SelectItem value="4">4 stars</SelectItem>
+                    <SelectItem value="3">3 stars</SelectItem>
+                    <SelectItem value="2">2 stars</SelectItem>
+                    <SelectItem value="1">1 star</SelectItem>
+                  </SelectContent>
+                </Select>
 
-                      <div className="flex flex-row justify-end">
-                        {isReported ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs text-muted-foreground gap-1.5"
-                            disabled
-                            aria-label="Already reported"
-                          >
-                            <CheckCircle data-icon="inline-start" weight="fill" />
-                            Already Reported
-                          </Button>
-                        ) : (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs text-muted-foreground gap-1.5 hover:text-destructive"
-                            onClick={() => openReportDialog(review.id)}
-                            aria-label="Report review"
-                          >
-                            <Flag data-icon="inline-start" />
-                            Report
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                <Select value={sort} onValueChange={setSort}>
+                  <SelectTrigger aria-label="Sort reviews" className="flex-1 sm:w-40 sm:flex-none">
+                    <SelectValue placeholder="Most recent" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recent">Most recent</SelectItem>
+                    <SelectItem value="highest">Highest rated</SelectItem>
+                    <SelectItem value="lowest">Lowest rated</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Card className="py-0">
+              <CardContent className="px-5">
+                {filtered.length === 0 ? (
+                  <div className="flex flex-col items-center gap-1 py-12 text-center">
+                    <p className="text-base font-semibold">No reviews match</p>
+                    <p className="text-sm text-muted-foreground">
+                      Try a different word or rating.
+                    </p>
+                    {hasFilters && (
+                      <Button
+                        variant="link"
+                        onClick={() => {
+                          setSearch("")
+                          setRatingFilter("all")
+                        }}
+                      >
+                        Clear search and filters
+                      </Button>
+                    )}
                   </div>
-                )
-              })
-            )}
-          </CardContent>
-        </Card>
+                ) : (
+                  <ul className="divide-y">
+                    {filtered.map((review) => {
+                      const isReported = reportedIds.has(review.id)
+                      const name = review.profiles?.full_name ?? "Anonymous"
+                      return (
+                        <li key={review.id} className="flex items-start gap-3 py-4">
+                          <div
+                            aria-hidden="true"
+                            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-medium text-primary"
+                          >
+                            {getInitials(
+                              review.profiles?.full_name ?? null,
+                              review.profiles?.username ?? null
+                            )}
+                          </div>
+
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                              <span className="max-w-full truncate text-sm font-medium">{name}</span>
+                              <StarRow rating={review.rating} />
+                              <span className="text-xs text-muted-foreground">
+                                {formatRelativeDate(review.created_at)}
+                              </span>
+                              {isReported && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-500/15 dark:text-amber-300">
+                                  <span aria-hidden="true" className="size-1.5 rounded-full bg-amber-600" />
+                                  Reported · under review
+                                </span>
+                              )}
+                            </div>
+
+                            {review.content ? (
+                              // break-words: a pasted URL/long token has no break
+                              // opportunity and would be clipped by the layout's
+                              // overflow-x-hidden rather than wrapping.
+                              <p className="text-sm leading-relaxed break-words">
+                                {review.content}
+                              </p>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">
+                                Rated without a written review
+                              </p>
+                            )}
+
+                            {!isReported && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="-ml-3 text-muted-foreground hover:text-destructive sm:hidden"
+                                onClick={() => openReportDialog(review.id)}
+                              >
+                                <Flag aria-hidden="true" />
+                                Report
+                              </Button>
+                            )}
+                          </div>
+
+                          {!isReported && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="hidden shrink-0 text-muted-foreground hover:text-destructive sm:inline-flex"
+                              onClick={() => openReportDialog(review.id)}
+                              aria-label={`Report review by ${name}`}
+                            >
+                              <Flag aria-hidden="true" />
+                              Report
+                            </Button>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       <ReviewReportDialog

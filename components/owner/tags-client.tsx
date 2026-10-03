@@ -20,6 +20,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogCancel,
+  AlertDialogAction,
 } from "@/components/ui/alert-dialog"
 import { updateTagsAction } from "@/app/owner/actions"
 import { cn } from "@/lib/utils"
@@ -32,8 +33,8 @@ type Tag = {
   is_active: boolean
 }
 
-// Selection is neutral (dark outline + check) rather than solid brand green:
-// the portal keeps colour for the sidebar and primary actions.
+// Selection is a quiet green tint (outline + check), not solid brand green:
+// the filled green is kept for the primary action and the starred marker.
 const chipBase =
   "inline-flex min-h-11 items-center gap-1.5 border px-3.5 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50 sm:min-h-9"
 
@@ -74,8 +75,8 @@ function TagToggleGroup({
                 chipBase,
                 showStar ? "rounded-l-full pr-2.5" : "rounded-full",
                 selected
-                  ? "border-foreground/70 bg-muted font-medium text-foreground"
-                  : "border-border bg-background text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                  ? "border-primary/60 bg-primary/8 font-medium text-foreground"
+                  : "border-border bg-background text-foreground hover:border-foreground/30 hover:bg-muted"
               )}
             >
               {selected && <Check size={14} weight="bold" aria-hidden="true" />}
@@ -92,18 +93,25 @@ function TagToggleGroup({
                 }
                 title={
                   starDisabled
-                    ? `You can show up to ${featured!.max} on your cafe card`
+                    ? `You can show up to ${featured!.max} on your café card. Unstar one first.`
                     : undefined
                 }
                 disabled={starDisabled}
                 onClick={() => featured!.onToggle(tag.id)}
                 className={cn(
                   chipBase,
-                  "-ml-px rounded-r-full border-foreground/70 bg-muted px-2.5 disabled:cursor-not-allowed disabled:opacity-40",
-                  isFeatured ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  "-ml-px rounded-r-full border-primary/60 bg-primary/8 px-2 disabled:cursor-not-allowed disabled:opacity-40",
+                  isFeatured ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Star size={16} weight={isFeatured ? "fill" : "regular"} aria-hidden="true" />
+                <span
+                  className={cn(
+                    "flex size-6 items-center justify-center rounded-full",
+                    isFeatured && "bg-primary"
+                  )}
+                >
+                  <Star size={14} weight={isFeatured ? "fill" : "regular"} aria-hidden="true" />
+                </span>
               </button>
             )}
           </span>
@@ -195,7 +203,7 @@ export function OwnerTagsClient({
 
   return (
     <>
-      <div className="w-full max-w-3xl mx-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6">
+      <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6">
 
         {/* Page Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -203,10 +211,17 @@ export function OwnerTagsClient({
             <h1 className="text-2xl font-semibold">Tags</h1>
             <p className="text-sm text-muted-foreground">
               Pick everything that fits. People filter by these when they
-              search for a cafe.
+              search for a café.
             </p>
           </div>
         </div>
+
+        {selectedTags.length === 0 && (
+          <p className="rounded-lg bg-muted px-3 py-2.5 text-sm">
+            No tags yet. Cafés with tags show up in more searches — pick
+            everything that fits.
+          </p>
+        )}
 
         {/* Best For */}
         {bestForTags.length > 0 && (
@@ -214,14 +229,14 @@ export function OwnerTagsClient({
             <CardHeader>
               <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <div className="flex flex-col gap-0.5">
-                  <CardTitle>Best for</CardTitle>
+                  <CardTitle className="text-base font-semibold">Best for</CardTitle>
                   <CardDescription>
-                    Why would someone visit your cafe? Star up to 3 to show
-                    them on your cafe card.
+                    Why would someone visit? Star up to 3 to show them on
+                    your café card.
                   </CardDescription>
                 </div>
                 <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
-                  {featuredTags.length}/3 starred
+                  {featuredTags.length} of 3 featured
                 </span>
               </div>
             </CardHeader>
@@ -242,8 +257,8 @@ export function OwnerTagsClient({
             <CardHeader>
               <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <div className="flex flex-col gap-0.5">
-                  <CardTitle>Amenities</CardTitle>
-                  <CardDescription>What does your cafe have?</CardDescription>
+                  <CardTitle className="text-base font-semibold">Amenities</CardTitle>
+                  <CardDescription>What your café has.</CardDescription>
                 </div>
                 <span className="shrink-0 text-sm text-muted-foreground tabular-nums">{amenitiesCount} selected</span>
               </div>
@@ -264,7 +279,7 @@ export function OwnerTagsClient({
             <CardHeader>
               <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <div className="flex flex-col gap-0.5">
-                  <CardTitle>Payment accepted</CardTitle>
+                  <CardTitle className="text-base font-semibold">Payment accepted</CardTitle>
                   <CardDescription>
                     What payment methods do you accept?
                   </CardDescription>
@@ -287,6 +302,7 @@ export function OwnerTagsClient({
       <SaveBar
         visible={isDirty}
         saving={isSaving}
+        label="tags"
         onSave={handleSave}
         onDiscard={() => {
           setSelectedTags(appliedTagIds)
@@ -304,9 +320,9 @@ export function OwnerTagsClient({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Unable to save tags</AlertDialogTitle>
+            <AlertDialogTitle>Couldn&apos;t save your tags</AlertDialogTitle>
             <AlertDialogDescription>
-              {saveError}
+              {saveError} Your changes are still here — try saving again.
             </AlertDialogDescription>
           </AlertDialogHeader>
           {/* AlertDialog blocks backdrop dismissal and renders no close X, so
@@ -314,6 +330,9 @@ export function OwnerTagsClient({
               have, trapping the owner with unsaved edits. */}
           <AlertDialogFooter>
             <AlertDialogCancel>Close</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void handleSave()}>
+              Try again
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -2,14 +2,13 @@
 
 import { Spinner } from "@/components/ui/spinner"
 import * as React from "react"
+import { DropdownMenu } from "radix-ui"
 import {
-  CaretLeft,
-  CaretRight,
-  Crown,
-  DotsSixVertical,
-  Image,
-  Lightbulb,
-  Plus,
+  ArrowLeft,
+  ArrowRight,
+  DotsThree,
+  Info,
+  Star,
   Trash,
   UploadSimple,
 } from "@phosphor-icons/react"
@@ -25,15 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 import {
   uploadCafeHeroAction,
   uploadCafePhotoAction,
@@ -43,6 +34,11 @@ import {
 import imageCompression from "browser-image-compression"
 
 const TOTAL_SLOTS = 5
+
+const ACCEPT = "image/jpeg,image/png,image/webp"
+
+const menuItem =
+  "flex min-h-11 cursor-default items-center gap-2.5 rounded-md px-2.5 text-sm outline-none select-none data-disabled:pointer-events-none data-disabled:opacity-40 data-highlighted:bg-muted sm:min-h-9"
 
 const TIPS = [
   "Show the interior — customers want to know what the vibe feels like before visiting",
@@ -238,316 +234,211 @@ export function OwnerPhotosClient({
     }
   }
 
+  const busy = isUploading || isDeleting || isReordering
+  const emptySlots = TOTAL_SLOTS - usedSlots
+
+  // One file input per empty slot. A <label> wraps it so the whole tile is the
+  // target; the input itself is disabled while anything is in flight so a
+  // second pick can't race the first past the photo cap.
+  function renderUploadSlot(hero: boolean, first: boolean, key: string) {
+    const uploadingHere = isUploading && first
+    return (
+      <label
+        key={key}
+        className={cn(
+          "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-input bg-background px-3 text-center text-muted-foreground transition-colors hover:border-foreground/30 hover:bg-muted hover:text-foreground has-focus-visible:border-ring has-focus-visible:ring-2 has-focus-visible:ring-ring/50",
+          hero
+            ? "col-span-2 aspect-[3/2] lg:row-span-2 lg:aspect-auto lg:min-h-80"
+            : "aspect-[3/2]",
+          busy && "pointer-events-none opacity-60"
+        )}
+      >
+        {uploadingHere ? <Spinner className="size-5" /> : <UploadSimple size={20} aria-hidden="true" />}
+        <span className={cn("text-sm", hero && "font-medium text-foreground")}>
+          {uploadingHere ? "Uploading…" : hero ? "Add your hero photo" : "Add photo"}
+        </span>
+        {hero && !uploadingHere && (
+          <span className="max-w-xs text-xs text-balance">
+            Shown on your card, your map pin and the top of your page
+          </span>
+        )}
+        <input
+          type="file"
+          accept={ACCEPT}
+          className="sr-only"
+          disabled={busy}
+          onChange={(e) => handleFileUpload(e, hero)}
+        />
+      </label>
+    )
+  }
+
   return (
     <>
-      <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6">
-
-        {/* Page Header */}
-        <div>
-          <h1 className="text-2xl font-semibold">Photos</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage your cafe&apos;s photos. The hero photo appears everywhere in
-            the app.
-          </p>
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">Photos</h1>
+            <p className="text-sm text-muted-foreground">
+              The first photo is your hero — it&apos;s on your card, your map
+              pin and the top of your page.
+            </p>
+          </div>
+          {emptySlots > 0 && (
+            <label
+              className={cn(
+                "inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80 has-focus-visible:ring-2 has-focus-visible:ring-ring/50 sm:h-9",
+                busy && "pointer-events-none opacity-50"
+              )}
+            >
+              {isUploading ? <Spinner className="size-4" /> : <UploadSimple size={16} aria-hidden="true" />}
+              {isUploading ? "Uploading…" : currentHeroUrl ? "Upload photo" : "Upload hero photo"}
+              <input
+                type="file"
+                accept={ACCEPT}
+                className="sr-only"
+                disabled={busy}
+                onChange={(e) => handleFileUpload(e, !currentHeroUrl)}
+              />
+            </label>
+          )}
         </div>
 
-  
-
-        {/* Hero Photo Card */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-row items-center justify-between">
-              <div className="flex flex-col gap-0.5">
-                <CardTitle>Hero photo</CardTitle>
-                <CardDescription>
-                  This is your main photo shown on cafe cards, map pins, and
-                  your cafe page header.
-                </CardDescription>
-              </div>
-              <Badge variant="secondary">Required</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-
-              {/* Hero preview */}
-              <div className="relative w-full sm:w-48 sm:shrink-0">
-                <div className="aspect-video w-full bg-muted rounded-lg flex flex-col items-center justify-center gap-2 text-muted-foreground border-2 border-dashed border-primary/30 overflow-hidden">
-                  {currentHeroUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={currentHeroUrl}
-                      alt="Hero"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <>
-                      <Image size={32} />
-                      <p className="text-xs">Hero photo</p>
-                    </>
-                  )}
-                </div>
-                <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs">
-                  Hero
-                </Badge>
-              </div>
-
-              {/* Right content */}
-              <div className="flex-1 space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  This photo appears as the main image for your cafe throughout
-                  the app. Use a high-quality, well-lit photo of your cafe
-                  interior or exterior.
-                </p>
-
-                <div className="space-y-1.5">
-                  <p className="text-xs text-muted-foreground">Tips:</p>
-                  <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
-                    <li>JPG, PNG, or WEBP (iPhone photos convert automatically)</li>
-                    <li>Landscape works best: it leads your listing and map pin</li>
-                  </ul>
-                </div>
-
-                <label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    disabled={isUploading || isDeleting}
-                    asChild
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {allPhotos.map((url, i) => {
+            const isHero = i === 0
+            return (
+              <div
+                key={url}
+                className={cn(
+                  "group relative overflow-hidden rounded-xl bg-muted",
+                  isHero
+                    ? "col-span-2 aspect-[3/2] lg:row-span-2 lg:aspect-auto lg:min-h-80"
+                    : "aspect-[3/2]",
+                  draggingIndex === i && "opacity-50",
+                  !busy && "sm:cursor-grab"
+                )}
+                draggable={!busy}
+                onDragStart={() => handleDragStart(i)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => void handleDrop(i)}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
+                  alt={isHero ? "Hero photo" : `Photo ${i + 1}`}
+                  className="absolute inset-0 size-full object-cover"
+                  draggable={false}
+                />
+                {isHero && (
+                  <span className="absolute top-3 left-3 rounded-md bg-background px-2 py-0.5 text-xs font-medium text-foreground">
+                    Hero
+                  </span>
+                )}
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger
+                    disabled={busy}
+                    aria-label={`Options for ${isHero ? "hero photo" : `photo ${i + 1}`}`}
+                    className="absolute top-2 right-2 flex size-11 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 sm:size-9"
                   >
-                    {/* asChild renders this span via Slot, so the Button's
-                        `loading` prop can't inject a spinner here — it's done
-                        inline instead. */}
-                    <span>
-                      {isUploading ? (
-                        <Spinner className="size-4" />
-                      ) : (
-                        <UploadSimple size={16} />
+                    <span className="flex size-8 items-center justify-center rounded-full bg-background text-foreground shadow-sm">
+                      <DotsThree size={18} weight="bold" aria-hidden="true" />
+                    </span>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Portal>
+                    <DropdownMenu.Content
+                      align="end"
+                      sideOffset={4}
+                      className="z-50 min-w-48 origin-(--radix-dropdown-menu-content-transform-origin) rounded-xl bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10 duration-100 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+                    >
+                      {!isHero && (
+                        <DropdownMenu.Item className={menuItem} onSelect={() => void setAsHero(url)}>
+                          <Star size={16} aria-hidden="true" />
+                          Make hero photo
+                        </DropdownMenu.Item>
                       )}
-                      {isUploading ? "Uploading…" : currentHeroUrl ? "Replace hero photo" : "Upload hero photo"}
-                    </span>
-                  </Button>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    // The Button above is asChild on a <span>, so its
-                    // `disabled` never reached anything tappable: a second
-                    // pick mid-upload raced the first past the photo cap.
-                    disabled={isUploading || isDeleting || isReordering}
-                    onChange={(e) => handleFileUpload(e, true)}
-                  />
-                </label>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Gallery Card */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-row items-center justify-between">
-              <div className="flex flex-col gap-0.5">
-                <CardTitle>Gallery photos</CardTitle>
-                <CardDescription>
-                  Add up to 5 photos total, including your hero photo.
-                </CardDescription>
-              </div>
-              <span className="shrink-0 text-sm text-muted-foreground tabular-nums">{usedSlots} of {TOTAL_SLOTS}</span>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-
-            {/* Grid */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-              {allPhotos.map((url, i) => (
-                <div
-                  key={url}
-                  className="relative group"
-                  draggable={!isUploading && !isDeleting && !isReordering}
-                  onDragStart={() => handleDragStart(i)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => void handleDrop(i)}
-                >
-                  <div className="aspect-square bg-muted rounded-lg flex items-center justify-center border overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
-                  </div>
-                  {url === currentHeroUrl && (
-                    <Badge className="absolute top-2 left-2 text-xs bg-primary text-primary-foreground z-10">
-                      Hero
-                    </Badge>
-                  )}
-                  {/* Drag is desktop-only — hide the hint on touch. */}
-                  <Badge
-                    variant="outline"
-                    className="absolute top-2 right-2 z-10 hidden text-[10px] bg-background/90 sm:flex"
-                  >
-                    <DotsSixVertical size={10} />
-                    <span className="hidden sm:inline">Drag</span>
-                  </Badge>
-
-                  {/* Touch: the hover overlay below never appears, so surface
-                      set-hero / delete as persistent controls on small screens. */}
-                  <div className="absolute top-2 right-2 z-10 flex items-center gap-1 sm:hidden">
-                    {url !== currentHeroUrl && (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="icon"
-                        className="size-10"
-                        onClick={() => void setAsHero(url)}
-                        disabled={isUploading || isDeleting || isReordering}
-                        aria-label={`Set photo ${i + 1} as hero`}
+                      <DropdownMenu.Item
+                        className={menuItem}
+                        disabled={i === 0}
+                        onSelect={() => void movePhoto(i, -1)}
                       >
-                        <Crown size={16} />
-                      </Button>
-                    )}
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="icon"
-                      className="size-10 text-destructive"
-                      onClick={() => setDeleteConfirm(i)}
-                      disabled={isUploading || isDeleting || isReordering}
-                      aria-label={`Delete photo ${i + 1}`}
-                    >
-                      <Trash size={12} />
-                    </Button>
-                  </div>
-                  <div className="absolute bottom-2 left-2 right-2 z-10 flex items-center justify-between gap-2">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="icon"
-                      className="size-10 sm:size-7"
-                      onClick={() => void movePhoto(i, -1)}
-                      disabled={i === 0 || isUploading || isDeleting || isReordering}
-                      aria-label={`Move photo ${i + 1} left`}
-                    >
-                      <CaretLeft size={14} />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="icon"
-                      className="size-10 sm:size-7"
-                      onClick={() => void movePhoto(i, 1)}
-                      disabled={i === allPhotos.length - 1 || isUploading || isDeleting || isReordering}
-                      aria-label={`Move photo ${i + 1} right`}
-                    >
-                      <CaretRight size={14} />
-                    </Button>
-                  </div>
-                  <div className="absolute inset-0 hidden rounded-lg bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 sm:flex sm:items-center sm:justify-center sm:gap-2">
-                    {url !== currentHeroUrl && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="text-xs h-7"
-                        onClick={() => void setAsHero(url)}
-                        disabled={isUploading || isDeleting || isReordering}
+                        <ArrowLeft size={16} aria-hidden="true" />
+                        Move earlier
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item
+                        className={menuItem}
+                        disabled={i === allPhotos.length - 1}
+                        onSelect={() => void movePhoto(i, 1)}
                       >
-                        <Crown size={12} />
-                        Set hero
-                      </Button>
-                    )}
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="text-xs h-7 text-destructive hover:text-destructive"
-                      onClick={() => setDeleteConfirm(i)}
-                      disabled={isUploading || isDeleting || isReordering}
-                    >
-                      <Trash size={12} />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                        <ArrowRight size={16} aria-hidden="true" />
+                        Move later
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Separator className="my-1 h-px bg-border" />
+                      <DropdownMenu.Item
+                        className={cn(menuItem, "text-destructive data-highlighted:bg-destructive/10")}
+                        onSelect={() => setDeleteConfirm(i)}
+                      >
+                        <Trash size={16} aria-hidden="true" />
+                        Delete photo
+                      </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Portal>
+                </DropdownMenu.Root>
+              </div>
+            )
+          })}
 
-              {usedSlots < TOTAL_SLOTS && (
-                <label className="cursor-pointer">
-                  <Button
-                    variant="outline"
-                    className="aspect-square h-full w-full border-dashed flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors rounded-lg"
-                    disabled={isUploading || isDeleting}
-                    asChild
-                  >
-                    {/* asChild again — spinner inlined rather than via the
-                        Button's `loading` prop. */}
-                    <span>
-                      {isUploading ? <Spinner className="size-5" /> : <Plus size={20} />}
-                      <span className="text-xs">
-                        {isUploading ? "Uploading…" : "Add photo"}
-                      </span>
-                    </span>
-                  </Button>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    // The Button above is asChild on a <span>, so its
-                    // `disabled` never reached anything tappable: a second
-                    // pick mid-upload raced the first past the photo cap.
-                    disabled={isUploading || isDeleting || isReordering}
-                    onChange={(e) => handleFileUpload(e, false)}
-                  />
-                </label>
-              )}
-            </div>
+          {Array.from({ length: emptySlots }).map((_, n) =>
+            renderUploadSlot(usedSlots === 0 && n === 0, n === 0, `empty-${n}`)
+          )}
+        </div>
 
-            {usedSlots >= TOTAL_SLOTS && (
-              <p className="text-xs text-muted-foreground">
-                Maximum 5 photos reached
-              </p>
-            )}
-
-            {uploadError && (
-              <p className="text-sm text-destructive mt-2">{uploadError}</p>
-            )}
-
-            <p className="text-xs text-muted-foreground">
-              Tip: Drag to reorder on desktop, or use arrow buttons on mobile.
-              The first photo is the hero.
+        <div className="space-y-2">
+          <p className="flex items-start gap-2 text-sm text-muted-foreground">
+            <Info size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
+            <span>
+              <span className="tabular-nums">
+                {usedSlots} of {TOTAL_SLOTS} photos
+              </span>
+              {usedSlots >= TOTAL_SLOTS
+                ? " · Delete one to add another."
+                : usedSlots > 1
+                  ? " · Drag to reorder, or use the menu on each photo · JPG, PNG or WEBP, up to 10 MB each."
+                  : " · JPG, PNG or WEBP, up to 10 MB each. iPhone photos convert automatically."}
+            </span>
+          </p>
+          {uploadError && (
+            <p role="alert" className="text-sm text-destructive">
+              {uploadError}
             </p>
-          </CardContent>
-        </Card>
+          )}
+        </div>
 
-        {/* Photo Tips Card */}
-        <Card className="border-dashed bg-muted/30">
-          <CardHeader>
-            <div className="flex flex-row items-center gap-2">
-              <Lightbulb size={16} className="text-muted-foreground" />
-              <CardTitle className="text-sm">Photo tips</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {TIPS.map((tip, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  <div className="size-1.5 rounded-full bg-muted-foreground/40 mt-2 shrink-0" />
-                  <p className="text-xs text-muted-foreground">{tip}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
+        <details className="group rounded-xl border px-4 py-3">
+          <summary className="flex min-h-11 cursor-pointer items-center justify-between text-sm font-medium outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/50 sm:min-h-0 [&::-webkit-details-marker]:hidden">
+            Photo tips
+            <span className="text-xs font-normal text-muted-foreground group-open:hidden">Show</span>
+            <span className="hidden text-xs font-normal text-muted-foreground group-open:inline">Hide</span>
+          </summary>
+          <ul className="mt-3 grid list-disc gap-x-8 gap-y-2 pl-4 text-sm text-muted-foreground sm:grid-cols-2">
+            {TIPS.map((tip) => (
+              <li key={tip}>{tip}</li>
+            ))}
+          </ul>
+        </details>
       </div>
 
-      {/* Delete Confirm Dialog */}
       <AlertDialog
         open={deleteConfirm !== null}
         onOpenChange={() => setDeleteConfirm(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete photo?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this photo?</AlertDialogTitle>
             <AlertDialogDescription>
-              This photo will be permanently removed from your listing.
+              It will be removed from your café page and the app. This
+              can&apos;t be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

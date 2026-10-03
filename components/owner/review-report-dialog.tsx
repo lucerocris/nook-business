@@ -246,9 +246,10 @@ function ReviewReportForm({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Report Review</DialogTitle>
+        <DialogTitle className="text-lg font-semibold">Report this review</DialogTitle>
         <DialogDescription>
-          Tell us why this review should be reviewed by moderation.
+          The Nook team checks every report. The review stays up until they
+          decide.
         </DialogDescription>
       </DialogHeader>
 
@@ -291,7 +292,7 @@ function ReviewReportForm({
         </FieldSet>
 
         <Field>
-          <FieldLabel htmlFor="report-description">Additional details</FieldLabel>
+          <FieldLabel htmlFor="report-description">Anything else?</FieldLabel>
           <Textarea
             id="report-description"
             value={description}
@@ -379,7 +380,7 @@ function ReviewReportForm({
         </Button>
         <Button type="button" onClick={handleSubmit} disabled={isBusy}>
           {isBusy && <Spinner data-icon="inline-start" />}
-          Submit Report
+          Send report
         </Button>
       </DialogFooter>
     </>
@@ -402,7 +403,7 @@ export function ReviewReportDialog({
       }}
     >
       {open && reviewId ? (
-        <DialogContent key={resetKey ?? reviewId}>
+        <DialogContent key={resetKey ?? reviewId} className="p-6 text-sm sm:max-w-md">
           <ReviewReportForm
             reviewId={reviewId}
             cafeId={cafeId}

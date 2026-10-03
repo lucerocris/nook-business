@@ -2,13 +2,11 @@ import type { Metadata } from "next"
 import "@/app/globals.css"
 import { OwnerSidebar } from "@/components/owner/sidebar"
 import { SessionRoleSync } from "@/components/owner/session-role-sync"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { OwnerHeader } from "@/components/owner/header"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
+import { createClient } from "@/lib/supabase/server"
+import { getOwnerCafeContextByOwnerUserId } from "@/lib/queries/cafes"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 export const metadata: Metadata = {
   title: {
@@ -17,11 +15,35 @@ export const metadata: Metadata = {
   },
 }
 
-export default function OwnerLayout({
+export default async function OwnerLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Middleware has already gated /owner on a signed-in owner. The cafe can still
+  // be missing (this layout also wraps /owner/no-cafe), so the sidebar takes a
+  // nullable cafe instead of redirecting from here.
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const cafe = user ? await getOwnerCafeContextByOwnerUserId(user.id) : null
+  // With no café linked, the sidebar says whether a claim is still in review
+  // (pages unlock on approval) or nothing is pending at all. RLS scopes
+  // cafe_claims to the caller's own rows.
+  let claimInReview = false
+  if (user && !cafe) {
+    const { count } = await supabase
+      .from("cafe_claims")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["pending", "under_review"])
+    claimInReview = (count ?? 0) > 0
+  }
+  const account = {
+    name: (user?.user_metadata?.full_name as string | undefined) ?? null,
+    email: user?.email ?? null,
+  }
+
   return (
     <TooltipProvider>
       {/* The marketing navbar is rendered by the root layout and hidden by
@@ -41,18 +63,9 @@ export default function OwnerLayout({
           rejected by RLS. Renders nothing. */}
       <SessionRoleSync />
       <SidebarProvider>
-        <OwnerSidebar />
+        <OwnerSidebar cafe={cafe} account={account} claimInReview={claimInReview} />
         <SidebarInset>
-          {/* Sticky on mobile: the drawer trigger is the only way back to
-              navigation there, and on long pages (menu, reviews) it scrolled
-              out of reach and forced a trip back to the top. */}
-          <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 md:static">
-            {/* Sized to the 44px touch minimum on mobile; the shared trigger
-                defaults to a 32px pointer-sized target. */}
-            <SidebarTrigger className="-ml-1 size-11 md:size-8" />
-            <span className="text-sm font-semibold md:hidden">Nook</span>
-            <ThemeToggle className="ml-auto size-11 rounded-md hover:bg-accent md:size-8 md:[&_svg]:size-4" />
-          </header>
+          <OwnerHeader cafe={cafe} />
           {/* min-w-0 + overflow-x-hidden: without these, any over-wide
               descendant widens the document and scrolls the whole page
               sideways instead of being contained. */}

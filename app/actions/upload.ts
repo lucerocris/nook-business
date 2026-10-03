@@ -95,10 +95,10 @@ async function runPhotoAction(
   }
 }
 
-async function loadPhotos(
+async function loadPhotoRow(
   supabase: ReturnType<typeof createAdminClient>,
   cafeId: string
-): Promise<CafePhotoState> {
+): Promise<{ state: CafePhotoState; rawGallery: unknown }> {
   const { data, error } = await supabase
     .from("cafes")
     .select("featured_image_url, photo_urls")
@@ -106,9 +106,54 @@ async function loadPhotos(
     .single()
   if (error) throw error
   return {
-    hero: (data?.featured_image_url as string | null) ?? null,
-    gallery: (data?.photo_urls as string[] | null) ?? [],
+    state: {
+      hero: (data?.featured_image_url as string | null) ?? null,
+      gallery: (data?.photo_urls as string[] | null) ?? [],
+    },
+    rawGallery: data?.photo_urls ?? null,
   }
+}
+
+async function loadPhotos(
+  supabase: ReturnType<typeof createAdminClient>,
+  cafeId: string
+): Promise<CafePhotoState> {
+  return (await loadPhotoRow(supabase, cafeId)).state
+}
+
+const PHOTO_WRITE_ATTEMPTS = 3
+
+// Read-modify-write of hero + gallery with an optimistic guard. Two concurrent
+// uploads used to read the same row and the later write dropped the earlier
+// photo (leaving its object orphaned). The update now only applies if both
+// columns still hold what was read (photo_urls is jsonb, compared as JSON);
+// otherwise the row is re-read and `plan` re-run against the fresh state, so
+// its checks (cap, membership) always see what is actually stored.
+async function commitPhotos(
+  supabase: ReturnType<typeof createAdminClient>,
+  cafeId: string,
+  plan: (current: CafePhotoState) => CafePhotoState
+): Promise<{ previous: CafePhotoState; next: CafePhotoState }> {
+  for (let attempt = 0; attempt < PHOTO_WRITE_ATTEMPTS; attempt++) {
+    const { state: current, rawGallery } = await loadPhotoRow(supabase, cafeId)
+    const next = plan(current)
+
+    let query = supabase
+      .from("cafes")
+      .update({ featured_image_url: next.hero, photo_urls: next.gallery })
+      .eq("id", cafeId)
+    query = current.hero === null
+      ? query.is("featured_image_url", null)
+      : query.eq("featured_image_url", current.hero)
+    query = rawGallery === null
+      ? query.is("photo_urls", null)
+      : query.filter("photo_urls", "eq", JSON.stringify(rawGallery))
+
+    const { data, error } = await query.select("id")
+    if (error) throw error
+    if (data?.length) return { previous: current, next }
+  }
+  throw new OwnerFacingError("Your photos changed in another tab. Refresh the page and try again.")
 }
 
 async function deleteFileQuietly(url: string) {
@@ -157,17 +202,21 @@ export async function uploadCafeHeroAction(
     const key    = `nook/cafes/${targetCafeId}/hero-${Date.now()}.${ext}`
     const url    = await uploadFile({ key, buffer, contentType })
 
-    const { error } = await supabase
-      .from("cafes")
-      .update({ featured_image_url: url })
-      .eq("id", targetCafeId)
-    if (error) throw error
+    const committed = await commitPhotos(supabase, targetCafeId, (latest) => {
+      if (!latest.hero && latest.gallery.length >= CAFE_PHOTO_LIMIT) tooMany()
+      return { hero: url, gallery: latest.gallery }
+    }).catch(async (error) => {
+      // Never stored on the row, so nothing references the upload.
+      await deleteFileQuietly(url)
+      throw error
+    })
 
     // Clean up the replaced object only after the row points at the new one.
-    if (current.hero && current.hero !== url) await deleteFileQuietly(current.hero)
+    const replaced = committed.previous.hero
+    if (replaced && replaced !== url) await deleteFileQuietly(replaced)
 
     revalidatePhotos(targetCafeId)
-    return { hero: url, gallery: current.gallery }
+    return committed.next
   })
 }
 
@@ -193,17 +242,18 @@ export async function uploadCafePhotoAction(
     const key    = `nook/cafes/${targetCafeId}/gallery-${Date.now()}.${ext}`
     const url    = await uploadFile({ key, buffer, contentType })
 
-    // No hero yet → this upload becomes the hero (cards, map pins and the
-    // detail header all key off featured_image_url).
-    const next: CafePhotoState = current.hero
-      ? { hero: current.hero, gallery: [...current.gallery, url] }
-      : { hero: url, gallery: current.gallery }
-
-    const { error } = await supabase
-      .from("cafes")
-      .update({ featured_image_url: next.hero, photo_urls: next.gallery })
-      .eq("id", targetCafeId)
-    if (error) throw error
+    const { next } = await commitPhotos(supabase, targetCafeId, (latest) => {
+      if ((latest.hero ? 1 : 0) + latest.gallery.length >= CAFE_PHOTO_LIMIT) tooMany()
+      // No hero yet → this upload becomes the hero (cards, map pins and the
+      // detail header all key off featured_image_url).
+      return latest.hero
+        ? { hero: latest.hero, gallery: [...latest.gallery, url] }
+        : { hero: url, gallery: latest.gallery }
+    }).catch(async (error) => {
+      // Never stored on the row, so nothing references the upload.
+      await deleteFileQuietly(url)
+      throw error
+    })
 
     revalidatePhotos(targetCafeId)
     return next
@@ -219,30 +269,25 @@ export async function deleteCafePhotoAction(
   return runPhotoAction(async () => {
     const targetCafeId = await requireOwnedCafeId(cafeId)
     const supabase     = createAdminClient()
-    const current      = await loadPhotos(supabase, targetCafeId)
-
-    // Only URLs stored on this cafe may be deleted. Without this, a client
-    // could pass any cafe's public image URL and delete it from storage.
-    const isHero = current.hero === photoUrl
-    if (!isHero && !current.gallery.includes(photoUrl)) {
-      throw new OwnerFacingError("That photo is no longer on your listing. Refresh the page.")
-    }
-
-    // Hero-ness comes from the row, never from the client: a client that
-    // thought a promoted hero was a gallery photo used to leave
-    // featured_image_url pointing at a deleted object.
-    const gallery = current.gallery.filter((u) => u !== photoUrl)
-    const next: CafePhotoState = isHero
-      ? { hero: gallery[0] ?? null, gallery: gallery.slice(1) }
-      : { hero: current.hero, gallery }
 
     // Row first, storage second: a failed DB write must not leave the
     // listing pointing at an object that's already gone.
-    const { error } = await supabase
-      .from("cafes")
-      .update({ featured_image_url: next.hero, photo_urls: next.gallery })
-      .eq("id", targetCafeId)
-    if (error) throw error
+    const { next } = await commitPhotos(supabase, targetCafeId, (current) => {
+      // Only URLs stored on this cafe may be deleted. Without this, a client
+      // could pass any cafe's public image URL and delete it from storage.
+      const isHero = current.hero === photoUrl
+      if (!isHero && !current.gallery.includes(photoUrl)) {
+        throw new OwnerFacingError("That photo is no longer on your listing. Refresh the page.")
+      }
+
+      // Hero-ness comes from the row, never from the client: a client that
+      // thought a promoted hero was a gallery photo used to leave
+      // featured_image_url pointing at a deleted object.
+      const gallery = current.gallery.filter((u) => u !== photoUrl)
+      return isHero
+        ? { hero: gallery[0] ?? null, gallery: gallery.slice(1) }
+        : { hero: current.hero, gallery }
+    })
 
     await deleteFileQuietly(photoUrl)
 
@@ -264,24 +309,19 @@ export async function reorderCafePhotosAction(
 
     const deduped  = Array.from(new Set(orderedPhotoUrls.filter(Boolean)))
     const supabase = createAdminClient()
-    const current  = await loadPhotos(supabase, targetCafeId)
 
-    // Reordering may only permute URLs this cafe already owns, and all of
-    // them: planting a foreign URL would let a later delete remove another
-    // cafe's object, and dropping one would orphan it.
-    const owned = [...(current.hero ? [current.hero] : []), ...current.gallery]
-    const sameSet =
-      deduped.length === owned.length && deduped.every((u) => owned.includes(u))
-    if (!sameSet) {
-      throw new OwnerFacingError("Your photos changed in another tab. Refresh the page and try again.")
-    }
-
-    const next: CafePhotoState = { hero: deduped[0] ?? null, gallery: deduped.slice(1) }
-    const { error } = await supabase
-      .from("cafes")
-      .update({ featured_image_url: next.hero, photo_urls: next.gallery })
-      .eq("id", targetCafeId)
-    if (error) throw error
+    const { next } = await commitPhotos(supabase, targetCafeId, (current) => {
+      // Reordering may only permute URLs this cafe already owns, and all of
+      // them: planting a foreign URL would let a later delete remove another
+      // cafe's object, and dropping one would orphan it.
+      const owned = [...(current.hero ? [current.hero] : []), ...current.gallery]
+      const sameSet =
+        deduped.length === owned.length && deduped.every((u) => owned.includes(u))
+      if (!sameSet) {
+        throw new OwnerFacingError("Your photos changed in another tab. Refresh the page and try again.")
+      }
+      return { hero: deduped[0] ?? null, gallery: deduped.slice(1) }
+    })
 
     revalidatePhotos(targetCafeId)
     return next

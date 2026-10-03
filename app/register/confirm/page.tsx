@@ -21,20 +21,20 @@ export default async function RegisterConfirmPage({
 
   return (
     <FunnelShell contentClassName="max-w-4xl">
-      <div className="mx-auto w-full max-w-2xl rounded-2xl bg-nk-surface p-6 text-center shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-nk-line sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-nk-green">
+      <div className="mx-auto w-full max-w-2xl rounded-2xl bg-white p-6 text-center shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70 sm:p-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40]">
           Confirm your account
         </p>
 
-        <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-nk-ink sm:text-4xl">
+        <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-[#101514] sm:text-4xl">
           Enter your code
         </h1>
 
-        <p className="mx-auto mt-4 max-w-xl text-sm text-nk-body sm:text-base">
+        <p className="mx-auto mt-4 max-w-xl text-sm text-[#3b3b3b] sm:text-base">
           {trimmedEmail ? (
             <>
               We sent a verification code to{" "}
-              <span className="font-semibold text-nk-ink break-words">{trimmedEmail}</span>.
+              <span className="font-semibold text-[#101514] break-words">{trimmedEmail}</span>.
             </>
           ) : (
             <>We sent a verification code to your email.</>

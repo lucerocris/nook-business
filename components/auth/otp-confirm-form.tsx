@@ -60,16 +60,16 @@ export function OtpConfirmForm({ email, redirectTo }: OtpConfirmFormProps) {
         onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
         placeholder="Enter code"
         aria-label="Verification code"
-        className="w-full max-w-xs rounded-xl border border-nk-green/20 bg-nk-surface px-4 py-3 text-center font-mono text-xl tracking-[0.25em] text-nk-body outline-none transition placeholder:text-base placeholder:tracking-normal placeholder:text-gray-400 focus:border-nk-green/45 focus:ring-4 focus:ring-nk-green/12"
+        className="w-full max-w-xs rounded-xl border border-[#3A5A40]/20 bg-white px-4 py-3 text-center font-mono text-xl tracking-[0.25em] text-gray-900 outline-none transition placeholder:text-base placeholder:tracking-normal placeholder:text-gray-400 focus:border-[#3A5A40]/45 focus:ring-4 focus:ring-[#3A5A40]/12"
       />
 
-      {error && <p className="text-sm font-semibold text-red-600 dark:text-red-400">{error}</p>}
-      {info && !error && <p className="text-sm font-medium text-nk-green">{info}</p>}
+      {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
+      {info && !error && <p className="text-sm font-medium text-[#3A5A40]">{info}</p>}
 
       <button
         type="submit"
         disabled={isVerifying || code.length < 6}
-        className="inline-flex w-full max-w-xs items-center justify-center rounded-xl bg-nk-green-fill px-6 py-3.5 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(58,90,64,0.3)] transition hover:bg-nk-green-hover disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex w-full max-w-xs items-center justify-center rounded-xl bg-[#3A5A40] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(58,90,64,0.3)] transition hover:bg-[#2f4a35] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isVerifying ? "Verifying..." : "Verify & continue"}
       </button>
@@ -78,7 +78,7 @@ export function OtpConfirmForm({ email, redirectTo }: OtpConfirmFormProps) {
         type="button"
         onClick={handleResend}
         disabled={isResending}
-        className="text-sm font-semibold text-nk-muted transition hover:text-nk-green disabled:cursor-not-allowed disabled:opacity-60"
+        className="text-sm font-semibold text-gray-500 transition hover:text-[#3A5A40] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isResending ? (
           <span className="inline-flex items-center gap-2">

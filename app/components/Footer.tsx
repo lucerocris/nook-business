@@ -46,7 +46,7 @@ const columns: { heading: string; links: FooterLink[] }[] = [
 
 export default function Footer() {
   return (
-    <footer className="bg-nk-green-fill text-white">
+    <footer className="bg-[var(--nk-green)] text-white">
       <div className="nk-container grid gap-12 pb-10 pt-16 sm:pt-20 lg:grid-cols-[1.2fr_2fr]">
         <div>
           <Link href="/" className="inline-flex rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">

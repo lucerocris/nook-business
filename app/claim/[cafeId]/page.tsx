@@ -75,11 +75,11 @@ export default async function ClaimPage({
 
     return (
       <FunnelShell contentClassName="max-w-4xl">
-        <div className="mx-auto w-full max-w-2xl rounded-2xl bg-nk-surface p-6 text-center ring-1 ring-nk-line sm:p-8">
-          <h1 className="text-2xl font-semibold tracking-[-0.02em] text-nk-ink">
+        <div className="mx-auto w-full max-w-2xl rounded-2xl bg-white p-6 text-center ring-1 ring-zinc-200/70 sm:p-8">
+          <h1 className="text-2xl font-semibold tracking-[-0.02em] text-[#101514]">
             {cafe.name} already has an owner on Nook
           </h1>
-          <p className="mx-auto mt-3 max-w-md text-sm text-nk-body">
+          <p className="mx-auto mt-3 max-w-md text-sm text-[#3b3b3b]">
             If you run this cafe and didn&apos;t claim it, message us on
             Instagram and we&apos;ll sort it out.
           </p>
@@ -88,13 +88,13 @@ export default async function ClaimPage({
               href="https://instagram.com/nook_cafefinder"
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-full bg-nk-green-fill px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-nk-green-hover"
+              className="rounded-full bg-[#3A5A40] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#2f4833]"
             >
               Message @nook_cafefinder
             </a>
             <Link
               href="/claim"
-              className="rounded-full border border-nk-line px-5 py-2.5 text-sm font-medium text-nk-body transition-colors hover:bg-nk-bg-2"
+              className="rounded-full border border-zinc-300 px-5 py-2.5 text-sm font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50"
             >
               Search again
             </Link>
@@ -109,7 +109,7 @@ export default async function ClaimPage({
   if (!user) {
     return (
       <FunnelShell contentClassName="max-w-4xl">
-        <div className="mx-auto w-full max-w-2xl rounded-2xl bg-nk-surface p-6 text-center shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-nk-line sm:p-8">
+        <div className="mx-auto w-full max-w-2xl rounded-2xl bg-white p-6 text-center shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70 sm:p-8">
           {cafe.featured_image_url ? (
             <img
               src={cafe.featured_image_url}
@@ -117,33 +117,33 @@ export default async function ClaimPage({
               className="mx-auto mb-6 h-24 w-24 rounded-2xl object-cover shadow-[0_16px_35px_rgba(58,90,64,0.18)]"
             />
           ) : (
-            <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-2xl bg-nk-green/10 text-xs font-semibold uppercase tracking-[0.24em] text-nk-green">
+            <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-2xl bg-[#3A5A40]/10 text-xs font-semibold uppercase tracking-[0.24em] text-[#3A5A40]">
               Nook
             </div>
           )}
 
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-nk-green">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40]">
             Claim verification
           </p>
-          <h1 className="mt-4 text-balance font-display text-3xl font-semibold tracking-tight text-nk-ink sm:text-4xl">
+          <h1 className="mt-4 text-balance font-display text-3xl font-semibold tracking-tight text-[#101514] sm:text-4xl">
             Claim {cafe.name ?? "this cafe"}
           </h1>
 
-          <p className="mx-auto mt-4 max-w-xl text-base text-nk-body">
+          <p className="mx-auto mt-4 max-w-xl text-base text-[#3b3b3b]">
             Create a free business account to verify ownership and manage {cafe.name ?? "this cafe"} on Nook.
           </p>
 
           <div className="mt-8 flex flex-col items-center gap-4">
             <Link
               href={`/register?redirect=${redirectPath}`}
-              className="inline-flex w-full items-center justify-center min-h-11 rounded-full bg-nk-green-fill px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-nk-green-hover"
+              className="inline-flex w-full items-center justify-center min-h-11 rounded-full bg-[#3A5A40] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#2f4833]"
             >
               Create free account
             </Link>
 
             <Link
               href={`/login?redirect=${redirectPath}`}
-              className="text-sm font-semibold text-nk-green transition hover:text-nk-green-strong"
+              className="text-sm font-semibold text-[#3A5A40] transition hover:text-[#2b442f]"
             >
               
               Already have an account? Log in

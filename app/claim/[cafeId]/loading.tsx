@@ -16,16 +16,16 @@ export default function ClaimCafeLoading() {
       <div
         role="status"
         aria-label="Loading claim details"
-        className="mx-auto w-full max-w-2xl rounded-2xl bg-nk-surface p-6 text-center shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-nk-line sm:p-8"
+        className="mx-auto w-full max-w-2xl rounded-2xl bg-white p-6 text-center shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70 sm:p-8"
       >
-        <div className="mx-auto mb-6 size-24 rounded-2xl bg-nk-ink/5 motion-safe:animate-pulse" />
-        <div className="mx-auto h-3 w-40 rounded-full bg-nk-ink/5 motion-safe:animate-pulse" />
-        <div className="mx-auto mt-4 h-8 w-3/4 rounded-lg bg-nk-ink/5 motion-safe:animate-pulse sm:h-9" />
-        <div className="mx-auto mt-4 h-4 w-full max-w-xl rounded-full bg-nk-ink/5 motion-safe:animate-pulse" />
-        <div className="mx-auto mt-2 h-4 w-2/3 rounded-full bg-nk-ink/5 motion-safe:animate-pulse" />
+        <div className="mx-auto mb-6 size-24 rounded-2xl bg-zinc-100 motion-safe:animate-pulse" />
+        <div className="mx-auto h-3 w-40 rounded-full bg-zinc-100 motion-safe:animate-pulse" />
+        <div className="mx-auto mt-4 h-8 w-3/4 rounded-lg bg-zinc-100 motion-safe:animate-pulse sm:h-9" />
+        <div className="mx-auto mt-4 h-4 w-full max-w-xl rounded-full bg-zinc-100 motion-safe:animate-pulse" />
+        <div className="mx-auto mt-2 h-4 w-2/3 rounded-full bg-zinc-100 motion-safe:animate-pulse" />
         <div className="mt-8 flex flex-col items-center gap-3">
-          <div className="h-11 w-full rounded-full bg-nk-ink/5 motion-safe:animate-pulse" />
-          <div className="h-4 w-48 rounded-full bg-nk-ink/5 motion-safe:animate-pulse" />
+          <div className="h-11 w-full rounded-full bg-zinc-100 motion-safe:animate-pulse" />
+          <div className="h-4 w-48 rounded-full bg-zinc-100 motion-safe:animate-pulse" />
         </div>
         <span className="sr-only">Loading claim details…</span>
       </div>

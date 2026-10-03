@@ -20,7 +20,7 @@ export function Hero() {
 
       {/* Left-aligned on phones, centered from sm up. */}
       <div className="nk-container flex flex-col items-start text-left sm:items-center sm:text-center">
-        <span className="inline-flex items-center gap-2 rounded-full border border-[var(--nk-line)] bg-nk-surface px-3 py-1 text-[13px] font-medium text-[var(--nk-body)]">
+        <span className="inline-flex items-center gap-2 rounded-full border border-[var(--nk-line)] bg-white px-3 py-1 text-[13px] font-medium text-[var(--nk-body)]">
           <span className="h-1.5 w-1.5 rounded-full bg-[var(--nk-green)]" />
           Nook for Business · free for cafe owners
         </span>

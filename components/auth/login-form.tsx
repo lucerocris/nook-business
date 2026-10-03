@@ -58,12 +58,12 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
   return (
     <form className="mt-6 space-y-4 sm:mt-7" onSubmit={handleSubmit}>
       {formError ? (
-        <p role="alert" className="rounded-lg border border-nk-danger/25 bg-nk-danger/5 px-4 py-3 text-sm text-nk-danger">
+        <p role="alert" className="rounded-lg border border-[#b94a48]/25 bg-[#b94a48]/5 px-4 py-3 text-sm text-[#b94a48]">
           {formError}
         </p>
       ) : null}
       <div>
-        <label className="text-sm font-medium text-nk-ink" htmlFor="email">
+        <label className="text-sm font-medium text-[#101514]" htmlFor="email">
           Email
         </label>
         <input
@@ -73,18 +73,18 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
           autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="mt-1.5 w-full rounded-lg border border-nk-line bg-nk-surface px-3 py-2.5 text-base text-nk-ink outline-none transition-colors placeholder:text-zinc-400 focus:border-nk-green sm:text-sm"
+          className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base text-[#101514] outline-none transition-colors placeholder:text-zinc-400 focus:border-[#3A5A40] sm:text-sm"
           aria-invalid={Boolean(fieldErrors.email)}
           aria-describedby={fieldErrors.email ? "email-error" : undefined}
         />
         {fieldErrors.email ? (
-          <p id="email-error" className="mt-2 text-xs text-nk-danger">
+          <p id="email-error" className="mt-2 text-xs text-[#b94a48]">
             {fieldErrors.email}
           </p>
         ) : null}
       </div>
       <div>
-        <label className="text-sm font-medium text-nk-ink" htmlFor="password">
+        <label className="text-sm font-medium text-[#101514]" htmlFor="password">
           Password
         </label>
         <input
@@ -94,19 +94,19 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="mt-1.5 w-full rounded-lg border border-nk-line bg-nk-surface px-3 py-2.5 text-base text-nk-ink outline-none transition-colors placeholder:text-zinc-400 focus:border-nk-green sm:text-sm"
+          className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base text-[#101514] outline-none transition-colors placeholder:text-zinc-400 focus:border-[#3A5A40] sm:text-sm"
           aria-invalid={Boolean(fieldErrors.password)}
           aria-describedby={fieldErrors.password ? "password-error" : undefined}
         />
         {fieldErrors.password ? (
-          <p id="password-error" className="mt-2 text-xs text-nk-danger">
+          <p id="password-error" className="mt-2 text-xs text-[#b94a48]">
             {fieldErrors.password}
           </p>
         ) : null}
       </div>
       <button
         type="submit"
-        className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-nk-green-fill px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-nk-green-hover disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[#3A5A40] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#2f4833] disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isSubmitting}
       >
         {isSubmitting ? (
@@ -118,11 +118,11 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
           "Log in"
         )}
       </button>
-      <p className="text-center text-sm text-nk-muted">
+      <p className="text-center text-sm text-[#6b6b6b]">
         Don&apos;t have an account?{" "}
         <Link
           href={`/register?redirect=${redirectParam}`}
-          className="font-semibold text-nk-green hover:text-nk-green-strong"
+          className="font-semibold text-[#3A5A40] hover:text-[#2b442f]"
         >
           Create one
         </Link>

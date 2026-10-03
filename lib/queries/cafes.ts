@@ -315,7 +315,7 @@ export async function getOwnerDashboardCafeById(
   const supabase = await createClient()
   // Highlights and tags are only counted: the dashboard's setup checklist needs
   // to know whether each step is done, not what was picked.
-  const [cafeRes, highlightRes, tagRes] = await Promise.all([
+  const [cafeRes, highlightRes, tagRes, reviewRes] = await Promise.all([
     supabase
       .from("cafes")
       .select(
@@ -334,14 +334,29 @@ export async function getOwnerDashboardCafeById(
       .from("cafe_tags")
       .select("tag_id", { count: "exact", head: true })
       .eq("cafe_id", cafeId),
+    // cafes.rating / review_count include moderation-hidden reviews; recompute
+    // from visible ones so the dashboard matches the Reviews page.
+    supabase
+      .from("reviews")
+      .select("rating")
+      .eq("cafe_id", cafeId)
+      .eq("moderation_status", "visible"),
   ])
 
   if (cafeRes.error) throw cafeRes.error
   if (highlightRes.error) throw highlightRes.error
   if (tagRes.error) throw tagRes.error
+  if (reviewRes.error) throw reviewRes.error
+
+  const ratings = (reviewRes.data ?? []).map((r) => r.rating as number)
 
   return {
     ...(cafeRes.data as Omit<OwnerDashboardCafe, "highlight_count" | "tag_count">),
+    rating:
+      ratings.length > 0
+        ? ratings.reduce((s, n) => s + n, 0) / ratings.length
+        : null,
+    review_count: ratings.length,
     highlight_count: highlightRes.count ?? 0,
     tag_count: tagRes.count ?? 0,
   }

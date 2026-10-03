@@ -327,7 +327,9 @@ export async function getOwnerDashboardCafeById(
       .from("menu_items")
       .select("id", { count: "exact", head: true })
       .eq("cafe_id", cafeId)
-      .eq("is_highlight", true),
+      .eq("is_highlight", true)
+      // The app hides highlights without a photo, so those don't count.
+      .not("image_url", "is", null),
     supabase
       .from("cafe_tags")
       .select("tag_id", { count: "exact", head: true })

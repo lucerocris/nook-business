@@ -177,7 +177,15 @@ export function OwnerTagsClient({
     setIsDirty(true)
   }
 
+  // Latest selection, read after a save resolves to tell whether the owner
+  // kept editing while it was in flight.
+  const latestSnapshot = React.useRef("")
+  React.useEffect(() => {
+    latestSnapshot.current = JSON.stringify([selectedTags, featuredTags])
+  })
+
   async function handleSave() {
+    const savedSnapshot = JSON.stringify([selectedTags, featuredTags])
     setIsSaving(true)
     setSaveError(null)
     try {
@@ -188,7 +196,7 @@ export function OwnerTagsClient({
         setSaveError(result.error)
         return
       }
-      setIsDirty(false)
+      if (latestSnapshot.current === savedSnapshot) setIsDirty(false)
       toast.success("Tags saved")
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to save tags"

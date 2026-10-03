@@ -1,4 +1,27 @@
+import "server-only"
+
+import type { User } from "@supabase/supabase-js"
 import { createAdminClient } from "@/lib/supabase/admin"
+
+const USERS_PER_PAGE = 1000
+
+// auth.admin.listUsers() returns one page (50 by default), so anyone past the
+// first page silently disappeared. Walk pages until a short one comes back.
+async function listAllAuthUsers(
+  supabase: ReturnType<typeof createAdminClient>
+): Promise<{ data: { users: User[] }; error: Error | null }> {
+  const users: User[] = []
+  for (let page = 1; ; page++) {
+    const { data, error } = await supabase.auth.admin.listUsers({
+      page,
+      perPage: USERS_PER_PAGE,
+    })
+    if (error) return { data: { users }, error }
+    users.push(...data.users)
+    if (data.users.length < USERS_PER_PAGE) break
+  }
+  return { data: { users }, error: null }
+}
 
 export async function getUsers() {
   const supabase = createAdminClient()
@@ -9,7 +32,7 @@ export async function getUsers() {
     reviewCountsResult,
     favCountsResult,
   ] = await Promise.all([
-    supabase.auth.admin.listUsers(),
+    listAllAuthUsers(supabase),
     supabase
       .from("profiles")
       .select("id, full_name, username, avatar_url, is_suspended, created_at"),

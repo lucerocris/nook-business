@@ -12,6 +12,7 @@ import {
   updateMenuCategory,
   deleteMenuCategory,
 } from "@/lib/queries/menu"
+import { isSpecialtyTag } from "@/lib/queries/tags"
 
 import { validateAndNormalizeProfile, type ProfileInput } from "@/lib/validation/profile"
 
@@ -72,6 +73,46 @@ export async function updateProfileAction(
 
 export type UpdateTagsResult = { ok: true } | { ok: false; error: string }
 
+const MAX_FEATURED_TAGS = 3
+
+// Tags applied to the cafe that the owner's tag picker never shows (vibe
+// category or inactive — see getOwnerAssignableTags), so they can't be posted
+// back. set_owner_cafe_tags replaces the whole set and only re-attaches
+// specialty tags itself, so without this every owner save silently dropped
+// admin-assigned vibe/inactive tags. Specialty tags are left to the RPC (it
+// preserves them, and rejects them if passed in). Re-sending tags that are
+// already applied is idempotent: the RPC de-duplicates and rewrites the set.
+async function getHiddenAppliedTags(
+  cafeId: string
+): Promise<{ tagIds: string[]; featuredTagIds: string[] }> {
+  const admin = createAdminClient()
+  const { data, error } = await admin
+    .from("cafe_tags")
+    .select("tag_id, is_featured, tags(name, category, is_active)")
+    .eq("cafe_id", cafeId)
+  if (error) throw error
+
+  type TagInfo = { name: string; category: string; is_active: boolean }
+  const tagIds: string[] = []
+  const featuredTagIds: string[] = []
+  for (const row of (data ?? []) as Array<{
+    tag_id: string
+    is_featured: boolean | null
+    tags: TagInfo | TagInfo[] | null
+  }>) {
+    const tag = Array.isArray(row.tags) ? row.tags[0] : row.tags
+    if (!tag || isSpecialtyTag(tag)) continue
+    const hidden = !tag.is_active || tag.category === "vibe"
+    if (!hidden) continue
+    tagIds.push(row.tag_id)
+    // The RPC only allows Best For tags to be featured.
+    if (row.is_featured && tag.category.trim().toLowerCase().replace(/[\s-]+/g, "_") === "best_for") {
+      featuredTagIds.push(row.tag_id)
+    }
+  }
+  return { tagIds, featuredTagIds }
+}
+
 // Validation, specialty-tag preservation and the delete+insert all live in
 // set_owner_cafe_tags now, so this runs as one statement in one transaction.
 // It must use the user-context client: the RPC authorizes against auth.uid(),
@@ -83,10 +124,27 @@ export async function updateTagsAction(
   const cafeId = await getOwnerCafeId()
   const supabase = await createClient()
 
+  let preserved: { tagIds: string[]; featuredTagIds: string[] }
+  try {
+    preserved = await getHiddenAppliedTags(cafeId)
+  } catch (error) {
+    console.error("[tags] could not load hidden tags", error)
+    return { ok: false, error: "Couldn't save your tags. Please try again." }
+  }
+
+  const nextTagIds = Array.from(new Set([...(tagIds ?? []), ...preserved.tagIds]))
+  const nextFeatured = Array.from(new Set(featuredTagIds ?? []))
+  // Keep a hidden tag's featured flag only while it fits the RPC's 3-featured
+  // cap; otherwise it stays applied but unfeatured rather than failing the save.
+  for (const id of preserved.featuredTagIds) {
+    if (nextFeatured.length >= MAX_FEATURED_TAGS) break
+    if (!nextFeatured.includes(id)) nextFeatured.push(id)
+  }
+
   const { error } = await supabase.rpc("set_owner_cafe_tags", {
     p_cafe_id: cafeId,
-    p_tag_ids: tagIds,
-    p_featured_tag_ids: featuredTagIds,
+    p_tag_ids: nextTagIds,
+    p_featured_tag_ids: nextFeatured,
   })
 
   // Rule violations arrive as Postgres errors, not thrown exceptions. Return

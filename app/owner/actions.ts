@@ -247,11 +247,11 @@ async function assertCategoryOwnedByCafe(id: string, cafeId: string) {
 }
 
 export async function createCategoryAction(name: string): Promise<CategoryResult> {
-  const cafeId = await getOwnerCafeId()
   const err = validateCategoryName(name)
   if (err) return { ok: false, error: err }
 
   try {
+    const cafeId = await getOwnerCafeId()
     const category = await createMenuCategory({
       name: name.trim(),
       is_global: false,
@@ -268,11 +268,11 @@ export async function updateCategoryAction(
   id: string,
   name: string
 ): Promise<CategoryResult> {
-  const cafeId = await getOwnerCafeId()
   const err = validateCategoryName(name)
   if (err) return { ok: false, error: err }
 
   try {
+    const cafeId = await getOwnerCafeId()
     await assertCategoryOwnedByCafe(id, cafeId)
     const category = await updateMenuCategory({ id, name: name.trim() })
     revalidatePath("/owner/menu")
@@ -285,9 +285,8 @@ export async function updateCategoryAction(
 export async function deleteCategoryAction(
   id: string
 ): Promise<DeleteCategoryResult> {
-  const cafeId = await getOwnerCafeId()
-
   try {
+    const cafeId = await getOwnerCafeId()
     await assertCategoryOwnedByCafe(id, cafeId)
     await deleteMenuCategory(id)
     revalidatePath("/owner/menu")

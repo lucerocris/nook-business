@@ -3,6 +3,7 @@ import "@/app/globals.css"
 import { OwnerSidebar } from "@/components/owner/sidebar"
 import { SessionRoleSync } from "@/components/owner/session-role-sync"
 import { OwnerHeader } from "@/components/owner/header"
+import { OwnerLayoutError } from "@/components/owner/layout-error"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { createClient } from "@/lib/supabase/server"
 import { getOwnerCafeContextByOwnerUserId } from "@/lib/queries/cafes"
@@ -27,7 +28,24 @@ export default async function OwnerLayout({
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  const cafe = user ? await getOwnerCafeContextByOwnerUserId(user.id) : null
+  // A Supabase error here would skip app/owner/error.tsx (it sits below this
+  // layout) and land on the marketing error page, so handle it in the portal.
+  let cafe: Awaited<ReturnType<typeof getOwnerCafeContextByOwnerUserId>> = null
+  let cafeLoadFailed = false
+  try {
+    cafe = user ? await getOwnerCafeContextByOwnerUserId(user.id) : null
+  } catch (error) {
+    console.error("Failed to load owner cafe context", error)
+    cafeLoadFailed = true
+  }
+  if (cafeLoadFailed) {
+    return (
+      <>
+        <style>{`.navbar, .mobile-menu-wrapper { display: none !important; }`}</style>
+        <OwnerLayoutError />
+      </>
+    )
+  }
   // With no café linked, the sidebar says whether a claim is still in review
   // (pages unlock on approval) or nothing is pending at all. RLS scopes
   // cafe_claims to the caller's own rows.

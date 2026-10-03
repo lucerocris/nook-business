@@ -29,10 +29,14 @@ export default async function ClaimStatusPage() {
 
   if (ownerRow) redirect("/owner/dashboard");
 
-  // RLS scopes this to the caller's own claims.
+  // RLS scopes this to the caller's own claims; the claimant filter is kept
+  // explicit so the page doesn't depend on that policy. Withdrawn claims were
+  // cancelled by the owner and aren't worth showing.
   const { data: claims } = await supabase
     .from("cafe_claims")
     .select("id, status, verification_code, expires_at, created_at, cafes(name)")
+    .eq("claimant_id", user.id)
+    .neq("status", "withdrawn")
     .order("created_at", { ascending: false });
 
   const activeClaims = (claims ?? []) as unknown as {
@@ -44,15 +48,34 @@ export default async function ClaimStatusPage() {
     cafes: { name: string | null } | null;
   }[];
 
+  const now = new Date();
+  const isExpired = (claim: (typeof activeClaims)[number]) =>
+    claim.status === "pending" &&
+    !!claim.expires_at &&
+    new Date(claim.expires_at) < now;
+  const hasInProgress = activeClaims.some(
+    (claim) =>
+      (claim.status === "pending" || claim.status === "under_review") &&
+      !isExpired(claim),
+  );
+
   return (
     <FunnelShell>
       <FunnelSpread
         label="Claim status"
-        title={activeClaims.length > 0 ? "Your claim is in progress." : "You haven't claimed a cafe yet."}
+        title={
+          hasInProgress
+            ? "Your claim is in progress."
+            : activeClaims.length > 0
+              ? "Your claims."
+              : "You haven't claimed a cafe yet."
+        }
         lead={
-          activeClaims.length > 0
+          hasInProgress
             ? "We usually review claims within 1–2 business days of receiving your code, and we'll email you once it's approved."
-            : "Once you claim your cafe, you'll be able to track it here."
+            : activeClaims.length > 0
+              ? "None of your claims are awaiting review right now."
+              : "Once you claim your cafe, you'll be able to track it here."
         }
       >
         {activeClaims.length === 0 ? (
@@ -62,8 +85,10 @@ export default async function ClaimStatusPage() {
         ) : (
           <ul className="border-t border-[var(--nk-line)]">
             {activeClaims.map((claim) => {
+              const expired = isExpired(claim);
               const isPending =
-                claim.status === "pending" || claim.status === "under_review";
+                !expired &&
+                (claim.status === "pending" || claim.status === "under_review");
 
               return (
                 <li key={claim.id} className="border-b border-[var(--nk-line)] py-6">
@@ -72,7 +97,7 @@ export default async function ClaimStatusPage() {
                       {claim.cafes?.name ?? "Your cafe"}
                     </h2>
                     <span className="rounded-full bg-[var(--nk-tint)] px-3 py-1 text-[12px] font-medium text-[var(--nk-green)]">
-                      {formatStatus(claim.status)}
+                      {expired ? "Expired" : formatStatus(claim.status)}
                     </span>
                   </div>
 
@@ -94,6 +119,13 @@ export default async function ClaimStatusPage() {
                         Message @nook_cafefinder
                       </a>
                     </div>
+                  ) : null}
+
+                  {expired ? (
+                    <p className="mt-3 text-[15px] text-[var(--nk-body)]">
+                      This claim expired before it was verified. Start a new
+                      claim from the cafe&apos;s page to get a fresh code.
+                    </p>
                   ) : null}
 
                   {claim.status === "rejected" ? (
@@ -123,6 +155,8 @@ function formatStatus(status: string) {
       return "Approved";
     case "rejected":
       return "Not approved";
+    case "withdrawn":
+      return "Withdrawn";
     default:
       return status;
   }

@@ -133,11 +133,12 @@ export function OwnerReviewsClient({
     return list
   }, [reviews, search, ratingFilter, sort])
 
-  const avgRating = cafe.rating ?? (
+  // From the visible reviews, not cafe.rating, which also counts reviews
+  // moderation has hidden.
+  const avgRating =
     reviews.length > 0
       ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
       : null
-  )
 
   function handleReported(reviewId: string) {
     setReportedIds((prev) => {

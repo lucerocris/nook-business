@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { getSafeRedirect } from "@/lib/safe-redirect";
 import { createClient } from "@/lib/supabase/middleware";
 
 const PUBLIC_AUTH_ROUTES = new Set(["/", "/login", "/register"]);
@@ -23,6 +24,11 @@ const withSupabaseCookies = (
 ) => {
   const cookies = getSetCookies(supabaseResponse.headers);
   cookies.forEach((cookie) => response.headers.append("set-cookie", cookie));
+  // Carry over the no-cache headers @supabase/ssr sets alongside auth cookies
+  ["cache-control", "expires", "pragma"].forEach((name) => {
+    const value = supabaseResponse.headers.get(name);
+    if (value) response.headers.set(name, value);
+  });
   return response;
 };
 
@@ -54,7 +60,13 @@ export async function middleware(request: NextRequest) {
   if (isOwnerRoute) {
     if (!user) {
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", "/owner/dashboard");
+      loginUrl.searchParams.set(
+        "redirect",
+        getSafeRedirect(
+          `${pathname}${request.nextUrl.search}`,
+          "/owner/dashboard",
+        ),
+      );
       return withSupabaseCookies(
         supabaseResponse,
         NextResponse.redirect(loginUrl),

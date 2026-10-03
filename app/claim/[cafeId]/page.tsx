@@ -77,7 +77,7 @@ export default async function ClaimPage({
       <FunnelShell>
         <FunnelSpread
           label="Claim your cafe"
-          title={`${cafe.name} already has an owner on Nook.`}
+          title={`${cafe.name ?? "This cafe"} already has an owner on Nook.`}
           lead="If you run this cafe and didn't claim it, message us on Instagram and we'll sort it out."
         >
           <div className="flex flex-wrap gap-3">

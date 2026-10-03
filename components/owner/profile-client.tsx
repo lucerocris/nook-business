@@ -239,6 +239,18 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
     return () => window.removeEventListener("beforeunload", handler)
   }, [isDirty])
 
+  // Latest form values, read after a save resolves to tell whether the owner
+  // kept editing while it was in flight.
+  const latestSnapshot = React.useRef("")
+  React.useEffect(() => {
+    latestSnapshot.current = JSON.stringify({
+      name,
+      description,
+      operating_hours: hours,
+      social_links: { instagram, facebook, tiktok, website },
+    })
+  })
+
   async function handleSave() {
     const input = {
       name,
@@ -246,6 +258,7 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
       operating_hours: hours,
       social_links: { instagram, facebook, tiktok, website },
     }
+    const savedSnapshot = JSON.stringify(input)
 
     // Fast client-side check so the owner gets the exact field/message before a
     // round-trip; the server re-validates the same way.
@@ -263,7 +276,7 @@ export function OwnerProfileClient({ cafe }: { cafe: Cafe }) {
         toast.error(res.error)
         return
       }
-      setIsDirty(false)
+      if (latestSnapshot.current === savedSnapshot) setIsDirty(false)
       toast.success("Listing saved")
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to save profile"

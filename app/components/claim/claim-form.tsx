@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { startClaim, withdrawClaim } from "@/actions/claims";
 
 type ClaimRecord = {
@@ -19,7 +19,8 @@ export function ClaimForm({ cafeId, cafeName, initialClaim }: ClaimFormProps) {
   const [claim, setClaim] = useState<ClaimRecord | null>(initialClaim);
   const [error, setError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
-  const [isCopying, setIsCopying] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -40,13 +41,22 @@ export function ClaimForm({ cafeId, cafeName, initialClaim }: ClaimFormProps) {
     }
   };
 
+  useEffect(() => {
+    return () => {
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    };
+  }, []);
+
   const handleCopy = async () => {
     if (!codeValue || typeof navigator === "undefined") return;
-    setIsCopying(true);
     try {
       await navigator.clipboard.writeText(codeValue);
-    } finally {
-      setIsCopying(false);
+      setError(null);
+      setIsCopied(true);
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      setError("Couldn't copy the code. Select it and copy it manually.");
     }
   };
 
@@ -139,12 +149,16 @@ export function ClaimForm({ cafeId, cafeName, initialClaim }: ClaimFormProps) {
             <button
               type="button"
               onClick={handleCopy}
-              disabled={!codeValue || isCopying}
+              disabled={!codeValue}
               className="inline-flex items-center justify-center rounded-full border border-[#d4d4d0] px-5 py-3 text-sm font-semibold text-[#101514] transition hover:border-[#3A5A40] hover:text-[#3A5A40] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isCopying ? "Copied" : "Copy code"}
+              {isCopied ? "Copied" : "Copy code"}
             </button>
           </div>
+
+          {error && (
+            <p className="text-sm font-semibold text-red-600">{error}</p>
+          )}
 
           <a
             href="https://instagram.com/nook_cafefinder"

@@ -18,7 +18,8 @@ export default async function AcceptInvitePage({ searchParams }: PageProps) {
   const { error } = (await searchParams) ?? {}
 
   // /accept-invite exchanges the emailed code for a session before redirecting
-  // here, so a session is the proof the invite is genuine.
+  // here. A session alone isn't enough though: any signed-in user can open this
+  // URL, so also require a pending invite (same check as acceptInviteAction).
   const supabase = await createClient()
   const {
     data: { user },
@@ -26,10 +27,24 @@ export default async function AcceptInvitePage({ searchParams }: PageProps) {
 
   const linkError = error ? (LINK_ERRORS[error] ?? "That invite link is not valid.") : null
 
-  // Greeting only — the invite is already valid by virtue of the session, so a
-  // missing name just degrades the copy.
-  let cafeName: string | null = null
+  let hasPendingInvite = false
   if (user) {
+    const { data: invite } = await supabase
+      .from("owner_invites")
+      .select("id, expires_at")
+      .eq("invited_profile_id", user.id)
+      .in("status", ["sent", "opened"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle<{ id: string; expires_at: string | null }>()
+
+    hasPendingInvite =
+      !!invite && (!invite.expires_at || new Date(invite.expires_at) >= new Date())
+  }
+
+  // Greeting only — a missing name just degrades the copy.
+  let cafeName: string | null = null
+  if (user && hasPendingInvite) {
     const { data: link } = await supabase
       .from("cafe_owner_cafe")
       .select("cafes(name)")
@@ -46,7 +61,7 @@ export default async function AcceptInvitePage({ searchParams }: PageProps) {
 
   return (
     <FunnelShell>
-      {!user ? (
+      {!user || !hasPendingInvite ? (
         <FunnelSpread
           label="Owner invite"
           title="This invite link isn't valid."

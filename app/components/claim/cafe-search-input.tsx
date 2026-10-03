@@ -37,7 +37,7 @@ export function CafeSearchInput() {
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedCafeId, setSelectedCafeId] = useState<string | null>(null);
   const debounceRef = useRef<number | null>(null);
-  const { results, loading, error, search } = useCafeSearch();
+  const { results, loading, error, search, reset } = useCafeSearch();
 
   // /claim/[cafeId] is a server-rendered route, so router.push can take a
   // noticeable moment with no visual change — the row looked unresponsive and
@@ -63,6 +63,9 @@ export function CafeSearchInput() {
 
     if (!trimmedValue) {
       setHasSearched(false);
+      // Drop stale results and ignore any search still in flight, so typing
+      // again doesn't flash the previous query's matches.
+      reset();
       return;
     }
 

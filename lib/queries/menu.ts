@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { isUuid } from "@/lib/validation/uuid"
 
 export type Category = {
   id: string
@@ -74,6 +75,29 @@ async function assertMenuItemBelongsToCafe(
   if (!data) throw new Error("Not authorized for this menu item")
 }
 
+// An item may use a global category or one of this cafe's own custom
+// categories (created_by = cafe id, as in getCategoriesForCafe). category_id
+// comes from the client, so without this an owner could file items under
+// another cafe's custom category.
+async function assertCategoryUsableByCafe(
+  supabase: ReturnType<typeof createAdminClient>,
+  categoryId: string,
+  cafeId: string
+) {
+  if (!isUuid(categoryId)) throw new Error("Choose a category for the item")
+
+  const { data, error } = await supabase
+    .from("menu_categories")
+    .select("id, is_global, created_by")
+    .eq("id", categoryId)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data || (!data.is_global && data.created_by !== cafeId)) {
+    throw new Error("Category not found for this cafe")
+  }
+}
+
 // Accepts only images hosted on our own Spaces bucket. Historically rows were
 // written with both the CDN hostname and the bare origin hostname
 // (…sgp1.cdn.digitaloceanspaces.com and …sgp1.digitaloceanspaces.com), so both
@@ -115,6 +139,8 @@ export async function upsertMenuItem(item: {
   if (item.id) {
     await assertMenuItemBelongsToCafe(supabase, item.id, item.cafe_id)
   }
+
+  await assertCategoryUsableByCafe(supabase, item.category_id, item.cafe_id)
 
   // Enforce the 5-highlight cap on the server too (the client also enforces it,
   // but two tabs / non-UI callers could otherwise exceed it).
@@ -196,37 +222,119 @@ export async function upsertMenuItemVariants(
 ) {
   const supabase = createAdminClient()
 
+  // Server-side backstop mirroring the item panel's rules (menu-client.tsx):
+  // the action receives raw JSON, so nothing here is guaranteed by the client.
+  const payloadVariants = validateVariants(variants)
+
   // menu_item_variants has no cafe_id, so ownership is checked against the
-  // parent item before the delete+insert.
+  // parent item before any write.
   await assertMenuItemBelongsToCafe(supabase, menuItemId, cafeId)
 
-  const { error: deleteError } = await supabase
-    .from("menu_item_variants")
-    .delete()
-    .eq("menu_item_id", menuItemId)
+  const deleteAll = async () => {
+    const { error } = await supabase
+      .from("menu_item_variants")
+      .delete()
+      .eq("menu_item_id", menuItemId)
+    if (error) throw error
+  }
 
-  if (deleteError) throw deleteError
-
-  if (variants.length === 0) return []
+  if (payloadVariants.length === 0) {
+    await deleteAll()
+    return []
+  }
 
   // Use insert only (omit id). Batch upsert from PostgREST can send id = null,
   // which skips DEFAULT gen_random_uuid() and violates NOT NULL on id.
-  const payload = variants.map((variant, index) => ({
+  const payload = payloadVariants.map((variant) => ({
     menu_item_id: menuItemId,
-    label: variant.label,
-    price_override: variant.price_override,
-    price_modifier: variant.price_modifier ?? 0,
-    is_default: variant.is_default ?? false,
-    sort_order: variant.sort_order ?? index,
+    ...variant,
   }))
 
+  // Insert the new set first, then delete the old rows. The previous
+  // delete-then-insert left the item with no sizes at all whenever the insert
+  // failed. Now a failed insert leaves the old sizes untouched.
   const { data, error } = await supabase
     .from("menu_item_variants")
     .insert(payload)
     .select()
 
+  if (error?.code === "23505") {
+    // A unique constraint over the item's variants would reject the new set
+    // while the old one still exists; fall back to replacing in place.
+    await deleteAll()
+    const retry = await supabase.from("menu_item_variants").insert(payload).select()
+    if (retry.error) throw retry.error
+    return retry.data as MenuItemVariant[]
+  }
   if (error) throw error
-  return data as MenuItemVariant[]
+
+  const inserted = data as MenuItemVariant[]
+  const insertedIds = inserted.map((v) => v.id)
+
+  const { error: deleteError } = await supabase
+    .from("menu_item_variants")
+    .delete()
+    .eq("menu_item_id", menuItemId)
+    .not("id", "in", `(${insertedIds.join(",")})`)
+
+  if (deleteError) {
+    // Undo the insert so the item doesn't show both the old and new sizes.
+    await supabase.from("menu_item_variants").delete().in("id", insertedIds)
+    throw deleteError
+  }
+
+  return inserted
+}
+
+const VARIANT_LABEL_MAX_LENGTH = 60
+const VARIANT_MAX_COUNT = 20
+
+function validateVariants(
+  variants: Array<Omit<MenuItemVariant, "id"> & { id?: string }>
+): Array<Omit<MenuItemVariant, "id">> {
+  if (!Array.isArray(variants)) throw new Error("Sizes are invalid")
+  if (variants.length > VARIANT_MAX_COUNT) {
+    throw new Error(`An item can have up to ${VARIANT_MAX_COUNT} sizes`)
+  }
+
+  const normalized = variants.map((variant, index) => {
+    if (!variant || typeof variant !== "object") throw new Error("Sizes are invalid")
+
+    const label = typeof variant.label === "string" ? variant.label.trim() : ""
+    if (!label) throw new Error("Give every size a name, like 12 oz or Iced")
+    if (label.length > VARIANT_LABEL_MAX_LENGTH) {
+      throw new Error(`Size names must be ${VARIANT_LABEL_MAX_LENGTH} characters or fewer`)
+    }
+
+    const priceOverride = variant.price_override
+    if (
+      priceOverride !== null &&
+      (typeof priceOverride !== "number" || !Number.isFinite(priceOverride) || priceOverride < 0)
+    ) {
+      throw new Error("Each size needs a valid price of 0 or more")
+    }
+
+    const priceModifier = variant.price_modifier ?? 0
+    if (typeof priceModifier !== "number" || !Number.isFinite(priceModifier)) {
+      throw new Error("Sizes are invalid")
+    }
+
+    const sortOrder = Number.isInteger(variant.sort_order) ? variant.sort_order : index
+
+    return {
+      label,
+      price_override: priceOverride,
+      price_modifier: priceModifier,
+      is_default: variant.is_default === true,
+      sort_order: sortOrder,
+    }
+  })
+
+  if (normalized.length > 0 && normalized.filter((v) => v.is_default).length !== 1) {
+    throw new Error("Choose exactly one default size")
+  }
+
+  return normalized
 }
 
 export async function createMenuCategory(category: {

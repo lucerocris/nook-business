@@ -356,6 +356,18 @@ export type AnalyticsDay = AnalyticsTotals & { date: string }
 
 const ZERO_TOTALS: AnalyticsTotals = { views: 0, hours: 0, directions: 0, favorites: 0 }
 
+// summary_date is written by /api/analytics-sync as a calendar day in this
+// timezone, so the window must be computed in it too. toISOString() (UTC) put
+// "today" a day behind between 00:00 and 08:00 Manila time.
+const REPORT_TZ = "Asia/Manila"
+
+// Midnight UTC of the current calendar day in REPORT_TZ. Date math below uses
+// the UTC setters so isoDay() reads back the same calendar day.
+function reportToday() {
+  const ymd = new Intl.DateTimeFormat("en-CA", { timeZone: REPORT_TZ }).format(new Date())
+  return new Date(`${ymd}T00:00:00Z`)
+}
+
 function isoDay(date: Date) {
   return date.toISOString().split("T")[0]
 }
@@ -366,9 +378,8 @@ function isoDay(date: Date) {
 export async function getOwnerAnalyticsSummaries(cafeId: string, daysBack: number) {
   const supabase = createAdminClient()
 
-  const today = new Date()
-  const start = new Date(today)
-  start.setDate(start.getDate() - (daysBack * 2 - 1))
+  const start = reportToday()
+  start.setUTCDate(start.getUTCDate() - (daysBack * 2 - 1))
 
   const { data, error } = await supabase
     .from("cafe_analytics_summaries")
@@ -394,7 +405,7 @@ export async function getOwnerAnalyticsSummaries(cafeId: string, daysBack: numbe
   const days: AnalyticsDay[] = []
   for (let i = 0; i < daysBack * 2; i++) {
     const d = new Date(start)
-    d.setDate(start.getDate() + i)
+    d.setUTCDate(start.getUTCDate() + i)
     const date = isoDay(d)
     days.push({ date, ...(byDate.get(date) ?? ZERO_TOTALS) })
   }

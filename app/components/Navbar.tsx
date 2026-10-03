@@ -154,6 +154,9 @@ export function Navbar({ initialUser }: NavbarProps) {
                         : "pointer-events-none opacity-0"
                     }`}
                     role="menu"
+                    // opacity-0 only hides it visually; inert keeps the closed
+                    // menu's items out of the tab order and accessibility tree.
+                    inert={!isUserMenuOpen}
                   >
                     {/* A signed-in user with a pending claim has no owner row
                         yet, so /owner/* redirects them away. Without this link
@@ -245,6 +248,7 @@ export function Navbar({ initialUser }: NavbarProps) {
                     : "pointer-events-none opacity-0"
                 }`}
                 role="menu"
+                inert={!isUserMenuOpen}
               >
                 <button
                   type="button"
@@ -263,6 +267,9 @@ export function Navbar({ initialUser }: NavbarProps) {
       {/* Mobile Menu Drawer */}
       <div
         className={`mobile-menu-wrapper block md:hidden fixed inset-0 z-40 bg-white transform transition-transform duration-300 ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"}`}
+        // Off-canvas but still in the DOM: without inert its links stayed
+        // focusable and announced while the drawer was closed.
+        inert={!isMobileMenuOpen}
       >
         <div className="flex flex-col gap-8 w-full p-6 pt-28 h-full">
           <ul className="flex flex-col border-t border-[var(--nk-line)]">

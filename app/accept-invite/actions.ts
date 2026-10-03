@@ -1,5 +1,6 @@
 "use server"
 
+import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 
 export type AcceptInviteResult = { ok: true } | { ok: false; error: string }
@@ -70,18 +71,40 @@ export async function acceptInviteAction(
     return { ok: false, error: passwordError.message }
   }
 
-  // Scoped to this user's own pending invite. RLS applies (user-context client),
-  // and invited_profile_id is compared against the session, not a client value.
-  await supabase
+  // Both writes use the admin client: RLS may not grant the invitee UPDATE on
+  // these rows, and an RLS no-op used to be ignored, returning ok:true with the
+  // invite still "sent". Each is scoped strictly to the session user (and their
+  // own pending invite), never to a client value, and must affect a row.
+  const admin = createAdminClient()
+
+  const { data: acceptedRows, error: inviteError } = await admin
     .from("owner_invites")
     .update({ status: "accepted", used_at: new Date().toISOString() })
     .eq("id", invite.id)
+    .eq("invited_profile_id", user.id)
+    .in("status", ["sent", "opened"])
+    .select("id")
+
+  if (inviteError || !acceptedRows?.length) {
+    return {
+      ok: false,
+      error: "We couldn't finish accepting your invite. Please try again.",
+    }
+  }
 
   // The account is active from here; it was created as "invited" by invite-owner.
-  await supabase
+  const { data: profileRows, error: profileError } = await admin
     .from("profiles")
     .update({ account_status: "active" })
     .eq("id", user.id)
+    .select("id")
+
+  if (profileError || !profileRows?.length) {
+    return {
+      ok: false,
+      error: "We couldn't activate your account. Please try again.",
+    }
+  }
 
   return { ok: true }
 }

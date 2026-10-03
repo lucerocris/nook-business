@@ -208,6 +208,9 @@ export function OwnerMenuClient({
         toast.success("Category added")
       }
       closeCategoryDialog()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to save category"
+      toast.error(message)
     } finally {
       setCategorySaving(false)
     }
@@ -228,6 +231,10 @@ export function OwnerMenuClient({
       setCategoryList((prev) => prev.filter((c) => c.id !== deleteCategoryId))
       if (selectedCategoryId === deleteCategoryId) selectCategory(null)
       toast.success("Category deleted")
+      setDeleteCategoryId(null)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete category"
+      toast.error(message)
       setDeleteCategoryId(null)
     } finally {
       setCategoryDeleting(false)

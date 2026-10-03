@@ -220,9 +220,12 @@ export function Navbar({ initialUser }: NavbarProps) {
               ) : null}
 
               <button
+                type="button"
                 className={`navbar-hamburger p-2 flex flex-col gap-1.5 ${isMobileMenuOpen ? "open" : ""}`}
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 aria-label="Toggle menu"
+                aria-expanded={isMobileMenuOpen}
+                aria-controls="mobile-menu"
               >
                 {/* Simple CSS Hamburger lines if you aren't using an icon library */}
                 <span
@@ -262,6 +265,7 @@ export function Navbar({ initialUser }: NavbarProps) {
 
       {/* Mobile Menu Drawer */}
       <div
+        id="mobile-menu"
         className={`mobile-menu-wrapper block md:hidden fixed inset-0 z-40 bg-white transform transition-transform duration-300 ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"}`}
       >
         <div className="flex flex-col gap-8 w-full p-6 pt-28 h-full">

@@ -4,9 +4,12 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import {
+  isClaimRole,
   resolveClaim,
+  type ClaimRole,
   type ResolveClaimResult,
 } from "@/lib/claims/resolve-claim";
+import { isUuid } from "@/lib/validation/uuid";
 import { notifyNewClaim } from "@/lib/claims/notify-new-claim";
 
 // Explicit POST action to create-or-get the caller's claim for a cafe. Kept off
@@ -14,8 +17,14 @@ import { notifyNewClaim } from "@/lib/claims/notify-new-claim";
 // a claim as a side effect — the owner must click "Confirm".
 export async function startClaim(params: {
   cafeId: string;
-  role: "owner" | "manager";
+  role: ClaimRole;
 }): Promise<ResolveClaimResult> {
+  // Server actions take any JSON from the client; the TS types above aren't
+  // enforced at runtime.
+  if (!isUuid(params?.cafeId) || !isClaimRole(params?.role)) {
+    return { error: "Something went wrong. Please try again." };
+  }
+
   const supabase = await createClient();
   const { data: userData, error: userError } = await supabase.auth.getUser();
   const user = userData?.user;
@@ -67,11 +76,16 @@ export async function withdrawClaim(
     return { error: "Please log in to update your claim." };
   }
 
+  // Only a pending claim can be withdrawn — the claim form tells the owner an
+  // under_review claim can't be cancelled here. Without the status guard this
+  // could also flip an approved/rejected claim back to "withdrawn". No row
+  // updated (wrong status, not theirs, gone) returns the error below.
   const { data, error } = await supabase
     .from("cafe_claims")
     .update({ status: "withdrawn" })
     .eq("id", claimId)
     .eq("claimant_id", user.id)
+    .eq("status", "pending")
     .select("id")
     .maybeSingle<{ id: string }>();
 

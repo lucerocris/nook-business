@@ -64,52 +64,78 @@ export async function GET(request: Request) {
       timeZone: REPORT_TZ,
     }).format(yesterday);
 
-    const posthogResponse = await fetch(
-      `https://app.posthog.com/api/projects/${POSTHOG_PROJECT_ID}/query/`,
-      {
-        method: 'POST',
-        headers: {
-          // CRITICAL: This must be a Personal API Key created in your PostHog account settings,
-          // NOT the public Project API key you use in Flutter.
-          'Authorization': `Bearer ${POSTHOG_PERSONAL_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: {
-            kind: 'HogQLQuery',
-            query: `
-              SELECT
-                properties.cafe_id AS cafe_id,
-                countIf(event = 'cafe_detail_viewed')  AS views_count,
-                countIf(event = 'check_hours')         AS hours_checked_count,
-                countIf(event = 'directions_tapped')   AS directions_tapped_count,
-                countIf(event = 'cafe_favorited')      AS favorites_count
-              FROM events
-              WHERE toDate(timestamp) = '${targetDate}'
-                AND event IN ('cafe_detail_viewed', 'check_hours', 'directions_tapped', 'cafe_favorited')
-                AND properties.cafe_id IS NOT NULL
-              GROUP BY properties.cafe_id
-            `,
-          },
-        }),
-      }
-    );
+    // HogQL caps results at 100 rows when the query has no explicit LIMIT, so
+    // past ~100 active cafes the rest silently got no summary row. Page through
+    // with an explicit LIMIT/OFFSET and a deterministic ORDER BY until a short
+    // page comes back. PAGE_SIZE stays well under PostHog's max explicit LIMIT.
+    const PAGE_SIZE = 10000;
+    const results: unknown[][] = [];
+    let columns: string[] = [];
 
-    if (!posthogResponse.ok) {
-      throw new Error(`PostHog API error: ${posthogResponse.status} ${posthogResponse.statusText}`);
+    for (let offset = 0; ; offset += PAGE_SIZE) {
+      const posthogResponse = await fetch(
+        `https://app.posthog.com/api/projects/${POSTHOG_PROJECT_ID}/query/`,
+        {
+          method: 'POST',
+          headers: {
+            // CRITICAL: This must be a Personal API Key created in your PostHog account settings,
+            // NOT the public Project API key you use in Flutter.
+            'Authorization': `Bearer ${POSTHOG_PERSONAL_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: {
+              kind: 'HogQLQuery',
+              query: `
+                SELECT
+                  properties.cafe_id AS cafe_id,
+                  countIf(event = 'cafe_detail_viewed')  AS views_count,
+                  countIf(event = 'check_hours')         AS hours_checked_count,
+                  countIf(event = 'directions_tapped')   AS directions_tapped_count,
+                  countIf(event = 'cafe_favorited')      AS favorites_count
+                FROM events
+                WHERE toDate(timestamp) = '${targetDate}'
+                  AND event IN ('cafe_detail_viewed', 'check_hours', 'directions_tapped', 'cafe_favorited')
+                  AND properties.cafe_id IS NOT NULL
+                GROUP BY properties.cafe_id
+                ORDER BY cafe_id
+                LIMIT ${PAGE_SIZE} OFFSET ${offset}
+              `,
+            },
+          }),
+        }
+      );
+
+      if (!posthogResponse.ok) {
+        throw new Error(`PostHog API error: ${posthogResponse.status} ${posthogResponse.statusText}`);
+      }
+
+      const posthogJson = await posthogResponse.json();
+      const page: unknown[][] = posthogJson.results ?? [];
+      if (posthogJson.columns) columns = posthogJson.columns;
+      results.push(...page);
+
+      if (page.length < PAGE_SIZE) {
+        // A short page should be the last one. If PostHog still reports more
+        // rows, it capped the page below our LIMIT; fail loudly rather than
+        // silently drop cafes.
+        if (posthogJson.hasMore) {
+          throw new Error(
+            `PostHog truncated page at offset ${offset} (${page.length} rows, hasMore=true)`
+          );
+        }
+        break;
+      }
     }
 
-    const posthogJson = await posthogResponse.json();
-    const { results, columns } = posthogJson;
-
-    if (!results || results.length === 0) {
+    if (results.length === 0) {
       return NextResponse.json({ success: true, message: 'No events to sync for today', synced: 0 });
     }
 
     // ------------------------------------------------------------------
     // 3. SHAPE THE DATA
     // ------------------------------------------------------------------
-    const aggregatedData = results.map((row: unknown[]) => {
+    const aggregatedData = results.map((row) => {
       const entry: Record<string, unknown> = {};
       columns.forEach((col: string, i: number) => {
         entry[col] = row[i];

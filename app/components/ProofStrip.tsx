@@ -22,12 +22,12 @@ export default function ProofStrip() {
   return (
     <section
       aria-label="Nook in numbers"
-      className="mt-0 border-y border-[var(--nk-line)] bg-white"
+      className="border-b border-[var(--nk-line)] bg-white"
     >
       <div className="nk-container grid grid-cols-1 divide-y divide-[var(--nk-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         {STATS.map((stat) => (
           <div key={stat.value} className="py-7 sm:px-8 sm:py-10 sm:first:pl-0">
-            <p className="text-[2rem] font-semibold leading-none tracking-[-0.02em] text-[var(--nk-ink)] sm:text-[2.5rem]">
+            <p className="nk-display text-[2.5rem] leading-none text-[var(--nk-ink)] sm:text-[3.25rem]">
               {stat.value}
             </p>
             <p className="mt-3 max-w-[30ch] text-[15px] leading-snug text-[var(--nk-body)]">

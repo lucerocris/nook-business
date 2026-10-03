@@ -50,7 +50,7 @@ export function OtpConfirmForm({ email, redirectTo }: OtpConfirmFormProps) {
   };
 
   return (
-    <form onSubmit={handleVerify} className="mt-8 flex flex-col items-center gap-4">
+    <form onSubmit={handleVerify} className="flex flex-col items-start gap-4">
       <input
         id="signup-otp"
         inputMode="numeric"
@@ -60,7 +60,7 @@ export function OtpConfirmForm({ email, redirectTo }: OtpConfirmFormProps) {
         onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
         placeholder="Enter code"
         aria-label="Verification code"
-        className="w-full max-w-xs rounded-xl border border-[#3A5A40]/20 bg-white px-4 py-3 text-center font-mono text-xl tracking-[0.25em] text-gray-900 outline-none transition placeholder:text-base placeholder:tracking-normal placeholder:text-gray-400 focus:border-[#3A5A40]/45 focus:ring-4 focus:ring-[#3A5A40]/12"
+        className="w-full max-w-xs rounded-[2px] border border-[#d4d4d0] bg-white px-4 py-3 text-center font-mono text-xl tracking-[0.25em] text-[var(--nk-ink)] outline-none transition placeholder:text-base placeholder:tracking-normal placeholder:text-[#8a8a87] focus:border-[var(--nk-green)] focus:ring-2 focus:ring-[var(--nk-green)]/25"
       />
 
       {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
@@ -69,7 +69,7 @@ export function OtpConfirmForm({ email, redirectTo }: OtpConfirmFormProps) {
       <button
         type="submit"
         disabled={isVerifying || code.length < 6}
-        className="inline-flex w-full max-w-xs items-center justify-center rounded-xl bg-[#3A5A40] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(58,90,64,0.3)] transition hover:bg-[#2f4a35] disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex min-h-11 w-full max-w-xs items-center justify-center rounded-full bg-[var(--nk-green)] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--nk-green-hover)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isVerifying ? "Verifying..." : "Verify & continue"}
       </button>

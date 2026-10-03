@@ -55,7 +55,7 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
   return (
     <form className="mt-6 space-y-4 sm:mt-7" onSubmit={handleSubmit}>
       {formError && (
-        <p role="alert" className="rounded-lg border border-[#b94a48]/25 bg-[#b94a48]/5 px-4 py-3 text-sm text-[#b94a48]">
+        <p role="alert" className="rounded-[2px] border border-[#b94a48]/30 bg-[#b94a48]/5 px-4 py-3 text-sm text-[#b94a48]">
           {formError}
         </p>
       )}
@@ -70,7 +70,7 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
           autoComplete="name"
           value={fullName}
           onChange={(event) => setFullName(event.target.value)}
-          className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base text-[#101514] outline-none transition-colors placeholder:text-zinc-400 focus:border-[#3A5A40] sm:text-sm"
+          className="mt-1.5 w-full rounded-[2px] border border-[#d4d4d0] bg-white px-3 py-2.5 text-base text-[var(--nk-ink)] outline-none transition-colors placeholder:text-[#8a8a87] focus:border-[var(--nk-green)] focus-visible:ring-2 focus-visible:ring-[var(--nk-green)]/25 sm:text-sm"
           aria-invalid={Boolean(fieldErrors.fullName)}
           aria-describedby={fieldErrors.fullName ? "fullName-error" : undefined}
         />
@@ -91,7 +91,7 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
           autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base text-[#101514] outline-none transition-colors placeholder:text-zinc-400 focus:border-[#3A5A40] sm:text-sm"
+          className="mt-1.5 w-full rounded-[2px] border border-[#d4d4d0] bg-white px-3 py-2.5 text-base text-[var(--nk-ink)] outline-none transition-colors placeholder:text-[#8a8a87] focus:border-[var(--nk-green)] focus-visible:ring-2 focus-visible:ring-[var(--nk-green)]/25 sm:text-sm"
           aria-invalid={Boolean(fieldErrors.email)}
           aria-describedby={fieldErrors.email ? "email-error" : undefined}
         />
@@ -112,7 +112,7 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
           autoComplete="new-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base text-[#101514] outline-none transition-colors placeholder:text-zinc-400 focus:border-[#3A5A40] sm:text-sm"
+          className="mt-1.5 w-full rounded-[2px] border border-[#d4d4d0] bg-white px-3 py-2.5 text-base text-[var(--nk-ink)] outline-none transition-colors placeholder:text-[#8a8a87] focus:border-[var(--nk-green)] focus-visible:ring-2 focus-visible:ring-[var(--nk-green)]/25 sm:text-sm"
           aria-invalid={Boolean(fieldErrors.password)}
           aria-describedby={fieldErrors.password ? "password-error" : undefined}
         />
@@ -136,7 +136,7 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
           "Create account"
         )}
       </button>
-      <p className="text-center text-sm text-[#6b6b6b]">
+      <p className="text-sm text-[var(--nk-muted)]">
         Already have an account?{" "}
         <Link
           href={`/login?redirect=${redirectParam}`}

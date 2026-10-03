@@ -57,18 +57,24 @@
   font-weight: 600;
   color: var(--nk-ink);
   text-wrap: balance;
+  letter-spacing: -0.02em;
 }
 
 .nk-h1 {
-  font-size: clamp(2.25rem, 1.4rem + 3.6vw, 4.25rem);
+  font-size: clamp(2.5rem, 1.5rem + 3.4vw, 4.25rem);
   line-height: 1.04;
-  letter-spacing: -0.03em;
 }
 
 .nk-h2 {
-  font-size: clamp(1.875rem, 1.3rem + 2.4vw, 3.25rem);
-  line-height: 1.08;
-  letter-spacing: -0.025em;
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3.25rem);
+  line-height: 1.06;
+}
+
+/* Headline weight for cafe names and big figures (design.md, Type). */
+.nk-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .nk-lead {
@@ -157,14 +163,9 @@
 
 /* Deep-green brand field with a lighter dot lattice, used behind the drawn
    product UI. */
+/* The one dark band per page (design.md, Emphasis): flat, no texture. */
 .nk-panel {
   background-color: var(--nk-green-deep);
-  background-image: radial-gradient(
-    circle,
-    rgba(218, 215, 205, 0.16) 1px,
-    transparent 1.6px
-  );
-  background-size: 22px 22px;
 }
 
 /* Skeleton text bars inside drawn UI. */

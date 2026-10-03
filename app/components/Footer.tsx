@@ -46,20 +46,20 @@ const columns: { heading: string; links: FooterLink[] }[] = [
 
 export default function Footer() {
   return (
-    <footer className="bg-[var(--nk-green)] text-white">
+    <footer className="bg-white text-[var(--nk-ink)]">
       <div className="nk-container grid gap-12 pb-10 pt-16 sm:pt-20 lg:grid-cols-[1.2fr_2fr]">
         <div>
-          <Link href="/" className="inline-flex rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+          <Link href="/" className="inline-flex rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--nk-green)]">
             <img
               src={LOGO_URL}
               alt="Nook for Business"
-              className="h-8 w-auto brightness-0 invert"
+              className="h-8 w-auto"
             />
           </Link>
-          <p className="mt-6 max-w-sm text-[22px] font-semibold leading-snug tracking-[-0.01em]">
+          <p className="nk-display mt-6 max-w-sm text-[26px] leading-snug">
             Skip the search. Find nook.
           </p>
-          <p className="mt-3 max-w-sm text-[15px] leading-relaxed text-white/80">
+          <p className="mt-3 max-w-sm text-[15px] leading-relaxed text-[var(--nk-body)]">
             Nook for Business is where cafe owners claim and manage their
             Nook listing.
           </p>
@@ -71,7 +71,7 @@ export default function Footer() {
         >
           {columns.map((column) => (
             <div key={column.heading}>
-              <p className="nk-meta text-white/65">{column.heading}</p>
+              <p className="text-[13px] font-medium text-[var(--nk-muted)]">{column.heading}</p>
               <ul className="mt-4 space-y-3">
                 {column.links.map((link) => (
                   <li key={link.label}>
@@ -80,14 +80,14 @@ export default function Footer() {
                         href={link.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[15px] text-white/90 transition-colors hover:text-white hover:underline hover:underline-offset-4"
+                        className="text-[15px] text-[var(--nk-body)] transition-colors hover:text-[var(--nk-green)] hover:underline hover:underline-offset-4"
                       >
                         {link.label}
                       </a>
                     ) : (
                       <Link
                         href={link.href}
-                        className="text-[15px] text-white/90 transition-colors hover:text-white hover:underline hover:underline-offset-4"
+                        className="text-[15px] text-[var(--nk-body)] transition-colors hover:text-[var(--nk-green)] hover:underline hover:underline-offset-4"
                       >
                         {link.label}
                       </Link>
@@ -100,9 +100,9 @@ export default function Footer() {
         </nav>
       </div>
 
-      <div className="nk-container flex flex-col gap-2 border-t border-white/15 py-6 sm:flex-row sm:items-center sm:justify-between">
-        <p className="nk-meta text-white/65">© 2026 Nook. All rights reserved.</p>
-        <p className="nk-meta text-white/65">business.nookph.app</p>
+      <div className="nk-container flex flex-col gap-2 border-t border-[var(--nk-line)] py-6 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-[13px] text-[var(--nk-muted)]">© 2026 Nook. All rights reserved.</p>
+        <p className="text-[13px] text-[var(--nk-muted)]">business.nookph.app</p>
       </div>
     </footer>
   );

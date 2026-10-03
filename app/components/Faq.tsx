@@ -37,14 +37,13 @@ const faqs = [
 
 export default function Faq() {
   return (
-    <section id="faq" className="scroll-mt-20 bg-white py-20 sm:py-28 lg:py-36">
+    <section id="faq" className="scroll-mt-20 border-b border-[var(--nk-line)] bg-white py-24 sm:py-32">
       <div className="nk-container grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)] lg:gap-20">
         <div className="lg:sticky lg:top-28 lg:self-start">
-          <p className="nk-eyebrow">Still got questions?</p>
-          <h2 className="nk-h2 mt-4">Read the FAQs</h2>
+          <h2 className="nk-h2">Questions owners ask.</h2>
 
-          <div className="mt-8 rounded-xl bg-[var(--nk-bg-2)] p-6 sm:p-8">
-            <p className="text-[18px] font-semibold text-[var(--nk-ink)]">
+          <div className="mt-10 border-t border-[var(--nk-ink)] pt-6">
+            <p className="text-[16px] font-semibold text-[var(--nk-ink)]">
               Can&apos;t find your answer?
             </p>
             <p className="mt-2 text-[15px] leading-relaxed text-[var(--nk-body)]">
@@ -66,19 +65,19 @@ export default function Faq() {
                 rel="noopener noreferrer"
                 className="nk-link"
               >
-                Merchant support →
+                Merchant support
               </a>
             </div>
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="border-t border-[var(--nk-ink)]">
           {faqs.map((item) => (
             <details
               key={item.q}
-              className="nk-faq group rounded-xl bg-[var(--nk-bg-2)]"
+              className="nk-faq group border-b border-[var(--nk-line)]"
             >
-              <summary className="flex cursor-pointer items-center gap-4 rounded-xl px-5 py-4 text-[16px] font-semibold text-[var(--nk-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--nk-green)] sm:px-6 sm:py-5">
+              <summary className="flex cursor-pointer items-center gap-4 py-5 text-[16px] font-medium text-[var(--nk-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--nk-green)] sm:py-6 sm:text-[17px]">
                 <span className="flex-1">{item.q}</span>
                 <span
                   aria-hidden="true"
@@ -87,7 +86,7 @@ export default function Faq() {
                   +
                 </span>
               </summary>
-              <p className="max-w-[62ch] px-5 pb-5 text-[15px] leading-relaxed text-[var(--nk-body)] sm:px-6 sm:pb-6">
+              <p className="max-w-[62ch] pb-6 text-[15px] leading-relaxed text-[var(--nk-body)]">
                 {item.a}
               </p>
             </details>

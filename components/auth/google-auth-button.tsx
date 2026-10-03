@@ -62,7 +62,7 @@ export function GoogleAuthButton({
       {error ? (
         <p
           role="alert"
-          className="mb-4 rounded-lg border border-[#b94a48]/25 bg-[#b94a48]/5 px-4 py-3 text-sm text-[#b94a48]"
+          className="mb-4 rounded-[2px] border border-[#b94a48]/30 bg-[#b94a48]/5 px-4 py-3 text-sm text-[#b94a48]"
         >
           {error}
         </p>
@@ -71,7 +71,7 @@ export function GoogleAuthButton({
         type="button"
         onClick={handleClick}
         disabled={isSubmitting}
-        className="inline-flex min-h-11 w-full items-center justify-center gap-2.5 rounded-full border border-zinc-200 bg-white px-6 py-3 text-sm font-semibold text-[#101514] transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex min-h-11 w-full items-center justify-center gap-2.5 rounded-full border border-[#d4d4d0] bg-white px-6 py-3 text-sm font-semibold text-[var(--nk-ink)] transition-colors hover:bg-[var(--nk-bg-2)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isSubmitting ? (
           <>
@@ -86,11 +86,11 @@ export function GoogleAuthButton({
         )}
       </button>
       <div className="mt-6 flex items-center gap-3" aria-hidden="true">
-        <span className="h-px flex-1 bg-zinc-200" />
-        <span className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+        <span className="h-px flex-1 bg-[var(--nk-line)]" />
+        <span className="text-[13px] text-[var(--nk-muted)]">
           or
         </span>
-        <span className="h-px flex-1 bg-zinc-200" />
+        <span className="h-px flex-1 bg-[var(--nk-line)]" />
       </div>
     </div>
   );

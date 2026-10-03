@@ -103,7 +103,7 @@ export function CafeSearchInput() {
           magnifier inline, the action as a pill on the right, and the focus
           indicator on the wrapper via :focus-within (the input itself has no
           outline, so without this there'd be no visible focus state). */}
-      <div className="flex w-full items-center gap-2 rounded-full border border-zinc-200 bg-white p-2 transition-shadow focus-within:border-[#3A5A40] focus-within:ring-2 focus-within:ring-[#3A5A40]/40">
+      <div className="flex w-full items-center gap-2 rounded-full border border-[#d4d4d0] bg-white p-2 transition-shadow focus-within:border-[#3A5A40] focus-within:ring-2 focus-within:ring-[#3A5A40]/40">
         <span
           aria-hidden="true"
           className="flex h-5 w-5 shrink-0 items-center justify-center pl-2 text-[#3b3b3b] sm:pl-3"
@@ -159,7 +159,7 @@ export function CafeSearchInput() {
       {/* Dropdown chrome matches the webapp's SearchDropdown: rounded-2xl,
           hairline ring, the standard card shadow. */}
       {showDropdown && (
-        <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl bg-white shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70">
+        <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-[2px] border border-[#d4d4d0] bg-white shadow-[0_12px_24px_rgba(0,0,0,0.08)]">
           <ul className="max-h-80 overflow-auto py-2 text-left text-sm text-[#3b3b3b]">
             {loading ? (
               <li className="px-4 py-3 text-sm text-zinc-500">Searching…</li>
@@ -188,7 +188,7 @@ export function CafeSearchInput() {
                       onClick={() => handleSelect(cafeId)}
                       disabled={isNavigating}
                       aria-busy={navigatingId === cafeId}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-[#e3ebe4]/50 disabled:cursor-default"
+                      className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-[#e3ebe4]/50 disabled:cursor-default"
                     >
                       <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
                         <span className="flex flex-wrap items-center gap-2">

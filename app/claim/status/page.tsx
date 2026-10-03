@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { FunnelShell } from "@/app/components/funnel-shell";
+import { FunnelShell, FunnelSpread } from "@/app/components/funnel-shell";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Your claim" };
@@ -45,71 +45,51 @@ export default async function ClaimStatusPage() {
   }[];
 
   return (
-    <FunnelShell contentClassName="max-w-3xl">
-      <div className="mx-auto w-full max-w-2xl rounded-2xl bg-white px-5 py-8 shadow-[0_12px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-200/70 sm:px-8 sm:py-10">
-        <div className="text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40]">
-            Claim status
-          </p>
-          <h1 className="mt-4 text-balance font-display text-3xl font-semibold tracking-tight text-[#101514] sm:text-4xl">
-            {activeClaims.length > 0
-              ? "Your claim is in progress"
-              : "You haven't claimed a cafe yet"}
-          </h1>
-        </div>
-
+    <FunnelShell>
+      <FunnelSpread
+        label="Claim status"
+        title={activeClaims.length > 0 ? "Your claim is in progress." : "You haven't claimed a cafe yet."}
+        lead={
+          activeClaims.length > 0
+            ? "We usually review claims within 1–2 business days of receiving your code, and we'll email you once it's approved."
+            : "Once you claim your cafe, you'll be able to track it here."
+        }
+      >
         {activeClaims.length === 0 ? (
-          <div className="mt-8 text-center">
-            <p className="mx-auto max-w-lg text-base text-[#3b3b3b]">
-              Once you claim your cafe, you&apos;ll be able to track its progress
-              here.
-            </p>
-            <Link
-              href="/claim"
-              className="mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-[#3A5A40] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#2b442f]"
-            >
-              Find your cafe
-            </Link>
-          </div>
+          <Link href="/claim" className="nk-btn nk-btn-primary min-h-11">
+            Find your cafe
+          </Link>
         ) : (
-          <ul className="mt-8 space-y-4">
+          <ul className="border-t border-[var(--nk-line)]">
             {activeClaims.map((claim) => {
               const isPending =
                 claim.status === "pending" || claim.status === "under_review";
 
               return (
-                <li
-                  key={claim.id}
-                  className="rounded-2xl border border-zinc-200 bg-[#e3ebe4]/30 px-5 py-5"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <h2 className="text-lg font-semibold text-[#101514]">
+                <li key={claim.id} className="border-b border-[var(--nk-line)] py-6">
+                  <div className="flex flex-wrap items-baseline justify-between gap-3">
+                    <h2 className="text-[20px] font-semibold tracking-[-0.01em] text-[var(--nk-ink)]">
                       {claim.cafes?.name ?? "Your cafe"}
                     </h2>
-                    <span className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-3 py-1 text-xs font-semibold text-[#3b3b3b]">
+                    <span className="rounded-full bg-[var(--nk-tint)] px-3 py-1 text-[12px] font-medium text-[var(--nk-green)]">
                       {formatStatus(claim.status)}
                     </span>
                   </div>
 
                   {isPending && claim.verification_code ? (
-                    <div className="mt-4">
-                      <p className="text-sm text-[#3b3b3b]">
+                    <div className="mt-5">
+                      <p className="text-[15px] text-[var(--nk-body)]">
                         Send this code to us from the cafe&apos;s official
                         Instagram account to finish verifying:
                       </p>
-                      <p className="mt-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-center font-mono text-2xl font-semibold tracking-[0.3em] text-[#101514]">
+                      <p className="mt-4 rounded-[2px] border border-[var(--nk-line)] bg-[var(--nk-bg-2)] px-4 py-4 text-center font-mono text-2xl font-semibold tracking-[0.3em] text-[var(--nk-ink)]">
                         {claim.verification_code}
-                      </p>
-                      <p className="mt-3 text-sm text-[#6b6b6b]">
-                        We usually review claims within 1&ndash;2 business days
-                        of receiving the code, and we&apos;ll email you once
-                        it&apos;s approved.
                       </p>
                       <a
                         href="https://instagram.com/nook_cafefinder"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md bg-[#3A5A40] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#2b442f]"
+                        className="nk-btn nk-btn-primary mt-5 min-h-11"
                       >
                         Message @nook_cafefinder
                       </a>
@@ -117,7 +97,7 @@ export default async function ClaimStatusPage() {
                   ) : null}
 
                   {claim.status === "rejected" ? (
-                    <p className="mt-3 text-sm text-[#3b3b3b]">
+                    <p className="mt-3 text-[15px] text-[var(--nk-body)]">
                       This claim wasn&apos;t approved. If you think that&apos;s a
                       mistake, message us on Instagram and we&apos;ll take
                       another look.
@@ -128,7 +108,7 @@ export default async function ClaimStatusPage() {
             })}
           </ul>
         )}
-      </div>
+      </FunnelSpread>
     </FunnelShell>
   );
 }

@@ -7,10 +7,10 @@
 // Numbers are deliberately absent from the stats cards: an illustration is no
 // place for a traffic figure a reader could mistake for a real one.
 
+import Image from "next/image";
 import {
   Check,
   Coffee,
-  Image as ImageIcon,
   InstagramLogo,
   MagnifyingGlass,
   MapPin,
@@ -26,7 +26,7 @@ function Card({
 }) {
   return (
     <div
-      className={`rounded-xl border border-[var(--nk-line)] bg-white ${className}`}
+      className={`rounded-[2px] border border-[var(--nk-line)] bg-white ${className}`}
     >
       {children}
     </div>
@@ -138,15 +138,15 @@ export function HoursCard({
             <span className="w-8 font-medium text-[var(--nk-ink)]">{day}</span>
             {open ? (
               <>
-                <span className="flex-1 rounded-md border border-[var(--nk-line)] px-2 py-1 tabular-nums">
+                <span className="flex-1 rounded-[2px] border border-[var(--nk-line)] px-2 py-1 tabular-nums">
                   {open}
                 </span>
-                <span className="flex-1 rounded-md border border-[var(--nk-line)] px-2 py-1 tabular-nums">
+                <span className="flex-1 rounded-[2px] border border-[var(--nk-line)] px-2 py-1 tabular-nums">
                   {close}
                 </span>
               </>
             ) : (
-              <span className="flex-1 rounded-md bg-[var(--nk-bg-2)] px-2 py-1 text-[var(--nk-muted)]">
+              <span className="flex-1 rounded-[2px] bg-[var(--nk-bg-2)] px-2 py-1 text-[var(--nk-muted)]">
                 Closed
               </span>
             )}
@@ -154,7 +154,7 @@ export function HoursCard({
         ))}
       </ul>
       {showToast ? (
-        <div className="mt-3 flex items-center gap-2 rounded-lg bg-[var(--nk-tint)] px-3 py-2 text-[12px] font-medium text-[var(--nk-green)]">
+        <div className="mt-3 flex items-center gap-2 rounded-[2px] bg-[var(--nk-tint)] px-3 py-2 text-[12px] font-medium text-[var(--nk-green)]">
           <Check size={14} weight="bold" />
           Hours updated
         </div>
@@ -219,7 +219,7 @@ export function MenuCard({ className = "" }: { className?: string }) {
           ["Sea Salt Latte", "₱175"],
         ].map(([name, price]) => (
           <div key={name} className="flex items-center gap-3">
-            <span className="h-8 w-8 shrink-0 rounded-md bg-[var(--nk-timberwolf)]" />
+            <span className="h-8 w-8 shrink-0 rounded-[2px] bg-[var(--nk-timberwolf)]" />
             <span className="flex-1 text-[var(--nk-body)]">{name}</span>
             <span className="font-medium tabular-nums text-[var(--nk-ink)]">
               {price}
@@ -232,24 +232,40 @@ export function MenuCard({ className = "" }: { className?: string }) {
 }
 
 /** Photos page: a hero photo plus a gallery grid. */
+// Filled with Flavour Coffee Station's own listing photos (hero plus three of
+// its gallery shots, cropped square), the same cafe as the landing hero.
+const GALLERY = [
+  "/landing/flavour-pour-over.webp",
+  "/landing/flavour-latte.webp",
+  "/landing/flavour-exterior.webp",
+];
+
 export function PhotosCard({ className = "" }: { className?: string }) {
   return (
     <Card className={`p-4 ${className}`}>
       <p className="text-[13px] font-semibold text-[var(--nk-ink)]">Photos</p>
-      <div className="relative mt-3 flex aspect-[16/8] items-center justify-center rounded-lg bg-[var(--nk-timberwolf)]">
-        <ImageIcon size={28} weight="light" className="text-[var(--nk-fern)]" />
+      <div className="relative mt-3 aspect-[16/8] overflow-hidden rounded-[2px] bg-[var(--nk-timberwolf)]">
+        <Image
+          src="/landing/hero-flavour-coffee-station.webp"
+          alt=""
+          fill
+          sizes="352px"
+          className="object-cover"
+        />
         <span className="absolute left-2 top-2 rounded-full bg-[var(--nk-green)] px-2 py-0.5 text-[10px] font-medium text-white">
           Hero
         </span>
       </div>
       <div className="mt-2 grid grid-cols-4 gap-2">
-        {[0, 1, 2].map((i) => (
+        {GALLERY.map((src) => (
           <span
-            key={i}
-            className="aspect-square rounded-md bg-[var(--nk-bg-2)]"
-          />
+            key={src}
+            className="relative aspect-square overflow-hidden rounded-[2px] bg-[var(--nk-bg-2)]"
+          >
+            <Image src={src} alt="" fill sizes="88px" className="object-cover" />
+          </span>
         ))}
-        <span className="flex aspect-square items-center justify-center rounded-md border border-dashed border-[var(--nk-sage)] text-[16px] text-[var(--nk-green)]">
+        <span className="flex aspect-square items-center justify-center rounded-[2px] border border-dashed border-[var(--nk-sage)] text-[16px] text-[var(--nk-green)]">
           +
         </span>
       </div>
@@ -327,7 +343,7 @@ export function SearchStepVisual() {
         Your Caf
         <span className="-ml-2 h-3.5 w-px bg-[var(--nk-ink)]" />
       </div>
-      <div className="mt-2 rounded-lg bg-[var(--nk-tint)]/60 px-3 py-2">
+      <div className="mt-2 rounded-[2px] bg-[var(--nk-tint)]/60 px-3 py-2">
         <p className="text-[12px] font-semibold text-[var(--nk-ink)]">
           Your Cafe
         </p>
@@ -345,7 +361,7 @@ export function CodeStepVisual() {
         @nook_cafefinder
       </div>
       <div className="mt-2 flex justify-end">
-        <span className="rounded-2xl rounded-br-md bg-[var(--nk-green)] px-3 py-2 font-mono text-[12px] tracking-[0.2em] text-white">
+        <span className="rounded-[2px] rounded-br-[2px] bg-[var(--nk-green)] px-3 py-2 font-mono text-[12px] tracking-[0.2em] text-white">
           ••••••
         </span>
       </div>

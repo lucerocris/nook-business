@@ -1,7 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { useId, useState } from "react";
 import {
   HoursCard,
   InsightsCard,
@@ -83,96 +80,56 @@ const features: Feature[] = [
   },
 ];
 
+// Five spreads, not an accordion: each feature gets its text and its drawn
+// preview side by side, the preview switching sides down the page, every
+// spread ruled off from the next (design.md: editorial spreads, hairlines).
 export default function ValueProposition() {
-  const [open, setOpen] = useState(0);
-  const baseId = useId();
-
   return (
-    <section id="features" className="scroll-mt-20 bg-white py-20 sm:py-28 lg:py-36">
+    <section id="features" className="scroll-mt-20 border-b border-[var(--nk-line)] bg-white py-24 sm:py-32">
       <div className="nk-container">
-        <div className="max-w-3xl sm:mx-auto sm:text-center">
-          <p className="nk-eyebrow">What you control</p>
-          <h2 className="nk-h2 mt-4">
-            Everything people check
-            <br className="hidden sm:block" /> before they head over.
-          </h2>
-          <p className="nk-lead mt-4">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] lg:gap-20">
+          <h2 className="nk-h2">Everything people check before they head over.</h2>
+          <p className="max-w-[52ch] text-[17px] leading-relaxed text-[var(--nk-body)] lg:pt-3">
             Most people pick a cafe from its listing. The owner portal puts
             the parts they check first in your hands.
           </p>
         </div>
 
-        <ul className="mt-14 border-b border-[var(--nk-line)] sm:mt-20">
-          {features.map((feature, index) => {
-            const isOpen = open === index;
-            const panelId = `${baseId}-panel-${index}`;
-            const buttonId = `${baseId}-button-${index}`;
-            const number = String(index + 1).padStart(2, "0");
-
-            return (
-              <li key={feature.title} className="border-t border-[var(--nk-line)]">
-                <h3>
-                  <button
-                    id={buttonId}
-                    type="button"
-                    aria-expanded={isOpen}
-                    aria-controls={panelId}
-                    onClick={() => setOpen(isOpen ? -1 : index)}
-                    className="group flex w-full items-center gap-4 py-6 text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--nk-green)] sm:gap-8 sm:py-8"
-                  >
-                    <span className="w-10 shrink-0 text-[1.5rem] font-semibold leading-none tracking-[-0.02em] text-[var(--nk-sage)] tabular-nums sm:w-20 sm:text-[2.5rem]">
-                      {number}
-                    </span>
-                    <span className="flex-1 text-[1.5rem] font-semibold leading-[1.1] tracking-[-0.02em] text-[var(--nk-ink)] transition-colors group-hover:text-[var(--nk-green)] sm:text-[2.5rem]">
-                      {feature.title}
-                    </span>
-                    <span
-                      aria-hidden="true"
-                      className="nk-plus flex h-10 w-10 shrink-0 items-center justify-center text-[28px] font-light leading-none text-[var(--nk-green)]"
-                    >
-                      +
-                    </span>
-                  </button>
+        <ul className="mt-16 sm:mt-20">
+          {features.map((feature, index) => (
+            <li
+              key={feature.title}
+              className="grid gap-10 border-t border-[var(--nk-line)] py-12 sm:py-16 lg:grid-cols-2 lg:items-center lg:gap-20"
+            >
+              <div className={index % 2 ? "lg:order-2" : ""}>
+                <h3 className="nk-display text-[2rem] leading-[1.1] text-[var(--nk-ink)] sm:text-[2.5rem]">
+                  {feature.title}
                 </h3>
-
-                <div
-                  id={panelId}
-                  role="region"
-                  aria-labelledby={buttonId}
-                  className="nk-collapse"
-                  data-open={isOpen}
-                  inert={!isOpen}
-                >
-                  <div>
-                    <div className="grid gap-8 pb-10 sm:pl-28 lg:grid-cols-2 lg:gap-14 lg:pb-14">
-                      <div className="flex min-h-[260px] items-center justify-center rounded-xl bg-[var(--nk-bg-2)] p-6 sm:p-10">
-                        {feature.visual}
-                      </div>
-                      <div className="flex flex-col justify-center">
-                        <p className="text-[16px] font-semibold leading-relaxed text-[var(--nk-ink)]">
-                          {feature.pitch}
-                        </p>
-                        <ul className="mt-6 space-y-2.5">
-                          {feature.points.map((point) => (
-                            <li
-                              key={point}
-                              className="flex items-start gap-3 text-[14px] text-[var(--nk-body)]"
-                            >
-                              <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--nk-green)]" />
-                              {point}
-                            </li>
-                          ))}
-                        </ul>
-                        <Link href="/claim" className="nk-link mt-8 self-start">
-                          Claim my cafe →
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            );
-          })}
+                <p className="mt-4 max-w-[48ch] text-[16px] leading-relaxed text-[var(--nk-body)]">
+                  {feature.pitch}
+                </p>
+                <ul className="mt-6 max-w-[48ch] border-t border-[var(--nk-line)]">
+                  {feature.points.map((point) => (
+                    <li
+                      key={point}
+                      className="border-b border-[var(--nk-line)] py-2.5 text-[14px] text-[var(--nk-ink)]"
+                    >
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+                <Link href="/claim" className="nk-link mt-6 inline-block">
+                  Claim my cafe
+                </Link>
+              </div>
+              <div
+                aria-hidden="true"
+                className={`flex min-h-[280px] items-center justify-center rounded-[2px] bg-[var(--nk-bg-2)] p-6 sm:p-10 ${index % 2 ? "lg:order-1" : ""}`}
+              >
+                {feature.visual}
+              </div>
+            </li>
+          ))}
         </ul>
       </div>
     </section>

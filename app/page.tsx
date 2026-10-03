@@ -20,7 +20,9 @@ export default function Home() {
       {/* The root layout doesn't wrap children in <main>, so the landing
           page supplies its own. Footer stays outside it — it's a separate
           contentinfo landmark, not page content. */}
-      <main>
+      {/* Plain paper: the site's dot grid stays on the other pages for now,
+          until they move onto design.md one by one. */}
+      <main className="bg-white">
         <Hero />
         <ProofStrip />
         <ValueProposition />

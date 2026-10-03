@@ -110,7 +110,15 @@ export async function GET(request: Request) {
     // ------------------------------------------------------------------
     // 3. SHAPE THE DATA
     // ------------------------------------------------------------------
-    const shapedRows = results.map((row: unknown[]) => {
+    type ShapedRow = {
+      cafe_id: unknown;
+      summary_date: string;
+      views_count: number;
+      hours_checked_count: number;
+      directions_tapped_count: number;
+      favorites_count: number;
+    };
+    const shapedRows: ShapedRow[] = results.map((row: unknown[]) => {
       const entry: Record<string, unknown> = {};
       columns.forEach((col: string, i: number) => {
         entry[col] = row[i];
@@ -129,8 +137,8 @@ export async function GET(request: Request) {
     // cafe_id is a client-supplied event property. One malformed or unknown
     // value used to fail the whole upsert (uuid cast / FK), dropping every
     // cafe's day. Keep only UUID-shaped ids that exist in cafes.
-    const uuidRows: Array<{ cafe_id: string }> = shapedRows.filter(
-      (row: { cafe_id: unknown }) => isUuid(row.cafe_id)
+    const uuidRows = shapedRows.filter(
+      (row): row is ShapedRow & { cafe_id: string } => isUuid(row.cafe_id)
     );
     const candidateIds = Array.from(new Set(uuidRows.map((row) => row.cafe_id)));
 

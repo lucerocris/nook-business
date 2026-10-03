@@ -1,11 +1,35 @@
 import type { NextConfig } from "next";
 
+// Image hosts follow the Spaces env (DO_SPACES_CDN_URL for the CDN host, and
+// DO_SPACES_BUCKET + DO_SPACES_ENDPOINT for the bare origin host) so a
+// different bucket doesn't need a code change. The hardcoded hosts are the
+// fallback when those aren't set.
+const hostnameOf = (url: string | undefined) => {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+};
+
+const spacesEndpointHost = hostnameOf(
+  process.env.DO_SPACES_ENDPOINT ?? process.env.DO_SPACE_ENDPOINT,
+);
+const cdnHost =
+  hostnameOf(process.env.DO_SPACES_CDN_URL) ??
+  "lucerocris.sgp1.cdn.digitaloceanspaces.com";
+const originHost =
+  process.env.DO_SPACES_BUCKET && spacesEndpointHost
+    ? `${process.env.DO_SPACES_BUCKET}.${spacesEndpointHost}`
+    : "lucerocris.sgp1.digitaloceanspaces.com";
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "lucerocris.sgp1.cdn.digitaloceanspaces.com",
+        hostname: cdnHost,
         port: "",
         pathname: "/nook-sites/**",
         search: "",
@@ -16,14 +40,14 @@ const nextConfig: NextConfig = {
       // "url parameter is not allowed".
       {
         protocol: "https",
-        hostname: "lucerocris.sgp1.cdn.digitaloceanspaces.com",
+        hostname: cdnHost,
         port: "",
         pathname: "/nook/**",
         search: "",
       },
       {
         protocol: "https",
-        hostname: "lucerocris.sgp1.digitaloceanspaces.com",
+        hostname: originHost,
         port: "",
         pathname: "/**",
         search: "",

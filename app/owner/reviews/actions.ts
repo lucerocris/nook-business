@@ -2,6 +2,7 @@
 
 // 1. FIX: Import the standard server client instead of the admin client
 import { createClient } from "@/lib/supabase/server"
+import { getKeyFromUrl } from "@/lib/upload"
 import {
   REPORT_DESCRIPTION_MAX_LENGTH,
   REPORT_EVIDENCE_MAX_FILES,
@@ -16,6 +17,25 @@ const POSTGRES_UNIQUE_VIOLATION = "23505"
 
 function isUuid(value: string): boolean {
   return UUID_LIKE.test(value)
+}
+
+// Evidence must be an object uploadReviewReportEvidenceAction wrote for THIS
+// review: https, on our Spaces CDN/origin host (getKeyFromUrl rejects any other
+// host), at nook/review-reports/{reviewId}/{timestamp}.{ext}. Any non-empty
+// string used to be stored, so a report could point moderators at arbitrary
+// external links or at another review's evidence.
+const EVIDENCE_FILE_NAME = /^\d+\.(jpeg|png|webp)$/
+
+function isOwnedEvidenceUrl(url: unknown, reviewId: string): boolean {
+  if (typeof url !== "string" || url.length === 0) return false
+  try {
+    if (new URL(url).protocol !== "https:") return false
+    const prefix = `nook/review-reports/${reviewId}/`
+    const key = getKeyFromUrl(url)
+    return key.startsWith(prefix) && EVIDENCE_FILE_NAME.test(key.slice(prefix.length))
+  } catch {
+    return false
+  }
 }
 
 function isValidReason(value: string): value is ReportReason {
@@ -55,8 +75,8 @@ function validatePayload(
     return { success: false, error: "INVALID_INPUT" }
   }
   if (
-    !payload.evidenceUrls.every(
-      (url) => typeof url === "string" && url.length > 0
+    !payload.evidenceUrls.every((url) =>
+      isOwnedEvidenceUrl(url, payload.reviewId)
     )
   ) {
     return { success: false, error: "INVALID_INPUT" }

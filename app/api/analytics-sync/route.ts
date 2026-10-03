@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { timingSafeEqual } from 'node:crypto';
+import { isUuid } from '@/lib/validation/uuid';
 
 // Constant-time comparison so the bearer check doesn't short-circuit on the
 // first differing byte.
@@ -109,7 +110,7 @@ export async function GET(request: Request) {
     // ------------------------------------------------------------------
     // 3. SHAPE THE DATA
     // ------------------------------------------------------------------
-    const aggregatedData = results.map((row: unknown[]) => {
+    const shapedRows = results.map((row: unknown[]) => {
       const entry: Record<string, unknown> = {};
       columns.forEach((col: string, i: number) => {
         entry[col] = row[i];
@@ -124,6 +125,34 @@ export async function GET(request: Request) {
         favorites_count:         Number(entry.favorites_count)         || 0,
       };
     });
+
+    // cafe_id is a client-supplied event property. One malformed or unknown
+    // value used to fail the whole upsert (uuid cast / FK), dropping every
+    // cafe's day. Keep only UUID-shaped ids that exist in cafes.
+    const uuidRows: Array<{ cafe_id: string }> = shapedRows.filter(
+      (row: { cafe_id: unknown }) => isUuid(row.cafe_id)
+    );
+    const candidateIds = Array.from(new Set(uuidRows.map((row) => row.cafe_id)));
+
+    const knownIds = new Set<string>();
+    for (let i = 0; i < candidateIds.length; i += 200) {
+      const { data: cafes, error: cafesError } = await supabaseAdmin
+        .from('cafes')
+        .select('id')
+        .in('id', candidateIds.slice(i, i + 200));
+      if (cafesError) throw cafesError;
+      for (const cafe of cafes ?? []) knownIds.add(String(cafe.id).toLowerCase());
+    }
+
+    const aggregatedData = uuidRows.filter((row) => knownIds.has(row.cafe_id.toLowerCase()));
+    const skipped = shapedRows.length - aggregatedData.length;
+    if (skipped > 0) {
+      console.warn(`Analytics sync skipped ${skipped} row(s) with an invalid or unknown cafe_id`);
+    }
+
+    if (aggregatedData.length === 0) {
+      return NextResponse.json({ success: true, message: 'No valid cafe events to sync', synced: 0, skipped });
+    }
 
     // ------------------------------------------------------------------
     // 4. UPSERT TO SUPABASE
@@ -141,6 +170,7 @@ export async function GET(request: Request) {
       success: true,
       message: 'Daily analytics synced successfully',
       synced: count,
+      skipped,
       date: targetDate,
     });
 

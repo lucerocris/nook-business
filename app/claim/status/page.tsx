@@ -10,6 +10,7 @@ import {
 } from "@/app/components/funnel-shell";
 import { createClient } from "@/lib/supabase/server";
 import { CodeHandoff } from "@/app/components/claim/code-handoff";
+import { CancelListing } from "@/app/components/claim/cancel-listing";
 
 export const metadata: Metadata = { title: "Your claim" };
 
@@ -104,6 +105,10 @@ export default async function ClaimStatusPage() {
                   ) : null}
                 </div>
                 <FunnelTimeline steps={claimSteps(claim, isExpired(claim))} />
+                {claim.is_new_listing &&
+                (claim.status === "pending" || claim.status === "under_review") ? (
+                  <CancelListing claimId={claim.id} cafeName={claim.cafes?.name ?? "this listing"} />
+                ) : null}
               </section>
             ))}
           </div>

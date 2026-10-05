@@ -194,7 +194,8 @@ export function ClaimForm({ cafeId, cafeName, initialClaim }: ClaimFormProps) {
         Open Instagram to send it
       </a>
       <p className="mt-3 text-center text-[13px] text-[var(--nk-muted)]">
-        We review claims within 1–2 working days of your message.
+        We&apos;ve emailed you this code too. We review claims within 1–2
+        working days of your message.
       </p>
     </FunnelSpread>
   );

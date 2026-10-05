@@ -179,7 +179,7 @@ Ranked by severity, then evidence. "Fixed" means changed in this pass, on
    "No matches. Try your street name or a landmark next to the cafe, then pick
    it. We check the exact pin before your cafe goes live."; a confirmation once
    picked; the list stays open while focus is in it and picks on click (so
-   Enter works). **Still open:** a "drop a pin" fallback (recommendation 2).
+   Enter works). A "drop a pin" fallback followed (follow-up 2).
 6. **Moderate · code · B1–B3.** The code hand-off was thinner than the existing
    claim flow's: no Copy, a link to the profile rather than the DM, no expiry,
    no word that the step changes only when the team sees the message.
@@ -202,13 +202,14 @@ Ranked by severity, then evidence. "Fixed" means changed in this pass, on
 10. **Moderate · inferred · C4.** Admin can only Publish. If the photos or pin are
     wrong there's no "send back with a note", so the owner sits on "Submitted
     for review" while the team messages them elsewhere. Not fixed (product
-    decision, recommendation 3).
+    decision). Built afterwards as Send back (follow-up 3).
 11. **Moderate · inferred · A5.** A cafe with no Instagram has no way through the
     form; the hint only says the code goes through Instagram. Not fixed
-    (recommendation 4).
+    (deferred, follow-up 4).
 12. **Minor · code · A, undo.** A submitted listing can't be corrected or
     cancelled by the owner (a mistyped Instagram handle means the DM never
-    matches). The existing claim flow has "Cancel this claim". Recommendation 5.
+    matches). The existing claim flow has "Cancel this claim". Cancel built
+    afterwards (follow-up 5); editing is not.
 13. **Minor · seen.** The account and claim pages showed a strip of the landing's
     dot lattice under the card on short pages (the shell stopped 72px short of
     the viewport). **Fixed:** plain white to the bottom.
@@ -232,31 +233,60 @@ and the "is now live" email.
 
 Single-rater scores, for comparing before and after only.
 
-### Recommendations that need a decision
+### Follow-up: decisions built (2026-10-05)
 
-1. **Email the owner their code when they submit** (and on claims too). Today it
-   lives only on the status page; Airbnb and Klarna both confirm by message.
-   Changes what Nook sends, so not done here.
-2. **Address fallback:** when search finds nothing, let the owner drop a pin on a
-   map (the admin app already has `map-picker`), or accept a typed address with
-   no coordinates and have the team place the pin.
-3. **"Send back" for drafts:** a note from the admin that clears
-   `review_requested_at` and emails the owner what to fix, shown on their
-   dashboard.
-4. **No-Instagram path:** decide what an owner without a cafe Instagram does
-   (Facebook page message, a call, a photo of a permit) and say it in the form.
-5. **Edit or cancel a pending listing** from the status page, at least the
-   Instagram handle, before it's under review.
+Four of the five recommendations were approved and built on
+`feat/list-your-cafe`; the fourth (no-Instagram path) is deferred.
+
+1. **Code by email.** `lib/claims/send-claim-code.ts` emails the owner their
+   code when a claim or a new listing is created: the code, the steps (switch to
+   the cafe's account, DM it), the `ig.me` link, "Send it by <date>", what
+   happens next, and a link to `/claim/status`. Sent with `after()` from the
+   same Resend setup and sender (`CLAIM_NOTIFICATION_FROM`) as the team alert;
+   a failure is logged and never fails the submission. The status page and the
+   claim page say the code was emailed too.
+2. **Drop a pin.** Under the address search, "Can't find it? Type the address
+   and place a pin instead" switches to a typed address plus a map
+   (`app/components/claim/pin-picker.tsx`, mapbox-gl): tap to place, drag to
+   adjust, or "I'm at the cafe, use my location". Tapping is the non-drag way
+   (WCAG 2.5.7). The pin is checked against the RPC's Philippines box before
+   submitting; city falls back to the RPC default and the team checks the
+   details before publishing. The RPC's address messages no longer say "pick
+   from the list". **The map tiles need `NEXT_PUBLIC_MAPBOX_TOKEN` too**, so
+   without the token neither search nor the pin works (the form says so and
+   keeps submit disabled, as before).
+3. **Send back with a note.** In nook-admin, the "Owner submitted" card on a
+   draft has **Send back** beside Publish: a note (required, up to 2,000
+   characters) is stored in the new `cafes.review_note`,
+   `review_requested_at` is cleared, and the owner is emailed the note with a
+   link to the dashboard. The dashboard's panel shows "Nook asked for a few
+   changes" with the note and a **Submit again** button; resubmitting clears
+   the note. The admin cafe page keeps showing the note until resubmission.
+   The owner column guard now also rejects owner-session changes to
+   `review_requested_at` and `review_note`; only the business app's service
+   role (resubmit) and admin write them.
+4. **No-Instagram path: deferred.** Still open: decide what an owner without
+   a cafe Instagram does (Facebook page message, a call, a permit photo) and
+   say it in the form.
+5. **Cancel a pending listing.** On `/claim/status`, a new listing that is
+   pending or under review has "Made a mistake, like the wrong Instagram
+   handle? Cancel this listing", with an inline confirm. The new
+   `withdraw_cafe_listing` RPC withdraws the claim and sets the draft
+   inactive in one transaction, which frees the one-open-listing slot; the
+   owner lands on the form with the cafe's name filled in.
 
 ## Needs the token or the migration to verify
 
-- The form end to end, the address hints and keyboard picking: needs
-  `NEXT_PUBLIC_MAPBOX_TOKEN`.
+- The form end to end, the address hints, keyboard picking, and the pin map
+  (tiles, tap, drag, use my location): need `NEXT_PUBLIC_MAPBOX_TOKEN`.
 - Submission, duplicates, the status page with a real code, the dashboard panel,
   the To publish tab, the approval email: need the migration. **Deploy order
   matters:** `/claim/status` selects `is_new_listing` and the admin Cafés list
   now selects `review_requested_at`; deploying either app before the migration
   breaks those pages.
+- Code email, send-back email and note, cancel and resubmit: need the
+  migration (`review_note`, `withdraw_cafe_listing`) and, for the emails,
+  `RESEND_API_KEY`.
 - `ig.me/m/nook_cafefinder` opening the DM thread in the Instagram app, on
   Android and iOS.
 

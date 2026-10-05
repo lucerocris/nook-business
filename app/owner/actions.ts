@@ -401,7 +401,10 @@ export async function requestReviewAction(): Promise<RequestReviewResult> {
 
   const { error } = await admin
     .from("cafes")
-    .update({ review_requested_at: new Date().toISOString() })
+    // Resubmitting answers any note from a send-back, so it's cleared here.
+    // Only this service-role path may touch these two columns (the owner
+    // column guard rejects them from an owner's own session).
+    .update({ review_requested_at: new Date().toISOString(), review_note: null })
     .eq("id", cafeId)
     .eq("status", "draft")
     .is("review_requested_at", null)

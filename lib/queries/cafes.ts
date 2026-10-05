@@ -50,6 +50,8 @@ export type OwnerDashboardCafe = {
   highlight_count: number
   tag_count: number
   review_requested_at: string | null
+  // Set when Nook sends a submitted draft back with what to fix.
+  review_note: string | null
 }
 
 export type OwnerPhotosCafe = {
@@ -320,7 +322,7 @@ export async function getOwnerDashboardCafeById(
     supabase
       .from("cafes")
       .select(
-        "id, name, status, rating, review_count, featured_image_url, neighborhood, city, description, operating_hours, review_requested_at"
+        "id, name, status, rating, review_count, featured_image_url, neighborhood, city, description, operating_hours, review_requested_at, review_note"
       )
       .eq("id", cafeId)
       .single(),

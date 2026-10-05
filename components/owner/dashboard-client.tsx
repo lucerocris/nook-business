@@ -411,7 +411,15 @@ function SubmitForReview({ cafe }: { cafe: OwnerDashboardCafe }) {
 
   return (
     <Panel className="p-4 sm:p-4">
-      <h2 className="text-sm font-semibold">Ready to go live?</h2>
+      {cafe.review_note ? (
+        <div className="mb-3 rounded-lg border border-[#E0AB38]/60 bg-[#FFF4DC] px-3 py-2.5 text-xs leading-relaxed text-[#5c3d00]">
+          <p className="font-semibold">Nook asked for a few changes</p>
+          <p className="mt-1 whitespace-pre-line">{cafe.review_note}</p>
+        </div>
+      ) : null}
+      <h2 className="text-sm font-semibold">
+        {cafe.review_note ? "Send it again when it’s ready" : "Ready to go live?"}
+      </h2>
       <p className="mt-1 text-xs text-muted-foreground">
         {ready
           ? "Send your page to Nook. We check it and publish it, usually within 2 working days."
@@ -423,7 +431,7 @@ function SubmitForReview({ cafe }: { cafe: OwnerDashboardCafe }) {
         </p>
       )}
       <Button className="mt-3 w-full" size="sm" onClick={submit} disabled={!ready || pending}>
-        {pending ? "Submitting…" : "Submit for review"}
+        {pending ? "Submitting…" : cafe.review_note ? "Submit again" : "Submit for review"}
       </Button>
     </Panel>
   )
@@ -849,7 +857,9 @@ export function OwnerDashboardClient({
               : cafe.status === "draft"
                 ? cafe.review_requested_at
                   ? "Nook is reviewing your listing — usually within 2 working days."
-                  : "Your listing isn’t public yet. Submit it for review when it’s ready."
+                  : cafe.review_note
+                    ? "Nook asked for a few changes before publishing. See the note above."
+                    : "Your listing isn’t public yet. Submit it for review when it’s ready."
                 : "Your listing is hidden. Message Nook to bring it back."}
           </p>
         </aside>

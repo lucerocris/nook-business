@@ -11,6 +11,8 @@ import {
 } from "@/lib/claims/resolve-claim";
 import { isUuid } from "@/lib/validation/uuid";
 import { notifyNewClaim } from "@/lib/claims/notify-new-claim";
+import { sendClaimCode } from "@/lib/claims/send-claim-code";
+import { getBaseUrl } from "@/lib/site-url";
 
 // Explicit POST action to create-or-get the caller's claim for a cafe. Kept off
 // the page's GET render so visiting /claim/[id] (or a crafted link) can't create
@@ -45,6 +47,23 @@ export async function startClaim(params: {
   // returns the moment the row is committed.
   if ("claim" in result && result.created) {
     const { claim } = result;
+    const statusUrl = `${await getBaseUrl()}/claim/status`;
+    const email = user.email;
+    if (email && claim.verification_code) {
+      const code = claim.verification_code;
+      after(() =>
+        sendClaimCode({
+          to: email,
+          cafeId: params.cafeId,
+          code,
+          expiresAt: claim.expires_at
+            ? new Date(claim.expires_at)
+            : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          isNewListing: false,
+          statusUrl,
+        })
+      );
+    }
     after(() =>
       notifyNewClaim({
         claimId: claim.id,

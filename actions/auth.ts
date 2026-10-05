@@ -1,10 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getSafeRedirect } from "@/lib/safe-redirect";
 import { landingForUser } from "@/lib/auth-landing";
+import { getBaseUrl } from "@/lib/site-url";
 
 type AuthResult =
   | {
@@ -12,17 +12,6 @@ type AuthResult =
     }
   | null;
 
-// Absolute base URL for email links: prefer the configured site URL, fall back
-// to the request's own origin so confirmation links aren't "undefined/..." when
-// NEXT_PUBLIC_SITE_URL is unset.
-async function getBaseUrl(): Promise<string> {
-  const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  if (envUrl) return envUrl.replace(/\/+$/, "");
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  return host ? `${proto}://${host}` : "";
-}
 
 export async function signUp(
   formData: FormData,

@@ -83,7 +83,8 @@ export function CodeHandoff({
       <p className="mt-3 text-[13px]">
         {expires ? <>Send it by {expires}. </> : null}
         Once it&apos;s in, this step changes to &ldquo;Under review&rdquo; and
-        we email you when you&apos;re approved.
+        we email you when you&apos;re approved. We&apos;ve emailed you this
+        code too.
       </p>
     </>
   );

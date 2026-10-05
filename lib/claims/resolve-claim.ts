@@ -5,6 +5,7 @@ export type ResolvedClaim = {
   id: string;
   verification_code: string | null;
   status: string;
+  expires_at?: string | null;
 };
 
 // `created` distinguishes a brand-new claim from re-opening the caller's
@@ -89,7 +90,7 @@ export async function resolveClaim(
         verification_method: "instagram_dm",
         expires_at: expiresAt.toISOString(),
       })
-      .select("id, verification_code, status")
+      .select("id, verification_code, status, expires_at")
       .single();
 
     if (!error && claim) {

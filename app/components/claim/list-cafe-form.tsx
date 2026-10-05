@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
+import { PinPicker, inPhilippines, type Pin } from "@/app/components/claim/pin-picker";
 import {
   submitListing,
   type DuplicateCafe,
@@ -146,6 +147,11 @@ export function ListCafeForm({ initialName }: { initialName: string }) {
   const [name, setName] = useState(initialName);
   const [addressQuery, setAddressQuery] = useState("");
   const [place, setPlace] = useState<Place | null>(null);
+  // "pin": search couldn't find the cafe (or the owner chose to), so they type
+  // the address and place the pin themselves.
+  const [mode, setMode] = useState<"search" | "pin">("search");
+  const [manualAddress, setManualAddress] = useState("");
+  const [pin, setPin] = useState<Pin | null>(null);
   const [neighborhood, setNeighborhood] = useState("");
   const [instagram, setInstagram] = useState("");
   const [role, setRole] = useState<ListingInput["role"]>("owner");
@@ -183,9 +189,36 @@ export function ListCafeForm({ initialName }: { initialName: string }) {
     if (!neighborhood.trim() && picked.neighborhood) setNeighborhood(picked.neighborhood);
   };
 
+  const usePin = () => {
+    setMode("pin");
+    address.clear();
+    setError(null);
+    if (!manualAddress.trim()) setManualAddress(place?.address ?? addressQuery);
+    if (!pin && place) setPin({ lat: place.lat, lng: place.lng });
+  };
+
+  const useSearch = () => {
+    setMode("search");
+    setError(null);
+  };
+
+  // What gets submitted: the picked search result, or the typed address plus
+  // the pin. City is left to the RPC's default in pin mode; the team checks
+  // the details before publishing.
+  const resolvePlace = (): Place | string => {
+    if (mode === "search") {
+      return place ?? "Pick your cafe's address from the list, or place a pin on the map instead.";
+    }
+    if (manualAddress.trim().length < 5) return "Type your cafe's address.";
+    if (!pin) return "Tap the map where your cafe is to place the pin.";
+    if (!inPhilippines(pin.lat, pin.lng)) return "The pin has to be in the Philippines.";
+    return { address: manualAddress.trim(), neighborhood: "", city: "", lat: pin.lat, lng: pin.lng };
+  };
+
   const submit = async (force: boolean) => {
-    if (!place) {
-      setError("Pick your cafe's address from the list so we can place it on the map.");
+    const resolved = resolvePlace();
+    if (typeof resolved === "string") {
+      setError(resolved);
       return;
     }
     setError(null);
@@ -193,11 +226,11 @@ export function ListCafeForm({ initialName }: { initialName: string }) {
     try {
       const result = await submitListing({
         name,
-        address: place.address,
+        address: resolved.address,
         neighborhood,
-        city: place.city,
-        lat: place.lat,
-        lng: place.lng,
+        city: resolved.city,
+        lat: resolved.lat,
+        lng: resolved.lng,
         instagram,
         role,
         force,
@@ -335,72 +368,113 @@ export function ListCafeForm({ initialName }: { initialName: string }) {
         />
       </div>
 
-      <div className="relative">
-        <label className={labelClass} htmlFor="cafe-address">
-          Address
-        </label>
-        <input
-          id="cafe-address"
-          value={addressQuery}
-          onChange={(e) => onAddressChange(e.target.value)}
-          onBlur={(e) => {
-            // Tabbing into the results moves focus there; only close when
-            // focus leaves the field and its list altogether.
-            if (e.relatedTarget?.closest("#cafe-address-options")) return;
-            window.setTimeout(address.clear, 150);
-          }}
-          placeholder="Search your cafe or street"
-          autoComplete="off"
-          role="combobox"
-          aria-expanded={address.suggestions.length > 0}
-          aria-controls="cafe-address-options"
-          aria-describedby="cafe-address-hint"
-          className={inputClass}
-        />
-        <p id="cafe-address-hint" className="mt-2 text-xs text-[var(--nk-muted)]" aria-live="polite">
-          {!MAPBOX_TOKEN
-            ? "Address search isn't available right now. Message us on Instagram to list your cafe."
-            : address.noMatch && !place
-              ? "No matches. Try your street name or a landmark next to the cafe, then pick it. We check the exact pin before your cafe goes live."
-              : place
-                ? "Pin placed. Wrong spot? Search again and pick another result."
-                : "Pick a result so we can place your cafe on the map."}
-        </p>
-        {address.suggestions.length > 0 && (
-          <ul
-            id="cafe-address-options"
-            role="listbox"
-            className="absolute left-0 right-0 z-30 mt-1 max-h-72 overflow-auto rounded-lg border border-[#d4d4d0] bg-white py-1 text-sm shadow-[0_12px_24px_rgba(0,0,0,0.08)]"
-          >
-            {address.suggestions.map((s) => (
-              <li key={s.mapbox_id} role="option" aria-selected={false}>
-                <button
-                  type="button"
-                  // preventDefault on mousedown keeps focus in the input, so its
-                  // blur doesn't close the list before the click lands. The pick
-                  // itself is on click, so Tab + Enter works too.
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => pick(s)}
-                  className="flex w-full flex-col items-start px-3 py-2.5 text-left hover:bg-[#e3ebe4]/50"
-                >
-                  <span className="font-medium text-[#101514]">{s.name}</span>
-                  <span className="text-xs text-[#6b6b6b]">
-                    {s.full_address ?? s.place_formatted}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {place && MAPBOX_TOKEN && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={staticMapUrl(place)}
-            alt={`Map pin at ${place.address}`}
-            className="mt-3 aspect-[16/7] w-full rounded-lg border border-[var(--nk-line)] object-cover"
+      {mode === "search" ? (
+        <div className="relative">
+          <label className={labelClass} htmlFor="cafe-address">
+            Address
+          </label>
+          <input
+            id="cafe-address"
+            value={addressQuery}
+            onChange={(e) => onAddressChange(e.target.value)}
+            onBlur={(e) => {
+              // Tabbing into the results moves focus there; only close when
+              // focus leaves the field and its list altogether.
+              if (e.relatedTarget?.closest("#cafe-address-options")) return;
+              window.setTimeout(address.clear, 150);
+            }}
+            placeholder="Search your cafe or street"
+            autoComplete="off"
+            role="combobox"
+            aria-expanded={address.suggestions.length > 0}
+            aria-controls="cafe-address-options"
+            aria-describedby="cafe-address-hint"
+            className={inputClass}
           />
-        )}
-      </div>
+          <p id="cafe-address-hint" className="mt-2 text-xs text-[var(--nk-muted)]" aria-live="polite">
+            {!MAPBOX_TOKEN
+              ? "Address search isn't available right now. Message us on Instagram to list your cafe."
+              : address.noMatch && !place
+                ? "No matches. Try your street name or a landmark next to the cafe, then pick it. We check the exact pin before your cafe goes live."
+                : place
+                  ? "Pin placed. Wrong spot? Search again and pick another result."
+                  : "Pick a result so we can place your cafe on the map."}
+          </p>
+          {MAPBOX_TOKEN ? (
+            <button
+              type="button"
+              onClick={usePin}
+              className={`mt-1 min-h-6 text-xs font-semibold text-[var(--nk-green)] hover:underline ${
+                address.noMatch && !place ? "" : "opacity-80"
+              }`}
+            >
+              Can&apos;t find it? Type the address and place a pin instead
+            </button>
+          ) : null}
+          {address.suggestions.length > 0 && (
+            <ul
+              id="cafe-address-options"
+              role="listbox"
+              className="absolute left-0 right-0 z-30 mt-1 max-h-72 overflow-auto rounded-lg border border-[#d4d4d0] bg-white py-1 text-sm shadow-[0_12px_24px_rgba(0,0,0,0.08)]"
+            >
+              {address.suggestions.map((s) => (
+                <li key={s.mapbox_id} role="option" aria-selected={false}>
+                  <button
+                    type="button"
+                    // preventDefault on mousedown keeps focus in the input, so its
+                    // blur doesn't close the list before the click lands. The pick
+                    // itself is on click, so Tab + Enter works too.
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => pick(s)}
+                    className="flex w-full flex-col items-start px-3 py-2.5 text-left hover:bg-[#e3ebe4]/50"
+                  >
+                    <span className="font-medium text-[#101514]">{s.name}</span>
+                    <span className="text-xs text-[#6b6b6b]">
+                      {s.full_address ?? s.place_formatted}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {place && MAPBOX_TOKEN && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={staticMapUrl(place)}
+              alt={`Map pin at ${place.address}`}
+              className="mt-3 aspect-[16/7] w-full rounded-lg border border-[var(--nk-line)] object-cover"
+            />
+          )}
+        </div>
+      ) : (
+        <div>
+          <label className={labelClass} htmlFor="cafe-address-manual">
+            Address
+          </label>
+          <input
+            id="cafe-address-manual"
+            value={manualAddress}
+            onChange={(e) => setManualAddress(e.target.value)}
+            maxLength={300}
+            autoComplete="street-address"
+            placeholder="e.g. 12 Gorordo Ave, Lahug, Cebu City"
+            aria-describedby="cafe-address-manual-hint"
+            className={inputClass}
+          />
+          <p id="cafe-address-manual-hint" className="mt-2 text-xs text-[var(--nk-muted)]">
+            Write it the way you&apos;d give directions. We check it and the pin
+            before your cafe goes live.
+          </p>
+          <PinPicker pin={pin} onChange={setPin} />
+          <button
+            type="button"
+            onClick={useSearch}
+            className="mt-2 min-h-6 text-xs font-semibold text-[var(--nk-green)] hover:underline"
+          >
+            Search for the address instead
+          </button>
+        </div>
+      )}
 
       <div>
         <label className={labelClass} htmlFor="cafe-neighborhood">

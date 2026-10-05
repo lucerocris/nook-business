@@ -47,13 +47,12 @@ export default async function LoginPage({
   return (
     <FunnelShell>
       <FunnelSpread
-        label="Owner account"
         title="Welcome back."
         lead="Log in to manage your cafe's listing and check on your claims."
       >
-        <div className="max-w-md">
+        <div>
           {errorMessage ? (
-            <p role="alert" className="mb-6 rounded-[2px] border border-[#E0AB38]/60 bg-[#E0AB38]/10 px-4 py-3 text-sm text-[#5c3d00]">
+            <p role="alert" className="mb-6 rounded-lg border border-[#E0AB38]/60 bg-[#E0AB38]/10 px-4 py-3 text-sm text-[#5c3d00]">
               {errorMessage}
             </p>
           ) : null}

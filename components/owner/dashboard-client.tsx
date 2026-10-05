@@ -36,6 +36,7 @@ import type {
   OwnerDashboardCafe,
 } from "@/lib/queries/cafes"
 import { TRAFFIC_RANGES } from "@/lib/owner/traffic-ranges"
+import { requestReviewAction } from "@/app/owner/actions"
 
 const NOOK_INSTAGRAM = "https://instagram.com/nook_cafefinder"
 
@@ -353,6 +354,66 @@ function TrafficChart({
         </span>
       </figcaption>
     </figure>
+  )
+}
+
+// Cover photo, hours and description are the minimum for a page worth
+// publishing; menu highlights and tags help but don't block. Mirrors the
+// check in requestReviewAction.
+function readyForReview(cafe: OwnerDashboardCafe) {
+  return !!cafe.featured_image_url && hasHours(cafe.operating_hours) && !!cafe.description?.trim()
+}
+
+function SubmitForReview({ cafe }: { cafe: OwnerDashboardCafe }) {
+  const router = useRouter()
+  const [pending, startTransition] = React.useTransition()
+  const [error, setError] = React.useState<string | null>(null)
+  const ready = readyForReview(cafe)
+
+  if (cafe.review_requested_at) {
+    const when = new Date(cafe.review_requested_at).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    })
+    return (
+      <Panel className="p-4 sm:p-4">
+        <h2 className="text-sm font-semibold">Submitted for review</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Sent {when}. We’ll email you when {cafe.name} is live.
+        </p>
+      </Panel>
+    )
+  }
+
+  const submit = () => {
+    setError(null)
+    startTransition(async () => {
+      const result = await requestReviewAction()
+      if (!result.ok) {
+        setError(result.error)
+        return
+      }
+      router.refresh()
+    })
+  }
+
+  return (
+    <Panel className="p-4 sm:p-4">
+      <h2 className="text-sm font-semibold">Ready to go live?</h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {ready
+          ? "Send your page to Nook. We check it and publish it, usually within 2 working days."
+          : "Add a cover photo, opening hours and a description, then send your page to Nook to publish."}
+      </p>
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-destructive">
+          {error}
+        </p>
+      )}
+      <Button className="mt-3 w-full" size="sm" onClick={submit} disabled={!ready || pending}>
+        {pending ? "Submitting…" : "Submit for review"}
+      </Button>
+    </Panel>
   )
 }
 
@@ -755,6 +816,9 @@ export function OwnerDashboardClient({
           )}
         >
           <SetupChecklist steps={steps} />
+          {cafe.status === "draft" && (
+            <SubmitForReview cafe={cafe} />
+          )}
           <p className="flex gap-2 px-3 text-xs leading-relaxed text-muted-foreground">
             <span
               aria-hidden
@@ -766,7 +830,9 @@ export function OwnerDashboardClient({
             {isActive
               ? "Nook reviewed and published your listing."
               : cafe.status === "draft"
-                ? "Nook is reviewing your listing — usually within 2 working days."
+                ? cafe.review_requested_at
+                  ? "Nook is reviewing your listing — usually within 2 working days."
+                  : "Your listing isn’t public yet. Submit it for review when it’s ready."
                 : "Your listing is hidden. Message Nook to bring it back."}
           </p>
         </aside>

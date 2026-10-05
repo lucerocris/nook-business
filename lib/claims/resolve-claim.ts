@@ -33,7 +33,7 @@ const CODE_ATTEMPTS = 3;
 
 // crypto.randomInt, not Math.random(): the code is what proves ownership in
 // the Instagram DM, so it must not be predictable.
-function generateCode(): string {
+export function generateCode(): string {
   let code = "";
   for (let i = 0; i < CODE_LENGTH; i += 1) {
     code += CODE_CHARS[randomInt(CODE_CHARS.length)];

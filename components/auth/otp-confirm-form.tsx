@@ -60,7 +60,7 @@ export function OtpConfirmForm({ email, redirectTo }: OtpConfirmFormProps) {
         onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
         placeholder="Enter code"
         aria-label="Verification code"
-        className="w-full max-w-xs rounded-[2px] border border-[#d4d4d0] bg-white px-4 py-3 text-center font-mono text-xl tracking-[0.25em] text-[var(--nk-ink)] outline-none transition placeholder:text-base placeholder:tracking-normal placeholder:text-[#8a8a87] focus:border-[var(--nk-green)] focus:ring-2 focus:ring-[var(--nk-green)]/25"
+        className="w-full max-w-xs rounded-lg border border-[#d4d4d0] bg-white px-4 py-3 text-center font-mono text-xl tracking-[0.25em] text-[var(--nk-ink)] outline-none transition placeholder:text-base placeholder:tracking-normal placeholder:text-[#8a8a87] focus:border-[var(--nk-green)] focus:ring-2 focus:ring-[var(--nk-green)]/25"
       />
 
       {error && <p className="text-sm font-semibold text-red-600">{error}</p>}

@@ -43,7 +43,7 @@ export function AcceptInviteForm() {
   return (
     <form className="mt-6 space-y-4 sm:mt-7" onSubmit={handleSubmit}>
       {formError ? (
-        <p role="alert" className="rounded-[2px] border border-[#b94a48]/30 bg-[#b94a48]/5 px-4 py-3 text-sm text-[#b94a48]">
+        <p role="alert" className="rounded-lg border border-[#b94a48]/30 bg-[#b94a48]/5 px-4 py-3 text-sm text-[#b94a48]">
           {formError}
         </p>
       ) : null}
@@ -59,7 +59,7 @@ export function AcceptInviteForm() {
           autoComplete="new-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="w-full rounded-[2px] border border-[#d4d4d0] bg-white px-3 py-2.5 text-base text-[var(--nk-ink)] outline-none transition-colors placeholder:text-[#8a8a87] focus:border-[var(--nk-green)] focus-visible:ring-2 focus-visible:ring-[var(--nk-green)]/25 sm:text-sm"
+          className="w-full rounded-lg border border-[#d4d4d0] bg-white px-3 py-2.5 text-base text-[var(--nk-ink)] outline-none transition-colors placeholder:text-[#8a8a87] focus:border-[var(--nk-green)] focus-visible:ring-2 focus-visible:ring-[var(--nk-green)]/25 sm:text-sm"
           placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
         />
       </div>
@@ -75,7 +75,7 @@ export function AcceptInviteForm() {
           autoComplete="new-password"
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
-          className="w-full rounded-[2px] border border-[#d4d4d0] bg-white px-3 py-2.5 text-base text-[var(--nk-ink)] outline-none transition-colors placeholder:text-[#8a8a87] focus:border-[var(--nk-green)] focus-visible:ring-2 focus-visible:ring-[var(--nk-green)]/25 sm:text-sm"
+          className="w-full rounded-lg border border-[#d4d4d0] bg-white px-3 py-2.5 text-base text-[var(--nk-ink)] outline-none transition-colors placeholder:text-[#8a8a87] focus:border-[var(--nk-green)] focus-visible:ring-2 focus-visible:ring-[var(--nk-green)]/25 sm:text-sm"
         />
       </div>
 

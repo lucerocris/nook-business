@@ -24,7 +24,12 @@
   --nk-bg-2: #f7f6f2;
   --nk-line: rgba(16, 21, 20, 0.1);
   --nk-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --nk-amber: #8a5a00; /* warning text, 6.1:1 on --nk-amber-tint */
+  --nk-amber-tint: #fff4dc;
+  /* DESIGN_SYSTEM.md §5 shadow-card, with the brand's green-tinted shadow base. */
+  --nk-shadow-card: 0 12px 28px rgba(15, 35, 20, 0.08);
 }
+
 
 /* ---------- Landing primitives ---------- */
 

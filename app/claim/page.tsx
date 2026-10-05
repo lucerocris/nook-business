@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect } from 'react'
+import Link from 'next/link'
 import { FunnelShell, FunnelSpread } from '../components/funnel-shell'
 import { CafeSearchInput } from '../components/claim/cafe-search-input'
 
@@ -13,23 +14,19 @@ export default function ClaimSearchPage() {
   return (
     <FunnelShell>
       <FunnelSpread
-        label="Claim your cafe · step 1 of 3"
-        title="Let's find your cafe listing."
-        lead="Pick your cafe from the Nook directory to start verification and open your owner portal."
-        aside={
-          <ol className="border-t border-[var(--nk-line)]">
-            {["Search by cafe name", "Choose the right listing", "Continue to verification"].map((step, i) => (
-              <li key={step} className="flex gap-4 border-b border-[var(--nk-line)] py-3">
-                <span className="tabular-nums text-[var(--nk-green)]">{i + 1}</span>
-                <span className="text-[var(--nk-body)]">{step}</span>
-              </li>
-            ))}
-          </ol>
-        }
+        stage={1}
+        title="Find your cafe on Nook."
+        lead="Search by name, then pick your cafe to start verifying it's yours."
       >
         <div className="relative z-20">
           <CafeSearchInput />
         </div>
+        <p className="mt-5 text-[14px] text-[var(--nk-muted)]">
+          Cafe not on Nook yet?{" "}
+          <Link href="/claim/new" className="font-semibold text-[var(--nk-green)] hover:underline">
+            Add it
+          </Link>
+        </p>
       </FunnelSpread>
     </FunnelShell>
   )

@@ -62,7 +62,7 @@ export function GoogleAuthButton({
       {error ? (
         <p
           role="alert"
-          className="mb-4 rounded-[2px] border border-[#b94a48]/30 bg-[#b94a48]/5 px-4 py-3 text-sm text-[#b94a48]"
+          className="mb-4 rounded-lg border border-[#b94a48]/30 bg-[#b94a48]/5 px-4 py-3 text-sm text-[#b94a48]"
         >
           {error}
         </p>

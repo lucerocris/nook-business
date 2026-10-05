@@ -33,11 +33,10 @@ export default async function RegisterPage({
   return (
     <FunnelShell>
       <FunnelSpread
-        label="New owner account"
         title="Create your account."
         lead="Free for cafe owners. You'll use it to claim your cafe and keep its hours, menu and photos right."
       >
-        <div className="max-w-md">
+        <div>
           <GoogleAuthButton redirectTo={redirectTo} label="Sign up with Google" />
           <RegisterForm redirectTo={redirectTo} />
         </div>

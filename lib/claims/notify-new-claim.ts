@@ -14,6 +14,10 @@ export type NewClaimNotification = {
   claimantEmail: string | null
   role: "owner" | "manager"
   verificationCode: string | null
+  // A cafe the owner added themselves via /claim/new: it's a hidden draft, so
+  // the admin also has to check the details and pin before publishing.
+  isNewListing?: boolean
+  instagramHandle?: string | null
 }
 
 // Cafe names, addresses and profile names are user-supplied, so they must be
@@ -76,6 +80,8 @@ export async function notifyNewClaim(
 
     const claimantName = profile?.full_name ?? "(no name on file)"
     const cafeAddress = cafe?.address ?? "(none on file)"
+    const kind = claim.isNewListing ? "new listing" : `${claim.role} claim`
+    const instagram = claim.instagramHandle ? `@${claim.instagramHandle}` : null
 
     // A text-only message is itself a mild spam signal, so send a multipart
     // mail: the HTML part carries the same facts, nothing exclusive to it.
@@ -85,10 +91,12 @@ export async function notifyNewClaim(
       ["Claimant", claimantName],
       ["Email", claimantEmail ?? "(no email on file)"],
       ["Role", claim.role],
+      ...(instagram ? [["Instagram", instagram] as [string, string]] : []),
       ["Code", claim.verificationCode ?? "(none)"],
     ]
     const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#1f2937;max-width:520px">
-<p style="font-size:15px;line-height:1.5"><strong>${escapeHtml(cafeName)}</strong> has a new ${escapeHtml(claim.role)} claim awaiting review.</p>
+<p style="font-size:15px;line-height:1.5"><strong>${escapeHtml(cafeName)}</strong> has a new ${escapeHtml(kind)} awaiting review.</p>
+${claim.isNewListing ? `<p style="font-size:14px;line-height:1.5">The owner added this cafe themselves. It's a hidden draft: check the address and map pin before publishing.</p>` : ""}
 <table cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.9">
 ${rows
   .map(
@@ -108,10 +116,18 @@ ${adminSiteUrl ? `<p style="font-size:14px"><a href="${adminSiteUrl}/admin/claim
       from,
       to,
       replyTo: claimantEmail ?? undefined,
-      subject: `New cafe claim: ${cafeName}`,
+      subject: claim.isNewListing
+        ? `New cafe listing: ${cafeName}`
+        : `New cafe claim: ${cafeName}`,
       html,
       text: [
-        `${cafeName} has a new ${claim.role} claim awaiting review.`,
+        `${cafeName} has a new ${kind} awaiting review.`,
+        ...(claim.isNewListing
+          ? [
+              "The owner added this cafe themselves. It's a hidden draft: check",
+              "the address and map pin before publishing.",
+            ]
+          : []),
         "",
         `Cafe:        ${cafeName}`,
         `Address:     ${cafe?.address ?? "(none on file)"}`,
@@ -121,6 +137,7 @@ ${adminSiteUrl ? `<p style="font-size:14px"><a href="${adminSiteUrl}/admin/claim
         `Email:       ${claimantEmail ?? "(no email on file)"}`,
         `User ID:     ${claim.claimantId}`,
         `Role:        ${claim.role}`,
+        ...(instagram ? [`Instagram:   ${instagram}`] : []),
         "",
         `Claim ID:    ${claim.claimId}`,
         `Code:        ${claim.verificationCode ?? "(none)"}`,

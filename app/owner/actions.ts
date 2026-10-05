@@ -361,3 +361,78 @@ export async function submitCorrectionRequestAction(
     return { ok: false, error: "Couldn't send your request. Please try again." }
   }
 }
+
+export type RequestReviewResult = { ok: true } | { ok: false; error: string }
+
+// A draft listing (one the owner added via /claim/new, or one an admin
+// created and invited them to) goes public only when an admin publishes it.
+// This is the owner's "it's ready" signal: it stamps review_requested_at and
+// emails the Nook team. The owner can't publish it themselves; the
+// guard_cafe_owner_update trigger blocks status changes from owner sessions.
+export async function requestReviewAction(): Promise<RequestReviewResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { ok: false, error: "Please log in again." }
+
+  let cafeId: string
+  try {
+    cafeId = await getOwnerCafeId()
+  } catch {
+    return { ok: false, error: "We couldn't find your cafe." }
+  }
+
+  const admin = createAdminClient()
+  const { data: cafe } = await admin
+    .from("cafes")
+    .select("name, status, featured_image_url, operating_hours, description, review_requested_at")
+    .eq("id", cafeId)
+    .single()
+
+  if (!cafe) return { ok: false, error: "We couldn't find your cafe." }
+  if (cafe.status !== "draft") return { ok: false, error: "Your cafe isn't waiting to be published." }
+  if (cafe.review_requested_at) return { ok: true }
+
+  // Same minimum the dashboard shows before enabling the button.
+  const hours = cafe.operating_hours as Record<string, { open?: string; closed?: boolean } | null> | null
+  const hasHours = !!hours && Object.values(hours).some((d) => d && !d.closed && d.open)
+  if (!cafe.featured_image_url || !hasHours || !cafe.description?.trim()) {
+    return { ok: false, error: "Add a cover photo, opening hours and a description first." }
+  }
+
+  const { error } = await admin
+    .from("cafes")
+    .update({ review_requested_at: new Date().toISOString() })
+    .eq("id", cafeId)
+    .eq("status", "draft")
+    .is("review_requested_at", null)
+  if (error) return { ok: false, error: "Couldn't submit. Please try again." }
+
+  const apiKey = process.env.RESEND_API_KEY
+  const to = process.env.CLAIM_NOTIFICATION_TO
+  if (apiKey && to) {
+    const adminSiteUrl = process.env.ADMIN_SITE_URL?.replace(/\/+$/, "")
+    try {
+      const { Resend } = await import("resend")
+      const { error: mailError } = await new Resend(apiKey).emails.send({
+        from: process.env.CLAIM_NOTIFICATION_FROM ?? "Nook <noreply@nookph.app>",
+        to,
+        replyTo: user.email ?? undefined,
+        subject: `Ready to publish: ${cafe.name}`,
+        text: [
+          `${cafe.name} has finished setting up and is waiting to be published.`,
+          "",
+          `Owner: ${user.email ?? user.id}`,
+          `Cafe ID: ${cafeId}`,
+          ...(adminSiteUrl ? ["", `Review it: ${adminSiteUrl}/admin/cafes/${cafeId}`] : []),
+        ].join("\n"),
+      })
+      if (mailError) console.error("[REVIEW_REQUEST] Resend rejected the alert:", mailError.message)
+    } catch (e) {
+      // The request itself is saved; a missed email shouldn't fail it.
+      console.error("[REVIEW_REQUEST] Failed to send alert:", e)
+    }
+  }
+
+  revalidatePath("/owner/dashboard")
+  return { ok: true }
+}

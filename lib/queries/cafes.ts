@@ -49,6 +49,7 @@ export type OwnerDashboardCafe = {
   operating_hours: Cafe["operating_hours"]
   highlight_count: number
   tag_count: number
+  review_requested_at: string | null
 }
 
 export type OwnerPhotosCafe = {
@@ -319,7 +320,7 @@ export async function getOwnerDashboardCafeById(
     supabase
       .from("cafes")
       .select(
-        "id, name, status, rating, review_count, featured_image_url, neighborhood, city, description, operating_hours"
+        "id, name, status, rating, review_count, featured_image_url, neighborhood, city, description, operating_hours, review_requested_at"
       )
       .eq("id", cafeId)
       .single(),

@@ -7,6 +7,7 @@ import {
   useTransition,
   type ChangeEvent,
 } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCafeSearch } from "@/hooks/use-cafe-search";
 import { Spinner } from "@/components/ui/spinner";
@@ -98,6 +99,8 @@ export function CafeSearchInput() {
     .filter((cafe): cafe is CafeResult => Boolean(cafe && cafe.id));
 
   const hasQuery = searchQuery.trim().length > 0;
+  // Carries what they searched for into the form as the cafe name.
+  const listHref = `/claim/new?name=${encodeURIComponent(searchQuery.trim())}`;
   const showDropdown = hasQuery && (loading || hasSearched || cafes.length > 0 || error);
 
   return (
@@ -162,7 +165,7 @@ export function CafeSearchInput() {
       {/* Dropdown chrome matches the webapp's SearchDropdown: rounded-2xl,
           hairline ring, the standard card shadow. */}
       {showDropdown && (
-        <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-[2px] border border-[#d4d4d0] bg-white shadow-[0_12px_24px_rgba(0,0,0,0.08)]">
+        <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-lg border border-[#d4d4d0] bg-white shadow-[0_12px_24px_rgba(0,0,0,0.08)]">
           <ul className="max-h-80 overflow-auto py-2 text-left text-sm text-[#3b3b3b]">
             {loading ? (
               <li className="px-4 py-3 text-sm text-zinc-500">Searching…</li>
@@ -173,7 +176,11 @@ export function CafeSearchInput() {
               </li>
             ) : cafes.length === 0 ? (
               <li className="px-4 py-3 text-sm text-zinc-500">
-                No cafes found. Try a different name.
+                No cafes found. Try a different name, or{" "}
+                <Link href={listHref} className="font-semibold text-[#3A5A40] hover:text-[#2f4833]">
+                  add your cafe to Nook
+                </Link>
+                .
               </li>
             ) : (
               cafes.map((cafe, index) => {
@@ -219,7 +226,14 @@ export function CafeSearchInput() {
                     </button>
                   </li>
                 );
-              })
+              }).concat(
+                <li key="list-new" className="border-t border-zinc-100 px-5 py-3 text-sm text-zinc-500">
+                  Not listed?{" "}
+                  <Link href={listHref} className="font-semibold text-[#3A5A40] hover:text-[#2f4833]">
+                    Add your cafe to Nook
+                  </Link>
+                </li>
+              )
             )}
           </ul>
         </div>

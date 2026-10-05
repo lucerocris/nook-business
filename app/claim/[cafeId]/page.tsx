@@ -76,7 +76,8 @@ export default async function ClaimPage({
     return (
       <FunnelShell>
         <FunnelSpread
-          label="Claim your cafe"
+          stage={1}
+          stageAttention
           title={`${cafe.name ?? "This cafe"} already has an owner on Nook.`}
           lead="If you run this cafe and didn't claim it, message us on Instagram and we'll sort it out."
         >
@@ -104,7 +105,7 @@ export default async function ClaimPage({
     return (
       <FunnelShell>
         <FunnelSpread
-          label="Claim your cafe · step 2 of 3"
+          stage={1}
           title={`Claim ${cafe.name ?? "this cafe"}.`}
           lead={`Create a free owner account to verify that ${cafe.name ?? "this cafe"} is yours and manage it on Nook.`}
         >
@@ -112,10 +113,10 @@ export default async function ClaimPage({
             <img
               src={cafe.featured_image_url}
               alt={cafe.name ?? "Cafe"}
-              className="mb-8 aspect-[16/9] w-full max-w-md rounded-[2px] object-cover"
+              className="mb-6 aspect-[16/9] w-full rounded-xl object-cover"
             />
           ) : null}
-          <div className="flex max-w-md flex-col gap-4">
+          <div className="flex flex-col gap-4">
             <Link
               href={`/register?redirect=${redirectPath}`}
               className="nk-btn nk-btn-primary min-h-11 w-full"

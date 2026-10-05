@@ -126,14 +126,20 @@ export function Hero() {
 
           <p className="mt-4 text-[14px] text-[var(--nk-muted)]">
             Can&apos;t find your cafe?{" "}
-            <a
-              href={INSTAGRAM_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="nk-link"
-            >
-              Ask us to add it
-            </a>
+            {SELF_SERVE_CLAIM_ENABLED ? (
+              <Link href="/claim/new" className="nk-link">
+                Add it to Nook
+              </Link>
+            ) : (
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="nk-link"
+              >
+                Ask us to add it
+              </a>
+            )}
           </p>
         </div>
 

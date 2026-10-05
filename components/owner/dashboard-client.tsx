@@ -128,6 +128,8 @@ type Step = {
   cta?: { label: string; href: string }
 }
 
+// The three Submit for review needs (cover, hours, description) come first, so
+// an owner working down the list reaches "ready" before the nice-to-haves.
 function setupSteps(cafe: OwnerDashboardCafe): Step[] {
   return [
     { title: "Claim your café", done: true },
@@ -144,6 +146,12 @@ function setupSteps(cafe: OwnerDashboardCafe): Step[] {
       cta: { label: "Set hours", href: "/owner/profile#hours" },
     },
     {
+      title: "Write a short description",
+      done: !!cafe.description?.trim(),
+      body: "A few lines on what you serve and what it’s like to stay.",
+      cta: { label: "Write description", href: "/owner/profile" },
+    },
+    {
       title: "Pick menu highlights",
       done: cafe.highlight_count > 0,
       body: "Choose up to 5 items people should try first. They show on your Nook page.",
@@ -154,12 +162,6 @@ function setupSteps(cafe: OwnerDashboardCafe): Step[] {
       done: cafe.tag_count > 0,
       body: "Tags like wifi, outlets or pet-friendly help the right people find you.",
       cta: { label: "Choose tags", href: "/owner/tags" },
-    },
-    {
-      title: "Write a short description",
-      done: !!cafe.description?.trim(),
-      body: "A few lines on what you serve and what it’s like to stay.",
-      cta: { label: "Write description", href: "/owner/profile" },
     },
   ]
 }
@@ -360,15 +362,25 @@ function TrafficChart({
 // Cover photo, hours and description are the minimum for a page worth
 // publishing; menu highlights and tags help but don't block. Mirrors the
 // check in requestReviewAction.
-function readyForReview(cafe: OwnerDashboardCafe) {
-  return !!cafe.featured_image_url && hasHours(cafe.operating_hours) && !!cafe.description?.trim()
+function missingForReview(cafe: OwnerDashboardCafe) {
+  return [
+    !cafe.featured_image_url && "a cover photo",
+    !hasHours(cafe.operating_hours) && "opening hours",
+    !cafe.description?.trim() && "a description",
+  ].filter((item): item is string => !!item)
+}
+
+function listInWords(items: string[]) {
+  if (items.length <= 1) return items.join("")
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`
 }
 
 function SubmitForReview({ cafe }: { cafe: OwnerDashboardCafe }) {
   const router = useRouter()
   const [pending, startTransition] = React.useTransition()
   const [error, setError] = React.useState<string | null>(null)
-  const ready = readyForReview(cafe)
+  const missing = missingForReview(cafe)
+  const ready = missing.length === 0
 
   if (cafe.review_requested_at) {
     const when = new Date(cafe.review_requested_at).toLocaleDateString("en-US", {
@@ -403,7 +415,7 @@ function SubmitForReview({ cafe }: { cafe: OwnerDashboardCafe }) {
       <p className="mt-1 text-xs text-muted-foreground">
         {ready
           ? "Send your page to Nook. We check it and publish it, usually within 2 working days."
-          : "Add a cover photo, opening hours and a description, then send your page to Nook to publish."}
+          : `Add ${listInWords(missing)}, then send your page to Nook to publish.`}
       </p>
       {error && (
         <p role="alert" className="mt-2 text-xs text-destructive">
@@ -417,7 +429,7 @@ function SubmitForReview({ cafe }: { cafe: OwnerDashboardCafe }) {
   )
 }
 
-function SetupChecklist({ steps }: { steps: Step[] }) {
+function SetupChecklist({ steps, draft = false }: { steps: Step[]; draft?: boolean }) {
   const doneCount = steps.filter((s) => s.done).length
   const current = steps.findIndex((s) => !s.done)
 
@@ -430,7 +442,8 @@ function SetupChecklist({ steps }: { steps: Step[] }) {
         <div className="min-w-0">
           <h2 className="text-sm font-semibold">Your listing is complete</h2>
           <p className="text-xs text-muted-foreground">
-            {doneCount}/{steps.length} · Nothing left to set up
+            {doneCount}/{steps.length} ·{" "}
+            {draft ? "Nothing left to set up before it goes live" : "Nothing left to set up"}
           </p>
         </div>
       </Panel>
@@ -812,10 +825,14 @@ export function OwnerDashboardClient({
         <aside
           className={cn(
             "flex min-w-0 flex-col gap-3 lg:sticky lg:top-6 lg:order-none",
-            steps.some((s) => !s.done) && "order-first"
+            // On a phone the aside stacks under the stats; lift it to the top
+            // while there's setup left or a draft still to submit.
+            (steps.some((s) => !s.done) ||
+              (cafe.status === "draft" && !cafe.review_requested_at)) &&
+              "order-first"
           )}
         >
-          <SetupChecklist steps={steps} />
+          <SetupChecklist steps={steps} draft={cafe.status === "draft"} />
           {cafe.status === "draft" && (
             <SubmitForReview cafe={cafe} />
           )}

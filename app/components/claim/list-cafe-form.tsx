@@ -49,6 +49,9 @@ function newSessionToken() {
 function useAddressSearch() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
+  // The last search finished and found nothing: worth saying so, or the field
+  // just sits there and the owner can't tell whether to wait or retype.
+  const [noMatch, setNoMatch] = useState(false);
   const session = useRef(newSessionToken());
   const latest = useRef(0);
 
@@ -56,6 +59,7 @@ function useAddressSearch() {
     const id = ++latest.current;
     if (!MAPBOX_TOKEN || query.trim().length < 3) {
       setSuggestions([]);
+      setNoMatch(false);
       return;
     }
     setLoading(true);
@@ -74,7 +78,11 @@ function useAddressSearch() {
         `https://api.mapbox.com/search/searchbox/v1/suggest?${params}`
       );
       const json = await res.json();
-      if (id === latest.current) setSuggestions(json.suggestions ?? []);
+      if (id === latest.current) {
+        const found: Suggestion[] = json.suggestions ?? [];
+        setSuggestions(found);
+        setNoMatch(found.length === 0);
+      }
     } catch {
       if (id === latest.current) setSuggestions([]);
     } finally {
@@ -115,7 +123,17 @@ function useAddressSearch() {
     }
   };
 
-  return { suggestions, loading, suggest, retrieve, clear: () => setSuggestions([]) };
+  return {
+    suggestions,
+    loading,
+    noMatch,
+    suggest,
+    retrieve,
+    clear: () => {
+      setSuggestions([]);
+      setNoMatch(false);
+    },
+  };
 }
 
 function staticMapUrl(place: Place) {
@@ -325,7 +343,12 @@ export function ListCafeForm({ initialName }: { initialName: string }) {
           id="cafe-address"
           value={addressQuery}
           onChange={(e) => onAddressChange(e.target.value)}
-          onBlur={() => window.setTimeout(address.clear, 150)}
+          onBlur={(e) => {
+            // Tabbing into the results moves focus there; only close when
+            // focus leaves the field and its list altogether.
+            if (e.relatedTarget?.closest("#cafe-address-options")) return;
+            window.setTimeout(address.clear, 150);
+          }}
           placeholder="Search your cafe or street"
           autoComplete="off"
           role="combobox"
@@ -334,10 +357,14 @@ export function ListCafeForm({ initialName }: { initialName: string }) {
           aria-describedby="cafe-address-hint"
           className={inputClass}
         />
-        <p id="cafe-address-hint" className="mt-2 text-xs text-[var(--nk-muted)]">
-          {MAPBOX_TOKEN
-            ? "Pick a result so we can place your cafe on the map."
-            : "Address search isn't available right now. Message us on Instagram to list your cafe."}
+        <p id="cafe-address-hint" className="mt-2 text-xs text-[var(--nk-muted)]" aria-live="polite">
+          {!MAPBOX_TOKEN
+            ? "Address search isn't available right now. Message us on Instagram to list your cafe."
+            : address.noMatch && !place
+              ? "No matches. Try your street name or a landmark next to the cafe, then pick it. We check the exact pin before your cafe goes live."
+              : place
+                ? "Pin placed. Wrong spot? Search again and pick another result."
+                : "Pick a result so we can place your cafe on the map."}
         </p>
         {address.suggestions.length > 0 && (
           <ul
@@ -349,11 +376,11 @@ export function ListCafeForm({ initialName }: { initialName: string }) {
               <li key={s.mapbox_id} role="option" aria-selected={false}>
                 <button
                   type="button"
-                  // mousedown, not click: the input's blur would close the list first.
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    pick(s);
-                  }}
+                  // preventDefault on mousedown keeps focus in the input, so its
+                  // blur doesn't close the list before the click lands. The pick
+                  // itself is on click, so Tab + Enter works too.
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => pick(s)}
                   className="flex w-full flex-col items-start px-3 py-2.5 text-left hover:bg-[#e3ebe4]/50"
                 >
                   <span className="font-medium text-[#101514]">{s.name}</span>

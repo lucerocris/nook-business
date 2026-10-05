@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getSafeRedirect } from "@/lib/safe-redirect";
+import { landingForUser } from "@/lib/auth-landing";
 
 type AuthResult =
   | {
@@ -159,14 +160,7 @@ export async function signIn(
   // the dashboard until a manual reload). Resolve the real destination here so
   // the navigation is a single hop.
   if (destination === "/" && data.user) {
-    const { data: ownerRow } = await supabase
-      .from("cafe_owner_cafe")
-      .select("owner_id")
-      .eq("owner_id", data.user.id)
-      .limit(1)
-      .maybeSingle();
-
-    if (ownerRow) destination = "/owner/dashboard";
+    destination = await landingForUser(supabase, data.user.id);
   }
 
   redirect(destination);

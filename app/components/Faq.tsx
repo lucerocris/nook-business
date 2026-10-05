@@ -19,7 +19,7 @@ const faqs = [
   },
   {
     q: "My cafe isn't on Nook. Can I add it?",
-    a: "Not from this site yet. Message us on Instagram with your cafe's name and location and we'll look into adding it. Once it's listed, you can claim it here.",
+    a: "Yes. Search for it above, and if it isn't there, choose \"Add your cafe to Nook\". You'll give its name, address and Instagram, then verify it's yours the same way as a claim. It stays hidden until you've set up your page and we've published it.",
   },
   {
     q: "What can I change once I'm approved?",

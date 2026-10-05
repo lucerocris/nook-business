@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getSafeRedirect } from "@/lib/safe-redirect";
+import { landingForUser } from "@/lib/auth-landing";
 
 // OAuth (PKCE) landing point. Google sends the browser here with ?code, which
 // is exchanged for a session cookie. The matching verifier cookie was written
@@ -37,14 +38,7 @@ export async function GET(request: NextRequest) {
   // it the owner lands on "/" and middleware bounces them to the dashboard
   // mid-transition, leaving the marketing navbar painted over the dashboard.
   if (destination === "/") {
-    const { data: ownerRow } = await supabase
-      .from("cafe_owner_cafe")
-      .select("owner_id")
-      .eq("owner_id", data.user.id)
-      .limit(1)
-      .maybeSingle();
-
-    if (ownerRow) destination = "/owner/dashboard";
+    destination = await landingForUser(supabase, data.user.id);
   }
 
   return NextResponse.redirect(new URL(destination, request.url));

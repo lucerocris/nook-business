@@ -47,8 +47,18 @@ export default async function LoginPage({
   return (
     <FunnelShell>
       <FunnelSpread
+        stage={
+          redirectTo.startsWith("/claim/") && !redirectTo.startsWith("/claim/status")
+            ? 1
+            : undefined
+        }
+        firstStageLabel={redirectTo.startsWith("/claim/new") ? "Add your cafe" : undefined}
         title="Welcome back."
-        lead="Log in to manage your cafe's listing and check on your claims."
+        lead={
+          redirectTo.startsWith("/claim/new")
+            ? "Log in, then add your cafe's address and Instagram."
+            : "Log in to manage your cafe's listing and check on your claims."
+        }
       >
         <div>
           {errorMessage ? (

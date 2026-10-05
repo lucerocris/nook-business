@@ -9,6 +9,7 @@ import {
   type TimelineStep,
 } from "@/app/components/funnel-shell";
 import { createClient } from "@/lib/supabase/server";
+import { CodeHandoff } from "@/app/components/claim/code-handoff";
 
 export const metadata: Metadata = { title: "Your claim" };
 
@@ -39,7 +40,7 @@ export default async function ClaimStatusPage() {
   // cancelled by the owner and aren't worth showing.
   const { data: claims } = await supabase
     .from("cafe_claims")
-    .select("id, status, verification_code, expires_at, created_at, is_new_listing, cafes(name)")
+    .select("id, status, verification_code, expires_at, created_at, is_new_listing, rejection_reason, cafes(name)")
     .eq("claimant_id", user.id)
     .neq("status", "withdrawn")
     .order("created_at", { ascending: false });
@@ -51,6 +52,7 @@ export default async function ClaimStatusPage() {
     expires_at: string | null;
     created_at: string | null;
     is_new_listing: boolean;
+    rejection_reason: string | null;
     cafes: { name: string | null } | null;
   }[];
 
@@ -115,7 +117,9 @@ type StatusClaim = {
   id: string;
   status: string;
   verification_code: string | null;
+  expires_at: string | null;
   is_new_listing: boolean;
+  rejection_reason: string | null;
 };
 
 // The same three stages as the strip on the other claim pages, with the
@@ -144,6 +148,11 @@ function claimSteps(claim: StatusClaim, expired: boolean): TimelineStep[] {
       status: "Not approved",
       body: (
         <>
+          {claim.rejection_reason ? (
+            <span className="mb-2 block text-[var(--nk-body)]">
+              {claim.rejection_reason}
+            </span>
+          ) : null}
           If you think that&apos;s a mistake, message us on Instagram at{" "}
           <a
             href="https://instagram.com/nook_cafefinder"
@@ -184,22 +193,20 @@ function claimSteps(claim: StatusClaim, expired: boolean): TimelineStep[] {
       title: "Verify it's yours",
       state: "current",
       status: "Waiting for your code",
-      body: (
+      body: claim.verification_code ? (
+        <CodeHandoff code={claim.verification_code} expiresAt={claim.expires_at} />
+      ) : (
         <>
-          <p>DM this code to us from the cafe&apos;s official Instagram account.</p>
-          {claim.verification_code ? (
-            <p className="mt-3 rounded-xl bg-[var(--nk-bg-2)] px-4 py-3 text-center font-mono text-xl font-semibold tracking-[0.3em] text-[var(--nk-ink)]">
-              {claim.verification_code}
-            </p>
-          ) : null}
+          Message us on Instagram at{" "}
           <a
-            href="https://instagram.com/nook_cafefinder"
+            href="https://ig.me/m/nook_cafefinder"
             target="_blank"
             rel="noopener noreferrer"
-            className="nk-btn nk-btn-primary mt-3 min-h-11 w-full"
+            className="font-semibold text-[var(--nk-green)] hover:underline"
           >
-            Message @nook_cafefinder
-          </a>
+            @nook_cafefinder
+          </a>{" "}
+          and we&apos;ll send you a code.
         </>
       ),
     };

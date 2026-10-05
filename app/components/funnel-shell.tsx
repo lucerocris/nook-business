@@ -21,7 +21,7 @@ export function FunnelShell({
   return (
     <section
       className={cn(
-        "min-h-[calc(100dvh-72px)] bg-white px-4 pb-16 pt-24 sm:px-6 sm:pb-24 sm:pt-32",
+        "min-h-dvh bg-white px-4 pb-16 pt-24 sm:px-6 sm:pb-24 sm:pt-32",
         className
       )}
     >
@@ -47,13 +47,19 @@ export type FunnelStage = 1 | 2 | 3;
 export function FunnelProgress({
   current,
   attention = false,
+  firstStageLabel,
 }: {
   current: FunnelStage;
   attention?: boolean;
+  /** Renames stage 1, e.g. "Add your cafe" for an owner listing a new one. */
+  firstStageLabel?: string;
 }) {
+  const stages = firstStageLabel
+    ? [firstStageLabel, ...FUNNEL_STAGES.slice(1)]
+    : FUNNEL_STAGES;
   return (
     <ol className="mb-7 grid grid-cols-3" aria-label="Progress">
-      {FUNNEL_STAGES.map((name, index) => {
+      {stages.map((name, index) => {
         const stage = (index + 1) as FunnelStage;
         const done = stage < current;
         const isCurrent = stage === current;
@@ -116,6 +122,8 @@ type FunnelSpreadProps = {
   stage?: FunnelStage;
   /** The current stage is stuck (expired or rejected claim). */
   stageAttention?: boolean;
+  /** Renames stage 1 in the strip (see FunnelProgress). */
+  firstStageLabel?: string;
   /** Secondary notes, under the card in small type. */
   aside?: ReactNode;
   children?: ReactNode;
@@ -129,13 +137,14 @@ export function FunnelSpread({
   lead,
   stage,
   stageAttention,
+  firstStageLabel,
   aside,
   children,
 }: FunnelSpreadProps) {
   return (
     <div>
       <div className="rounded-2xl bg-white p-5 shadow-[var(--nk-shadow-card)] sm:p-8">
-        {stage ? <FunnelProgress current={stage} attention={stageAttention} /> : null}
+        {stage ? <FunnelProgress current={stage} attention={stageAttention} firstStageLabel={firstStageLabel} /> : null}
         {label ? (
           <p className="text-[13px] font-medium text-[var(--nk-green)]">{label}</p>
         ) : null}

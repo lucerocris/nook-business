@@ -51,7 +51,7 @@ function Thumb({
         onClick={() => inputRef.current?.click()}
         disabled={uploading}
         aria-label={`Add a photo for ${item.name}`}
-        className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-amber-400 bg-amber-50 text-amber-800 outline-hidden hover:bg-amber-100 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-70"
+        className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-amber-400 bg-amber-50 text-amber-800 outline-hidden hover:bg-amber-100 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-70"
       >
         {uploading ? <Spinner className="size-4" /> : <UploadSimple className="size-4" aria-hidden />}
       </button>
@@ -95,7 +95,7 @@ function ItemRow({
           {itemDetailLine(item)}
         </p>
         {item.is_highlight && !item.image_url && (
-          <p className="mt-0.5 text-[13px] text-amber-800">Add a photo so it shows in the app</p>
+          <p className="mt-0.5 text-[13px] text-amber-800 dark:text-amber-300">Add a photo so it shows in the app</p>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">

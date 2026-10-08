@@ -96,19 +96,19 @@ const STATUS: Record<
 > = {
   active: {
     label: "Live",
-    pill: "bg-emerald-50 text-emerald-700",
+    pill: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
     body: (name) => `People can find ${name} on the map and in search.`,
     link: (cafeId) => ({ label: "View on Nook", href: `https://www.nookph.app/cafes/${cafeId}` }),
   },
   draft: {
     label: "Not public yet",
-    pill: "bg-[#FFF4DC] text-[#8A5A00]",
+    pill: "bg-[#FFF4DC] text-[#8A5A00] dark:bg-amber-500/15 dark:text-amber-300",
     body: (name) => `People can’t see ${name} until Nook publishes it.`,
     link: () => ({ label: "What happens next", href: NOOK_INSTAGRAM }),
   },
   inactive: {
     label: "Hidden",
-    pill: "bg-red-50 text-red-700",
+    pill: "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300",
     body: (name) => `${name} isn’t shown in the Nook app right now.`,
     link: () => ({ label: "Message Nook", href: NOOK_INSTAGRAM }),
   },
@@ -295,7 +295,7 @@ export function OwnerSidebar({
             <span
               className={cn(
                 "inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium",
-                claimInReview ? "bg-[#FFF4DC] text-[#8A5A00]" : "bg-muted text-muted-foreground"
+                claimInReview ? "bg-[#FFF4DC] text-[#8A5A00] dark:bg-amber-500/15 dark:text-amber-300" : "bg-muted text-muted-foreground"
               )}
             >
               {claimInReview ? "Claim in review" : "No café linked"}

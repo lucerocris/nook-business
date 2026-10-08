@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { ArrowSquareOutIcon } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { ThemeToggle } from "@/components/theme-toggle"
 import type { OwnerCafeContext } from "@/lib/queries/cafes"
 
 const NOOK_INSTAGRAM = "https://instagram.com/nook_cafefinder"
@@ -86,6 +87,7 @@ export function OwnerHeader({ cafe }: { cafe: OwnerCafeContext | null }) {
             </a>
           </Button>
         )}
+        <ThemeToggle />
       </div>
     </header>
   )

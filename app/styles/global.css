@@ -1,5 +1,11 @@
 @import 'tailwindcss';
 
+/* dark: utilities follow the .dark class, not the OS setting. Without this,
+   Tailwind's default media-query variant applied the owner portal's dark:
+   classes (and shadcn's) on light pages for anyone with a dark OS. Only the
+   owner portal ever gets the class; see components/theme-provider.tsx. */
+@custom-variant dark (&:is(.dark *));
+
 @theme {
   --color-gray-900: #3b3b3b;
 }

@@ -65,9 +65,9 @@ const METRICS: { key: Metric; label: string; icon: React.ElementType }[] = [
 ]
 
 const STATUS_PILL: Record<OwnerDashboardCafe["status"], { label: string; className: string }> = {
-  active: { label: "Live", className: "bg-emerald-50 text-emerald-700" },
-  draft: { label: "Not public yet", className: "bg-[#FFF4DC] text-[#8A5A00]" },
-  inactive: { label: "Hidden", className: "bg-red-50 text-red-700" },
+  active: { label: "Live", className: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" },
+  draft: { label: "Not public yet", className: "bg-[#FFF4DC] text-[#8A5A00] dark:bg-amber-500/15 dark:text-amber-300" },
+  inactive: { label: "Hidden", className: "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300" },
 }
 
 function formatDayRange(days: AnalyticsDay[]) {
@@ -218,7 +218,7 @@ function Delta({ current, previous }: { current: number; previous: number }) {
     <span
       className={cn(
         "inline-flex items-center gap-0.5 text-xs font-medium tabular-nums",
-        up ? "text-emerald-700" : "text-red-700"
+        up ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"
       )}
     >
       <Icon className="size-3" weight="bold" aria-hidden />
@@ -412,7 +412,7 @@ function SubmitForReview({ cafe }: { cafe: OwnerDashboardCafe }) {
   return (
     <Panel className="p-4 sm:p-4">
       {cafe.review_note ? (
-        <div className="mb-3 rounded-lg border border-[#E0AB38]/60 bg-[#FFF4DC] px-3 py-2.5 text-xs leading-relaxed text-[#5c3d00]">
+        <div className="mb-3 rounded-lg border border-[#E0AB38]/60 bg-[#FFF4DC] px-3 py-2.5 text-xs leading-relaxed text-[#5c3d00] dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-200">
           <p className="font-semibold">Nook asked for a few changes</p>
           <p className="mt-1 whitespace-pre-line">{cafe.review_note}</p>
         </div>

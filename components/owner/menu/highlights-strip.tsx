@@ -47,7 +47,7 @@ function FilledSlot({
               disabled={uploading}
               className={cn(
                 TILE,
-                "flex-col gap-1.5 border border-dashed border-amber-400 bg-amber-50 text-[13px] font-medium text-amber-800 outline-hidden transition-colors hover:bg-amber-100 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-70",
+                "flex-col gap-1.5 border border-dashed border-amber-400 bg-amber-50 text-[13px] font-medium text-amber-800 outline-hidden transition-colors hover:bg-amber-100 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-70",
               )}
             >
               {uploading ? (
@@ -82,7 +82,7 @@ function FilledSlot({
       </div>
       <p className="mt-2 truncate text-[13px] font-medium">{item.name}</p>
       {missingPhoto ? (
-        <p className="text-xs leading-snug text-amber-800">
+        <p className="text-xs leading-snug text-amber-800 dark:text-amber-300">
           Hidden in the app until it has a photo
         </p>
       ) : (
